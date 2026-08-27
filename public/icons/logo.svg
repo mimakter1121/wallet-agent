@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <rect width="512" height="512" rx="128" fill="#047857"/>
+  <rect x="32" y="32" width="448" height="448" rx="96" fill="#065f46" stroke="#10b981" stroke-width="8"/>
+  <!-- Modern Geometric Wallet + Shield emblem -->
+  <path d="M128 176C128 158.327 142.327 144 160 144H352C369.673 144 384 158.327 384 176V336C384 353.673 369.673 368 352 368H160C142.327 368 128 353.673 128 336V176Z" fill="#0f172a" stroke="#34d399" stroke-width="12"/>
+  <path d="M128 208H384" stroke="#34d399" stroke-width="8"/>
+  <path d="M288 240H384V304H288C274.745 304 264 293.255 264 280V264C264 250.745 274.745 240 288 240Z" fill="#10b981" stroke="#ffffff" stroke-width="6"/>
+  <circle cx="308" cy="272" r="10" fill="#ffffff"/>
+  <!-- Sparkle / Verified check emblem -->
+  <circle cx="396" cy="136" r="48" fill="#10b981" stroke="#ffffff" stroke-width="10"/>
+  <path d="M376 136L390 150L418 122" stroke="#ffffff" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

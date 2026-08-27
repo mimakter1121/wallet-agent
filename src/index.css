@@ -1,0 +1,103 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --bg-main: #0a1128;
+    --bg-card: #121e3d;
+    --bg-input: #1a294e;
+    --border-color: #233763;
+    --brand-green: #00c853;
+  }
+
+  * {
+    -webkit-tap-highlight-color: transparent;
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  }
+
+  body {
+    @apply bg-[#0a1128] text-slate-100 antialiased selection:bg-emerald-500/30 selection:text-emerald-300;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    background-color: #0a1128;
+  }
+}
+
+.font-mono {
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* Custom Cyber Sapphire scrollbar */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0a1128;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #233763;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #00c853;
+}
+
+/* Dark Cyber Sapphire Card Style */
+.cashier-card {
+  background: #121e3d;
+  border: 1px solid #233763;
+  border-radius: 16px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  transition: all 0.2s ease;
+}
+
+.cashier-card:hover {
+  border-color: #324d87;
+}
+
+/* High contrast action buttons */
+.cash-btn-primary {
+  background: #00c853;
+  color: #ffffff;
+  font-weight: 700;
+  border-radius: 12px;
+  transition: all 0.15s ease;
+}
+.cash-btn-primary:hover {
+  background: #00e676;
+}
+
+.cash-btn-blue {
+  background: #00b0ff;
+  color: #ffffff;
+  font-weight: 700;
+  border-radius: 12px;
+  transition: all 0.15s ease;
+}
+.cash-btn-blue:hover {
+  background: #40c4ff;
+}
+
+/* Print styling for receipts */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  #printable-receipt, #printable-receipt * {
+    visibility: visible;
+  }
+  #printable-receipt {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    background: white !important;
+    color: black !important;
+  }
+}

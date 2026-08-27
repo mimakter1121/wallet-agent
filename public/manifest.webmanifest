@@ -1,0 +1,36 @@
+{
+  "name": "Wallet Agent - Fintech Management",
+  "short_name": "WalletAgent",
+  "description": "Authorized Agent Portal for processing customer deposits, withdrawals, network management, and commission tracking.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0f1d",
+  "theme_color": "#059669",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/icons/logo.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["finance", "business", "productivity"],
+  "shortcuts": [
+    {
+      "name": "Deposit Request",
+      "url": "/deposits",
+      "description": "Create a new customer deposit request"
+    },
+    {
+      "name": "Withdrawal Request",
+      "url": "/withdrawals",
+      "description": "Process a customer withdrawal"
+    },
+    {
+      "name": "Wallet & Balance",
+      "url": "/wallet",
+      "description": "View current balance and ledger"
+    }
+  ]
+}
