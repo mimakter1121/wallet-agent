@@ -1,10 +1,11 @@
 import React from 'react';
-import { ShieldCheck, UserCheck, Search, Bell } from 'lucide-react';
+import { ShieldCheck, Lock } from 'lucide-react';
 
 export const AdminHeader: React.FC<{
   title: string;
   subtitle: string;
-}> = ({ title, subtitle }) => {
+  onLogout?: () => void;
+}> = ({ title, subtitle, onLogout }) => {
   return (
     <header className="bg-[#121e3d] border-b border-[#233763] px-6 py-4 flex items-center justify-between sticky top-0 z-30 shadow-md text-white select-none">
       <div>
@@ -32,6 +33,17 @@ export const AdminHeader: React.FC<{
             <div className="text-[11px] text-[#00c853] font-mono font-bold">admin@walletagent.internal</div>
           </div>
         </div>
+
+        {onLogout && (
+          <button
+            onClick={onLogout}
+            title="Lock Admin Portal"
+            className="ml-2 flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 text-xs font-bold transition-colors"
+          >
+            <Lock className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Lock Portal</span>
+          </button>
+        )}
       </div>
     </header>
   );

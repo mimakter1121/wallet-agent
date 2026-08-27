@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { AdminProvider, useAdmin } from './context/AdminContext';
 import { AdminSidebar, AdminTab } from './components/AdminSidebar';
 import { AdminHeader } from './components/AdminHeader';
+import { AdminLoginGate } from './components/AdminLoginGate';
 import { AdminDashboard } from './pages/AdminDashboard';
 import { CustomerPortalPage } from './pages/CustomerPortalPage';
 import { ExchangeRatesPage } from './pages/ExchangeRatesPage';
@@ -14,7 +15,19 @@ import { CheckCircle2, AlertCircle, Info } from 'lucide-react';
 
 const AdminContent: React.FC = () => {
   const [currentTab, setCurrentTab] = useState<AdminTab>('dashboard');
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
+    return sessionStorage.getItem('wa_admin_auth') === 'true';
+  });
   const { toast } = useAdmin();
+
+  if (!isAuthenticated) {
+    return <AdminLoginGate onAuthenticated={() => setIsAuthenticated(true)} />;
+  }
+
+  const handleLogout = () => {
+    sessionStorage.removeItem('wa_admin_auth');
+    setIsAuthenticated(false);
+  };
 
   const getTabTitles = () => {
     switch (currentTab) {
@@ -46,7 +59,7 @@ const AdminContent: React.FC = () => {
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0 overflow-y-auto">
-        <AdminHeader title={title} subtitle={subtitle} />
+        <AdminHeader title={title} subtitle={subtitle} onLogout={handleLogout} />
 
         <main className="flex-1 pb-12">
           {currentTab === 'dashboard' && <AdminDashboard onNavigate={setCurrentTab} />}
