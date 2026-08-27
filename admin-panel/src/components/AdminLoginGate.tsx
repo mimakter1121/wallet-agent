@@ -11,8 +11,8 @@ export const AdminLoginGate: React.FC<AdminLoginGateProps> = ({ onAuthenticated 
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  const MASTER_ADMIN_PASS = 'admin123'; // Default master admin access key
-  const MASTER_ADMIN_PIN = '9988';      // Alternative pin key
+  const MASTER_ADMIN_PASS = import.meta.env.VITE_ADMIN_PASSWORD || 'admin123';
+  const MASTER_ADMIN_PIN = import.meta.env.VITE_ADMIN_PIN || '9988';
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -20,7 +20,7 @@ export const AdminLoginGate: React.FC<AdminLoginGateProps> = ({ onAuthenticated 
     setError('');
 
     setTimeout(() => {
-      if (password === MASTER_ADMIN_PASS || password === MASTER_ADMIN_PIN || password === 'admin') {
+      if (password === MASTER_ADMIN_PASS || password === MASTER_ADMIN_PIN) {
         sessionStorage.setItem('wa_admin_auth', 'true');
         onAuthenticated();
       } else {
