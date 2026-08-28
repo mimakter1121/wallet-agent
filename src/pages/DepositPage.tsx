@@ -49,10 +49,11 @@ export const DepositPage: React.FC = () => {
   };
 
   useEffect(() => {
+    if (!agent?.dbId) return; // wait until agent is loaded before fetching
     fetchLiveDepositRequests();
     const interval = setInterval(fetchLiveDepositRequests, 3000);
     return () => clearInterval(interval);
-  }, []);
+  }, [agent?.dbId]);
 
   const handleUpdateLiveDeposit = async (reqId: string, reqCode: string, amount: number, status: 'approved' | 'rejected') => {
     const usdEquivalent = (amount / bdtRate).toFixed(2);

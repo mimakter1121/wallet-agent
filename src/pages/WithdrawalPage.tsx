@@ -49,10 +49,11 @@ export const WithdrawalPage: React.FC = () => {
   };
 
   useEffect(() => {
+    if (!agent?.dbId) return; // wait until agent is loaded before fetching
     fetchLiveWithdrawalRequests();
     const interval = setInterval(fetchLiveWithdrawalRequests, 3000);
     return () => clearInterval(interval);
-  }, []);
+  }, [agent?.dbId]);
 
   const handleUpdateLiveWithdrawal = async (reqId: string, reqCode: string, amount: number, status: 'approved' | 'rejected') => {
     const isCrypto = false; // BDT fiat default
