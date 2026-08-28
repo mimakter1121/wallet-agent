@@ -183,7 +183,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   });
 
   // Data version check — wipes old cached data when version changes
-  const DATA_VERSION = 'v9_clean_fresh_accounts'; // increment to wipe old demo cached profiles/transactions
+  const DATA_VERSION = 'v10_always_fresh_login';
   const storedVersion = localStorage.getItem('wa_data_version');
   if (storedVersion !== DATA_VERSION) {
     // Clear all old stored demo data
@@ -412,10 +412,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
         const activeAgentDbId = agentData?.id || agent.dbId;
 
-        // Set agent context in DB session so RLS policies allow access to own data only
-        if (activeAgentDbId) {
-          await (supabase.rpc as any)('set_agent_context', { agent_uuid: activeAgentDbId });
-        }
+        // agent context is handled via auth.uid() RLS — no manual set needed
 
 
         let mappedDbTx: Transaction[] = [];
@@ -669,62 +666,38 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setIsAuthenticated(true);
     localStorage.setItem('wa_auth', 'true');
 
-    let existingProfile: any = null;
-    try {
-      const saved = localStorage.getItem('wa_agent_profile') || localStorage.getItem('wa_agent');
-      if (saved) existingProfile = JSON.parse(saved);
-    } catch {}
+    // ALWAYS wipe all cached data on every login — DB sync will repopulate fresh data
+    ['wa_transactions', 'wa_customers', 'wa_commissions', 'wa_notifications', 'wa_kycdocs'].forEach(k => localStorage.removeItem(k));
+    setTransactions([]);
+    setCustomers([]);
+    setCommissions([]);
+    setNotifications([]);
 
-    const isDifferentUser = customAgentData?.email && existingProfile?.email && customAgentData.email.toLowerCase() !== existingProfile.email.toLowerCase();
-    const isNewExplicitAgent = customAgentData?.id && existingProfile?.id && customAgentData.id !== existingProfile.id;
+    const agentCode = customAgentData?.id || ('AG-' + Math.floor(10000 + Math.random() * 90000));
+    const agentName = customAgentData?.name || (customAgentData?.email ? customAgentData.email.split('@')[0] : 'Agent User');
+    const agentEmail = customAgentData?.email || 'agent@walletagent.com';
+    const agentMobile = customAgentData?.mobile || '+8801700000000';
 
-    if (isDifferentUser || isNewExplicitAgent) {
-      existingProfile = null;
-      ['wa_transactions', 'wa_customers', 'wa_commissions', 'wa_notifications', 'wa_kycdocs'].forEach(k => localStorage.removeItem(k));
-      setTransactions([]);
-      setCustomers([]);
-      setCommissions([]);
-      setNotifications([]);
-    }
-
-    const agentCode = customAgentData?.id || existingProfile?.id || ('AG-' + Math.floor(10000 + Math.random() * 90000));
-    const agentName = customAgentData?.name || existingProfile?.name || (customAgentData?.email ? customAgentData.email.split('@')[0] : 'Agent User');
-    const agentEmail = customAgentData?.email || existingProfile?.email || 'agent@walletagent.com';
-    const agentMobile = customAgentData?.mobile || existingProfile?.mobile || '+8801700000000';
-
-    const restoredProfile: AgentProfile = {
+    const freshProfile: AgentProfile = {
       ...initialAgent,
-      ...existingProfile,
       ...customAgentData,
       id: agentCode,
       name: agentName,
       email: agentEmail,
       mobile: agentMobile,
-      balance: customAgentData?.balance !== undefined ? customAgentData.balance : (existingProfile?.balance || 0),
-      pendingBalance: customAgentData?.pendingBalance !== undefined ? customAgentData.pendingBalance : (existingProfile?.pendingBalance || 0),
-      commissionBalance: customAgentData?.commissionBalance !== undefined ? customAgentData.commissionBalance : (existingProfile?.commissionBalance || 0),
-      referralCode: customAgentData?.referralCode || existingProfile?.referralCode || ('AGENT-' + agentCode.replace('AG-', ''))
+      balance: customAgentData?.balance ?? 0,
+      pendingBalance: customAgentData?.pendingBalance ?? 0,
+      commissionBalance: customAgentData?.commissionBalance ?? 0,
+      todayDeposits: 0,
+      todayWithdrawals: 0,
+      todayVolume: 0,
+      todayCommission: 0,
+      referralCode: customAgentData?.referralCode || ('AGENT-' + agentCode.replace('AG-', ''))
     };
 
-    setAgent(restoredProfile);
-    localStorage.setItem('wa_agent_profile', JSON.stringify(restoredProfile));
-    localStorage.setItem('wa_agent', JSON.stringify(restoredProfile));
-
-    if (!isDifferentUser && !isNewExplicitAgent) {
-      try {
-        const savedTxs = localStorage.getItem('wa_transactions');
-        if (savedTxs) setTransactions(JSON.parse(savedTxs));
-
-        const savedCusts = localStorage.getItem('wa_customers');
-        if (savedCusts) setCustomers(JSON.parse(savedCusts));
-
-        const savedComms = localStorage.getItem('wa_commissions');
-        if (savedComms) setCommissions(JSON.parse(savedComms));
-
-        const savedNotifs = localStorage.getItem('wa_notifications');
-        if (savedNotifs) setNotifications(JSON.parse(savedNotifs));
-      } catch {}
-    }
+    setAgent(freshProfile);
+    localStorage.setItem('wa_agent_profile', JSON.stringify(freshProfile));
+    localStorage.setItem('wa_agent', JSON.stringify(freshProfile));
 
     setCurrentPage('dashboard');
     showToast('success', 'Authenticated', 'Welcome back, ' + agentName + '.');
