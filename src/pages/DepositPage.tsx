@@ -16,6 +16,7 @@ import { getExchangeRates } from '../config/currencyRates';
 
 export const DepositPage: React.FC = () => {
   const { 
+    agent,
     transactions, 
     showToast,
     requestPinConfirmation,
@@ -29,10 +30,15 @@ export const DepositPage: React.FC = () => {
     if (isSupabaseConfigured()) {
       setIsLoading(true);
       try {
-        const { data } = await supabase
+        let query = supabase
           .from('deposit_requests')
           .select('*')
           .order('created_at', { ascending: false });
+        // Only show requests belonging to the currently logged-in agent
+        if (agent?.dbId) {
+          query = query.eq('agent_id', agent.dbId);
+        }
+        const { data } = await query;
         if (data) setLiveDepositRequests(data);
       } catch (err) {
         console.error('Error fetching live deposit requests:', err);
