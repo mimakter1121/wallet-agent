@@ -412,7 +412,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
         const activeAgentDbId = agentData?.id || agent.dbId;
 
-        // 2. Query transactions ONLY for THIS SPECIFIC AGENT
+        // Set agent context in DB session so RLS policies allow access to own data only
+        if (activeAgentDbId) {
+          await (supabase.rpc as any)('set_agent_context', { agent_uuid: activeAgentDbId });
+        }
+
+
         let mappedDbTx: Transaction[] = [];
         if (activeAgentDbId) {
           const { data: txData } = await supabase

@@ -74,6 +74,10 @@ export const authService = {
       }
 
       if (agentRecord) {
+        // Activate RLS agent context so DB-level policies block other agents' data
+        try {
+          await supabase.rpc('set_agent_context' as any, { agent_uuid: agentRecord.id });
+        } catch (_) { /* non-blocking */ }
         return {
           data: {
             user: null,
