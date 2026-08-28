@@ -361,12 +361,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
         let { data: agentData } = await agQuery.maybeSingle();
 
-        // If not found by agent_code / dbId, search by email/phone in profiles
-        if (!agentData && (agent.email || agent.mobile)) {
+        // If not found by agent_code / dbId, search ONLY by email in profiles (never by phone — default phone matches multiple agents)
+        if (!agentData && agent.email && agent.email !== 'agent@walletagent.com') {
           const { data: profRows } = await supabase
             .from('profiles')
             .select('id, agents(*)')
-            .or(`email.eq.${agent.email},phone.eq.${agent.mobile}`)
+            .eq('email', agent.email)
             .limit(1);
           
           if (profRows && profRows.length > 0 && (profRows[0] as any).agents?.[0]) {
