@@ -56,11 +56,13 @@ export const authService = {
         }
       } else {
         // Search in profiles table by email, phone, or name
-        const { data: pList } = await supabase
-          .from('profiles')
-          .select('*')
-          .or(`email.ilike.%${cleanIdent}%,phone.eq.${cleanIdent},full_name.ilike.%${cleanIdent}%`)
-          .limit(1);
+        let pQuery = supabase.from('profiles').select('*');
+        if (cleanIdent.includes('@')) {
+          pQuery = pQuery.eq('email', cleanIdent.toLowerCase());
+        } else {
+          pQuery = pQuery.or(`email.eq.${cleanIdent.toLowerCase()},phone.eq.${cleanIdent},full_name.ilike.${cleanIdent}`);
+        }
+        const { data: pList } = await pQuery.limit(1);
 
         if (pList && pList.length > 0) {
           profile = pList[0];
@@ -126,8 +128,8 @@ export const authService = {
         return { data: null, error: 'Failed to create user account.' };
       }
 
-      // Create / Upsert Profile record
-      const { data: profile, error: profileError } = await supabase
+      // 1. Create or retrieve Profile record
+      let { data: profile } = await supabase
         .from('profiles')
         .upsert({
           auth_user_id: authData.user.id,
@@ -138,27 +140,47 @@ export const authService = {
           status: 'active'
         }, { onConflict: 'email' })
         .select('*')
-        .single();
+        .maybeSingle();
 
-      const profileId = profile?.id || authData.user.id;
-      const agentCode = 'AG-' + Math.floor(10000 + Math.random() * 90000);
+      if (!profile) {
+        const { data: fallbackProf } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('email', email)
+          .maybeSingle();
+        profile = fallbackProf;
+      }
 
-      // Create / Upsert Agent record
-      const { data: agentRecord } = await supabase
-        .from('agents')
-        .upsert({
-          profile_id: profileId,
-          agent_code: agentCode,
-          balance: 0.00,
-          pending_balance: 0.00,
-          total_deposit: 0.00,
-          total_withdrawal: 0.00,
-          total_commission: 0.00,
-          commission_rate: 0.0150,
-          verification_status: 'verified'
-        }, { onConflict: 'agent_code' })
-        .select('*')
-        .single();
+      // 2. Create or retrieve Agent record for this profile
+      let agentRecord: any = null;
+      if (profile?.id) {
+        const { data: existingAg } = await supabase
+          .from('agents')
+          .select('*')
+          .eq('profile_id', profile.id)
+          .maybeSingle();
+        agentRecord = existingAg;
+
+        if (!agentRecord) {
+          const agentCode = 'AG-' + Math.floor(10000 + Math.random() * 90000);
+          const { data: newAg } = await supabase
+            .from('agents')
+            .insert({
+              profile_id: profile.id,
+              agent_code: agentCode,
+              balance: 0.00,
+              pending_balance: 0.00,
+              total_deposit: 0.00,
+              total_withdrawal: 0.00,
+              total_commission: 0.00,
+              commission_rate: 0.0150,
+              verification_status: 'verified'
+            })
+            .select('*')
+            .maybeSingle();
+          agentRecord = newAg;
+        }
+      }
 
       return { 
         data: { 

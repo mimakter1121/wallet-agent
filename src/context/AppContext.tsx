@@ -183,7 +183,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   });
 
   // Data version check — wipes old cached data when version changes
-  const DATA_VERSION = 'v10_always_fresh_login';
+  const DATA_VERSION = 'v12_pwa_cache_purged';
   const storedVersion = localStorage.getItem('wa_data_version');
   if (storedVersion !== DATA_VERSION) {
     // Clear all old stored demo data
@@ -375,24 +375,26 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
 
         // If STILL not found in DB, auto-create this specific agent in Supabase with 0 balance
-        if (!agentData && agent.id) {
-          const cleanCode = agent.id;
-          const { data: newProf } = await supabase
+        if (!agentData && (agent.id || agent.email)) {
+          const cleanCode = agent.id || ('AG-' + Math.floor(10000 + Math.random() * 90000));
+          const agentEmail = agent.email || `${cleanCode.toLowerCase().replace(/[^a-z0-9]/g, '')}@walletagent.com`;
+          
+          let { data: newProf } = await supabase
             .from('profiles')
-            .insert({
+            .upsert({
               full_name: agent.name || 'Agent User',
-              email: agent.email || `${cleanCode.toLowerCase().replace(/[^a-z0-9]/g, '')}@walletagent.com`,
-              phone: agent.mobile || '+8801700000000',
+              email: agentEmail,
+              phone: agent.mobile || '',
               role: 'agent',
               status: 'active'
-            })
+            }, { onConflict: 'email' })
             .select('id')
-            .single();
+            .maybeSingle();
 
           if (newProf?.id) {
             const { data: newAg } = await supabase
               .from('agents')
-              .insert({
+              .upsert({
                 profile_id: newProf.id,
                 agent_code: cleanCode,
                 balance: 0.00,
@@ -402,9 +404,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                 total_commission: 0.00,
                 commission_rate: 0.0150,
                 verification_status: 'verified'
-              })
+              }, { onConflict: 'agent_code' })
               .select('*')
-              .single();
+              .maybeSingle();
             
             if (newAg) agentData = newAg;
           }

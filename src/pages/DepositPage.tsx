@@ -30,15 +30,18 @@ export const DepositPage: React.FC = () => {
     if (isSupabaseConfigured()) {
       setIsLoading(true);
       try {
-        let query = supabase
+        if (!agent?.dbId) {
+          setLiveDepositRequests([]);
+          setIsLoading(false);
+          return;
+        }
+
+        const { data } = await supabase
           .from('deposit_requests')
           .select('*')
+          .eq('agent_id', agent.dbId)
           .order('created_at', { ascending: false });
-        // Only show requests belonging to the currently logged-in agent
-        if (agent?.dbId) {
-          query = query.eq('agent_id', agent.dbId);
-        }
-        const { data } = await query;
+
         if (data) setLiveDepositRequests(data);
       } catch (err) {
         console.error('Error fetching live deposit requests:', err);
