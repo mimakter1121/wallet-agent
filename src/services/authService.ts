@@ -73,28 +73,6 @@ export const authService = {
         }
       }
 
-      // 3. Fallback to the latest primary agent in Supabase
-      if (!agentRecord) {
-        const { data: anyAgent } = await supabase
-          .from('agents')
-          .select('*')
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .maybeSingle();
-
-        if (anyAgent) {
-          agentRecord = anyAgent;
-          if (anyAgent.profile_id) {
-            const { data: p } = await supabase
-              .from('profiles')
-              .select('*')
-              .eq('id', anyAgent.profile_id)
-              .maybeSingle();
-            profile = p;
-          }
-        }
-      }
-
       if (agentRecord) {
         return {
           data: {
@@ -106,7 +84,7 @@ export const authService = {
         };
       }
 
-      return { data: null, error: null };
+      return { data: null, error: 'Agent account not found. Please check your credentials or register a new account.' };
     } catch (err: any) {
       console.error('Error during signInWithEmail:', err);
       return { data: null, error: null };

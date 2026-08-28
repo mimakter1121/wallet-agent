@@ -74,13 +74,7 @@ export const agentService = {
         }
       }
 
-      // Fallback 1: if still null, pick the latest row in agents
-      if (!targetAgentUuid) {
-        const { data: agData } = await supabase.from('agents').select('id').order('created_at', { ascending: false }).limit(1).maybeSingle();
-        targetAgentUuid = agData?.id || null;
-      }
-
-      // Fallback 2: if agents table is empty, auto-create profile & agent record!
+      // If still not resolved, auto-create profile & agent record for this agent
       if (!targetAgentUuid) {
         const fallbackCode = (agentId && !isUuid) ? agentId : ('AG-' + Math.floor(10000 + Math.random() * 90000));
         const { data: profData } = await supabase

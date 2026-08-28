@@ -23,6 +23,7 @@ interface AdminContextType {
   updateAgentStatus: (id: string, active: boolean) => void;
   updateAgentKycStatus: (id: string, kycStatus: 'verified' | 'pending' | 'under_review' | 'rejected' | 'unverified') => void;
   addAgent: (agent: Omit<Agent, 'id' | 'createdAt'>) => void;
+  deleteAgent: (id: string) => void;
   showToast: (type: 'success' | 'error' | 'info', title: string, message: string) => void;
   toast: { type: 'success' | 'error' | 'info'; title: string; message: string } | null;
 }
@@ -70,7 +71,7 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     try {
       const [txRes, agRes, colRes] = await Promise.all([
         supabase.from('transactions').select('*').order('created_at', { ascending: false }),
-        supabase.from('agents').select('*, profiles(full_name, status)'),
+        supabase.from('agents').select('*, profiles(full_name, email, phone, status)'),
         supabase.from('treasury_accounts').select('*').order('created_at', { ascending: false })
       ]);
 
@@ -318,24 +319,84 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   };
 
-  const updateAgentStatus = (id: string, active: boolean) => {
+  const updateAgentStatus = async (id: string, active: boolean) => {
     setAgents(prev => prev.map(a => a.id === id ? { ...a, active } : a));
+    const newKyc = active ? 'verified' : 'unverified';
+    try {
+      await supabase
+        .from('agents')
+        .update({ verification_status: newKyc, updated_at: new Date().toISOString() })
+        .or(`agent_code.eq.${id},id.eq.${id}`);
+    } catch (err) {
+      console.error('Error updating agent status in Supabase:', err);
+    }
     showToast('info', 'Agent Updated', `Agent account ${active ? 'activated' : 'suspended'}.`);
   };
 
-  const updateAgentKycStatus = (id: string, kycStatus: 'verified' | 'pending' | 'under_review' | 'rejected' | 'unverified') => {
+  const updateAgentKycStatus = async (id: string, kycStatus: 'verified' | 'pending' | 'under_review' | 'rejected' | 'unverified') => {
     setAgents(prev => prev.map(a => a.id === id ? { ...a, kycStatus } : a));
+    try {
+      await supabase
+        .from('agents')
+        .update({ verification_status: kycStatus, updated_at: new Date().toISOString() })
+        .or(`agent_code.eq.${id},id.eq.${id}`);
+    } catch (err) {
+      console.error('Error updating agent KYC in Supabase:', err);
+    }
     showToast('success', 'KYC Status Updated', `Agent ${id} KYC status changed to ${kycStatus.toUpperCase()}.`);
   };
 
-  const addAgent = (data: Omit<Agent, 'id' | 'createdAt'>) => {
+  const addAgent = async (data: Omit<Agent, 'id' | 'createdAt'>) => {
+    const agentCode = 'AG-' + Math.floor(10000 + Math.random() * 90000);
     const newAg: Agent = {
       ...data,
-      id: 'AG-' + Math.floor(10000 + Math.random() * 90000),
+      id: agentCode,
       createdAt: new Date().toISOString().substring(0, 10)
     };
     setAgents(prev => [newAg, ...prev]);
+
+    try {
+      const { data: prof } = await supabase
+        .from('profiles')
+        .insert({
+          full_name: data.name,
+          email: data.email,
+          phone: data.phone || '+8801700000000',
+          role: data.role.toLowerCase().includes('sub') ? 'sub_agent' : 'agent',
+          status: 'active'
+        })
+        .select()
+        .single();
+
+      if (prof) {
+        await supabase
+          .from('agents')
+          .insert({
+            profile_id: prof.id,
+            agent_code: agentCode,
+            balance: data.balance,
+            verification_status: data.kycStatus
+          });
+      }
+    } catch (err) {
+      console.error('Error adding agent to Supabase:', err);
+    }
+
     showToast('success', 'Agent Registered', `${data.name} added to liquidity network.`);
+    fetchLiveAdminData();
+  };
+
+  const deleteAgent = async (id: string) => {
+    setAgents(prev => prev.filter(a => a.id !== id));
+    try {
+      await supabase
+        .from('agents')
+        .delete()
+        .or(`agent_code.eq.${id},id.eq.${id}`);
+    } catch (err) {
+      console.error('Error deleting agent from Supabase:', err);
+    }
+    showToast('info', 'Agent Deleted', `Agent account ${id} removed.`);
   };
 
   const stats: AdminStats = {
@@ -362,6 +423,7 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       updateAgentStatus,
       updateAgentKycStatus,
       addAgent,
+      deleteAgent,
       showToast,
       toast
     }}>

@@ -183,11 +183,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   });
 
   // Data version check — wipes old cached data when version changes
-  const DATA_VERSION = 'v8_clean_treasury'; // increment to wipe old demo cached profiles/transactions
+  const DATA_VERSION = 'v9_clean_fresh_accounts'; // increment to wipe old demo cached profiles/transactions
   const storedVersion = localStorage.getItem('wa_data_version');
   if (storedVersion !== DATA_VERSION) {
     // Clear all old stored demo data
-    ['wa_customers', 'wa_transactions', 'wa_commissions', 'wa_subagents', 'wa_notifications', 'wa_tickets', 'wa_agent', 'wa_agent_profile', 'wa_collection_accounts', 'wa_auth'].forEach(k => localStorage.removeItem(k));
+    ['wa_customers', 'wa_transactions', 'wa_commissions', 'wa_subagents', 'wa_notifications', 'wa_tickets', 'wa_agent', 'wa_agent_profile', 'wa_collection_accounts', 'wa_auth', 'wa_notif_read_ids'].forEach(k => localStorage.removeItem(k));
     localStorage.setItem('wa_data_version', DATA_VERSION);
   }
 
@@ -349,9 +349,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (!isAuthenticated) return;
 
       try {
-        if (!agent.id) return;
+        if (!agent.id && !agent.email) return;
 
-        // Query agent row SPECIFICALLY for this logged-in agent with fallback
+        // 1. Query agent row SPECIFICALLY for this logged-in agent
         let agQuery = supabase.from('agents').select('*');
         if (agent.dbId) {
           agQuery = agQuery.eq('id', agent.dbId);
@@ -361,164 +361,181 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
         let { data: agentData } = await agQuery.maybeSingle();
 
-        if (!agentData) {
-          const { data: fallbackAg } = await supabase
-            .from('agents')
-            .select('*')
-            .order('created_at', { ascending: false })
-            .limit(1)
-            .maybeSingle();
-          if (fallbackAg) {
-            agentData = fallbackAg;
+        // If not found by agent_code / dbId, search by email/phone in profiles
+        if (!agentData && (agent.email || agent.mobile)) {
+          const { data: profRows } = await supabase
+            .from('profiles')
+            .select('id, agents(*)')
+            .or(`email.eq.${agent.email},phone.eq.${agent.mobile}`)
+            .limit(1);
+          
+          if (profRows && profRows.length > 0 && (profRows[0] as any).agents?.[0]) {
+            agentData = (profRows[0] as any).agents[0];
+          }
+        }
+
+        // If STILL not found in DB, auto-create this specific agent in Supabase with 0 balance
+        if (!agentData && agent.id) {
+          const cleanCode = agent.id;
+          const { data: newProf } = await supabase
+            .from('profiles')
+            .insert({
+              full_name: agent.name || 'Agent User',
+              email: agent.email || `${cleanCode.toLowerCase().replace(/[^a-z0-9]/g, '')}@walletagent.com`,
+              phone: agent.mobile || '+8801700000000',
+              role: 'agent',
+              status: 'active'
+            })
+            .select('id')
+            .single();
+
+          if (newProf?.id) {
+            const { data: newAg } = await supabase
+              .from('agents')
+              .insert({
+                profile_id: newProf.id,
+                agent_code: cleanCode,
+                balance: 0.00,
+                pending_balance: 0.00,
+                total_deposit: 0.00,
+                total_withdrawal: 0.00,
+                total_commission: 0.00,
+                commission_rate: 0.0150,
+                verification_status: 'verified'
+              })
+              .select('*')
+              .single();
+            
+            if (newAg) agentData = newAg;
           }
         }
 
         const activeAgentDbId = agentData?.id || agent.dbId;
-        const activeAgentCode = agentData?.agent_code || agent.id;
 
-        // Query transactions from Supabase
-        let txQuery = supabase.from('transactions').select('*');
+        // 2. Query transactions ONLY for THIS SPECIFIC AGENT
+        let mappedDbTx: Transaction[] = [];
         if (activeAgentDbId) {
-          txQuery = txQuery.eq('agent_id', activeAgentDbId);
-        }
-        txQuery = txQuery.order('created_at', { ascending: false });
-
-        let { data: txData, error: txErr } = await txQuery;
-
-        // Fallback: If no transactions found by specific agent_id, fetch all transactions from ledger
-        if ((!txData || txData.length === 0) && !txErr) {
-          const { data: allTxs } = await supabase
+          const { data: txData } = await supabase
             .from('transactions')
             .select('*')
+            .eq('agent_id', activeAgentDbId)
             .order('created_at', { ascending: false });
-          if (allTxs && allTxs.length > 0) {
-            txData = allTxs;
+
+          if (txData && txData.length > 0) {
+            mappedDbTx = txData.map((t: any) => {
+              const rawCode = t.transaction_code || '';
+              const rawType = t.type || '';
+              const isDeposit = rawType === 'deposit' || rawCode.startsWith('DEP');
+              const isWithdrawal = rawType === 'withdrawal' || rawCode.startsWith('WTH');
+              const mappedType: 'deposit' | 'withdrawal' | 'topup' = isDeposit ? 'deposit' : (isWithdrawal ? 'withdrawal' : 'topup');
+
+              const displayName = t.customer_name 
+                || (t.note && !t.note.startsWith('Agent Topup') ? t.note.replace('Customer Cash-In Approved: ', '').replace('Customer Cash-Out Approved: ', '') : (isDeposit ? 'Customer Cash-In' : (isWithdrawal ? 'Customer Cash-Out' : `${agent.name || 'Agent'} Topup`)));
+              const displayPhone = t.customer_phone || agent.mobile || '01700000000';
+
+              return {
+                id: t.transaction_code || 'TX-' + t.id.substring(0, 5),
+                customerId: t.agent_id || 'AGENT-SELF',
+                customerName: displayName,
+                customerPhone: displayPhone,
+                type: mappedType,
+                amount: parseFloat(t.amount) || 0,
+                fee: 0,
+                netAmount: parseFloat(t.amount) || 0,
+                paymentMethod: t.payment_method || 'USDT TRC20',
+                reference: t.reference || t.transaction_code || '-',
+                status: t.status === 'approved' ? 'success' : (t.status === 'rejected' ? 'rejected' : 'pending'),
+                createdAt: t.created_at?.substring(0, 16) || new Date().toISOString().substring(0, 16),
+                updatedAt: t.updated_at?.substring(0, 16) || new Date().toISOString().substring(0, 16),
+                adminNote: t.note || 'Master Admin Clearance',
+                receiptNumber: 'RCP-TX-' + Math.floor(10000 + Math.random() * 90000)
+              };
+            });
           }
         }
 
-        if (txData && txData.length > 0) {
-          const mappedDbTx: Transaction[] = txData.map((t: any) => {
-            const rawCode = t.transaction_code || '';
-            const rawType = t.type || '';
-            const isDeposit = rawType === 'deposit' || rawCode.startsWith('DEP');
-            const isWithdrawal = rawType === 'withdrawal' || rawCode.startsWith('WTH');
-            const mappedType: 'deposit' | 'withdrawal' | 'topup' = isDeposit ? 'deposit' : (isWithdrawal ? 'withdrawal' : 'topup');
+        setTransactions(mappedDbTx);
 
-            const displayName = t.customer_name 
-              || (t.note && !t.note.startsWith('Agent Topup') ? t.note.replace('Customer Cash-In Approved: ', '').replace('Customer Cash-Out Approved: ', '') : (isDeposit ? 'Customer Cash-In' : (isWithdrawal ? 'Customer Cash-Out' : `${agent.name || 'Agent'} Topup`)));
-            const displayPhone = t.customer_phone || agent.mobile || '01700000000';
+        // Compute metrics accurately based strictly on this agent's own data
+        const nowUTCDate = new Date().toISOString().substring(0, 10);
+        const localToday = new Date().toLocaleDateString('en-CA');
+        const todaySuccessTxs = mappedDbTx.filter(t => t.status === 'success' && (t.createdAt?.startsWith(localToday) || t.createdAt?.startsWith(nowUTCDate)));
+        const computedTodayVol = todaySuccessTxs.reduce((sum, t) => sum + t.amount, 0);
+        const computedTodayDep = todaySuccessTxs.filter(t => t.type === 'deposit').reduce((sum, t) => sum + t.amount, 0);
+        const computedTodayWth = todaySuccessTxs.filter(t => t.type === 'withdrawal').reduce((sum, t) => sum + t.amount, 0);
+        const computedTodayComm = todaySuccessTxs.reduce((sum, t) => sum + (t.type === 'deposit' ? t.amount * 0.015 : (t.type === 'withdrawal' ? t.amount * 0.012 : 0)), 0);
 
-            return {
-              id: t.transaction_code || 'TX-' + t.id.substring(0, 5),
-              customerId: t.agent_id || 'AGENT-SELF',
-              customerName: displayName,
-              customerPhone: displayPhone,
-              type: mappedType,
-              amount: parseFloat(t.amount) || 0,
-              fee: 0,
-              netAmount: parseFloat(t.amount) || 0,
-              paymentMethod: t.payment_method || 'USDT TRC20',
-              reference: t.reference || t.transaction_code || '-',
-              status: t.status === 'approved' ? 'success' : (t.status === 'rejected' ? 'rejected' : 'pending'),
-              createdAt: t.created_at?.substring(0, 16) || new Date().toISOString().substring(0, 16),
-              updatedAt: t.updated_at?.substring(0, 16) || new Date().toISOString().substring(0, 16),
-              adminNote: t.note || 'Master Admin Clearance',
-              receiptNumber: 'RCP-TX-' + Math.floor(10000 + Math.random() * 90000)
-            };
-          });
-
-          const nowUTCDate = new Date().toISOString().substring(0, 10);
-          const localToday = new Date().toLocaleDateString('en-CA');
-          const todaySuccessTxs = mappedDbTx.filter(t => t.status === 'success' && (t.createdAt?.startsWith(localToday) || t.createdAt?.startsWith(nowUTCDate) || true));
-          const computedTodayVol = todaySuccessTxs.reduce((sum, t) => sum + t.amount, 0);
-          const computedTodayDep = todaySuccessTxs.filter(t => t.type === 'deposit').reduce((sum, t) => sum + t.amount, 0);
-          const computedTodayWth = todaySuccessTxs.filter(t => t.type === 'withdrawal').reduce((sum, t) => sum + t.amount, 0);
-          const computedTodayComm = todaySuccessTxs.reduce((sum, t) => sum + (t.type === 'deposit' ? t.amount * 0.015 : (t.type === 'withdrawal' ? t.amount * 0.012 : 0)), 0);
-
-          setTransactions(mappedDbTx);
-
-          if (agentData) {
-            const freshBal = parseFloat(agentData.balance) || 0;
-            const freshPending = parseFloat(agentData.pending_balance) || 0;
-            const freshComm = parseFloat(agentData.total_commission) || 0;
-            const freshDep = parseFloat(agentData.total_deposit) || 0;
-            const freshWth = parseFloat(agentData.total_withdrawal) || 0;
-
-            setAgent(prev => ({
-              ...prev,
-              dbId: agentData.id || prev.dbId,
-              balance: freshBal,
-              pendingBalance: freshPending,
-              commissionBalance: freshComm > 0 ? freshComm : computedTodayComm,
-              todayVolume: computedTodayVol > 0 ? computedTodayVol : (freshDep + freshWth),
-              todayDeposits: computedTodayDep > 0 ? computedTodayDep : freshDep,
-              todayWithdrawals: computedTodayWth > 0 ? computedTodayWth : freshWth,
-              todayCommission: computedTodayComm > 0 ? computedTodayComm : freshComm
-            }));
-          }
-
-          // Auto-generate notifications from live transactions (always regenerate)
-          const readIds: Set<string> = new Set(
-            JSON.parse(localStorage.getItem('wa_notif_read_ids') || '[]')
-          );
-          const autoNotifs: NotificationItem[] = mappedDbTx
-            .filter(t => t.status === 'success')
-            .map(t => {
-              const isDeposit = t.type === 'deposit';
-              const isWithdrawal = t.type === 'withdrawal';
-              const commission = isDeposit
-                ? (t.amount * 0.015).toFixed(2)
-                : isWithdrawal
-                ? (t.amount * 0.012).toFixed(2)
-                : '0.00';
-              const notifId = 'NOTIF-' + t.id;
-
-              return {
-                id: notifId,
-                type: (isDeposit || isWithdrawal ? 'transaction' : 'system') as 'transaction' | 'commission' | 'security' | 'system',
-                title: isDeposit
-                  ? `✅ Cash-In Approved: +$${t.amount.toFixed(2)}`
-                  : isWithdrawal
-                  ? `✅ Cash-Out Approved: $${t.amount.toFixed(2)}`
-                  : `💰 Agent Topup: $${t.amount.toFixed(2)}`,
-                message: isDeposit
-                  ? `Customer ${t.customerName || 'Unknown'} cash-in of $${t.amount.toFixed(2)} via ${t.paymentMethod} approved. Commission earned: +$${commission}. Float balance updated.`
-                  : isWithdrawal
-                  ? `Customer ${t.customerName || 'Unknown'} cash-out of $${t.amount.toFixed(2)} via ${t.paymentMethod} approved. Commission earned: +$${commission}. Float balance updated.`
-                  : `Liquidity topup of $${t.amount.toFixed(2)} via ${t.paymentMethod} approved and credited to float balance.`,
-                timestamp: t.createdAt || new Date().toISOString().substring(0, 16),
-                read: readIds.has(notifId),
-                badge: isDeposit
-                  ? `Commission +$${commission} (1.5%)`
-                  : isWithdrawal
-                  ? `Commission +$${commission} (1.2%)`
-                  : undefined
-              };
-            })
-            .reverse();
-
-          if (autoNotifs.length > 0) {
-            setNotifications(autoNotifs);
-          }
-        } else if (agentData) {
+        if (agentData) {
           const freshBal = parseFloat(agentData.balance) || 0;
           const freshPending = parseFloat(agentData.pending_balance) || 0;
           const freshComm = parseFloat(agentData.total_commission) || 0;
-          const freshDep = parseFloat(agentData.total_deposit) || 0;
-          const freshWth = parseFloat(agentData.total_withdrawal) || 0;
 
           setAgent(prev => ({
             ...prev,
+            id: agentData.agent_code || prev.id,
             dbId: agentData.id || prev.dbId,
             balance: freshBal,
             pendingBalance: freshPending,
-            commissionBalance: freshComm > 0 ? freshComm : prev.commissionBalance,
-            todayVolume: (freshDep + freshWth) > 0 ? (freshDep + freshWth) : prev.todayVolume,
-            todayDeposits: freshDep > 0 ? freshDep : prev.todayDeposits,
-            todayWithdrawals: freshWth > 0 ? freshWth : prev.todayWithdrawals,
-            todayCommission: freshComm > 0 ? freshComm : prev.todayCommission
+            commissionBalance: freshComm > 0 ? freshComm : computedTodayComm,
+            todayVolume: computedTodayVol,
+            todayDeposits: computedTodayDep,
+            todayWithdrawals: computedTodayWth,
+            todayCommission: computedTodayComm
+          }));
+        } else {
+          setAgent(prev => ({
+            ...prev,
+            balance: 0,
+            pendingBalance: 0,
+            commissionBalance: 0,
+            todayVolume: 0,
+            todayDeposits: 0,
+            todayWithdrawals: 0,
+            todayCommission: 0
           }));
         }
+
+        // Auto-generate notifications from this agent's live transactions only
+        const readIds: Set<string> = new Set(
+          JSON.parse(localStorage.getItem('wa_notif_read_ids') || '[]')
+        );
+        const autoNotifs: NotificationItem[] = mappedDbTx
+          .filter(t => t.status === 'success')
+          .map(t => {
+            const isDeposit = t.type === 'deposit';
+            const isWithdrawal = t.type === 'withdrawal';
+            const commission = isDeposit
+              ? (t.amount * 0.015).toFixed(2)
+              : isWithdrawal
+              ? (t.amount * 0.012).toFixed(2)
+              : '0.00';
+            const notifId = 'NOTIF-' + t.id;
+
+            return {
+              id: notifId,
+              type: (isDeposit || isWithdrawal ? 'transaction' : 'system') as 'transaction' | 'commission' | 'security' | 'system',
+              title: isDeposit
+                ? `✅ Cash-In Approved: +$${t.amount.toFixed(2)}`
+                : isWithdrawal
+                ? `✅ Cash-Out Approved: $${t.amount.toFixed(2)}`
+                : `💰 Agent Topup: $${t.amount.toFixed(2)}`,
+              message: isDeposit
+                ? `Customer ${t.customerName || 'Unknown'} cash-in of $${t.amount.toFixed(2)} via ${t.paymentMethod} approved. Commission earned: +$${commission}. Float balance updated.`
+                : isWithdrawal
+                ? `Customer ${t.customerName || 'Unknown'} cash-out of $${t.amount.toFixed(2)} via ${t.paymentMethod} approved. Commission earned: +$${commission}. Float balance updated.`
+                : `Liquidity topup of $${t.amount.toFixed(2)} via ${t.paymentMethod} approved and credited to float balance.`,
+              timestamp: t.createdAt || new Date().toISOString().substring(0, 16),
+              read: readIds.has(notifId),
+              badge: isDeposit
+                ? `Commission +$${commission} (1.5%)`
+                : isWithdrawal
+                ? `Commission +$${commission} (1.2%)`
+                : undefined
+            };
+          })
+          .reverse();
+
+        setNotifications(autoNotifs);
 
         // Fetch live KYC documents status for this agent from Supabase
         const kycRes = await supabase
@@ -647,12 +664,23 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setIsAuthenticated(true);
     localStorage.setItem('wa_auth', 'true');
 
-    // Retrieve previous profile if available
     let existingProfile: any = null;
     try {
       const saved = localStorage.getItem('wa_agent_profile') || localStorage.getItem('wa_agent');
       if (saved) existingProfile = JSON.parse(saved);
     } catch {}
+
+    const isDifferentUser = customAgentData?.email && existingProfile?.email && customAgentData.email.toLowerCase() !== existingProfile.email.toLowerCase();
+    const isNewExplicitAgent = customAgentData?.id && existingProfile?.id && customAgentData.id !== existingProfile.id;
+
+    if (isDifferentUser || isNewExplicitAgent) {
+      existingProfile = null;
+      ['wa_transactions', 'wa_customers', 'wa_commissions', 'wa_notifications', 'wa_kycdocs'].forEach(k => localStorage.removeItem(k));
+      setTransactions([]);
+      setCustomers([]);
+      setCommissions([]);
+      setNotifications([]);
+    }
 
     const agentCode = customAgentData?.id || existingProfile?.id || ('AG-' + Math.floor(10000 + Math.random() * 90000));
     const agentName = customAgentData?.name || existingProfile?.name || (customAgentData?.email ? customAgentData.email.split('@')[0] : 'Agent User');
@@ -677,20 +705,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     localStorage.setItem('wa_agent_profile', JSON.stringify(restoredProfile));
     localStorage.setItem('wa_agent', JSON.stringify(restoredProfile));
 
-    // Restore cached transactions, customers, commissions from localStorage
-    try {
-      const savedTxs = localStorage.getItem('wa_transactions');
-      if (savedTxs) setTransactions(JSON.parse(savedTxs));
+    if (!isDifferentUser && !isNewExplicitAgent) {
+      try {
+        const savedTxs = localStorage.getItem('wa_transactions');
+        if (savedTxs) setTransactions(JSON.parse(savedTxs));
 
-      const savedCusts = localStorage.getItem('wa_customers');
-      if (savedCusts) setCustomers(JSON.parse(savedCusts));
+        const savedCusts = localStorage.getItem('wa_customers');
+        if (savedCusts) setCustomers(JSON.parse(savedCusts));
 
-      const savedComms = localStorage.getItem('wa_commissions');
-      if (savedComms) setCommissions(JSON.parse(savedComms));
+        const savedComms = localStorage.getItem('wa_commissions');
+        if (savedComms) setCommissions(JSON.parse(savedComms));
 
-      const savedNotifs = localStorage.getItem('wa_notifications');
-      if (savedNotifs) setNotifications(JSON.parse(savedNotifs));
-    } catch {}
+        const savedNotifs = localStorage.getItem('wa_notifications');
+        if (savedNotifs) setNotifications(JSON.parse(savedNotifs));
+      } catch {}
+    }
 
     setCurrentPage('dashboard');
     showToast('success', 'Authenticated', 'Welcome back, ' + agentName + '.');
@@ -701,7 +730,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     await authService.signOut();
     setIsAuthenticated(false);
     localStorage.setItem('wa_auth', 'false');
-
+    ['wa_agent', 'wa_agent_profile', 'wa_transactions', 'wa_customers', 'wa_commissions', 'wa_notifications', 'wa_tickets', 'wa_kycdocs', 'wa_sessions'].forEach(k => localStorage.removeItem(k));
+    setAgent(initialAgent);
+    setCustomers(initialCustomers);
+    setTransactions(initialTransactions);
+    setCommissions(initialCommissions);
+    setNotifications(initialNotifications);
     setCurrentPage('login');
     showToast('info', 'Logged Out', 'Your session has been securely closed.');
   };

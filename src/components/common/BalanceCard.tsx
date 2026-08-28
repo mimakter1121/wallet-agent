@@ -19,9 +19,9 @@ export const BalanceCard: React.FC<BalanceCardProps> = ({
   // Compute live stats from today's approved transactions with timezone resilience
   const nowUTCDate = new Date().toISOString().substring(0, 10);
   const localToday = new Date().toLocaleDateString('en-CA');
-  const todayTxs = transactions.filter(t => t.status === 'success' && (t.createdAt?.startsWith(localToday) || t.createdAt?.startsWith(nowUTCDate) || true));
+  const todayTxs = transactions.filter(t => t.status === 'success' && (t.createdAt?.startsWith(localToday) || t.createdAt?.startsWith(nowUTCDate)));
   const computedTodayVol = todayTxs.reduce((sum, t) => sum + t.amount, 0);
-  const todayVolume = computedTodayVol > 0 ? computedTodayVol : (agent.todayVolume || 0);
+  const todayVolume = computedTodayVol;
   const netRevenue = transactions
     .filter(t => t.status === 'success' && (t.type === 'deposit' || t.type === 'withdrawal'))
     .reduce((sum, t) => sum + (t.type === 'deposit' ? t.amount * 0.015 : t.amount * 0.012), 0);

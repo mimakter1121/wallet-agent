@@ -55,9 +55,9 @@ export const CommissionChart: React.FC = () => {
 
   const total = depositComm + withdrawalComm + networkComm;
 
-  const depositPercent  = total > 0 ? Math.round((depositComm / total) * 100)    : 33;
-  const withdrawalPercent = total > 0 ? Math.round((withdrawalComm / total) * 100) : 33;
-  const networkPercent  = total > 0 ? Math.round((networkComm / total) * 100)    : 34;
+  const depositPercent  = total > 0 ? Math.round((depositComm / total) * 100)    : 0;
+  const withdrawalPercent = total > 0 ? Math.round((withdrawalComm / total) * 100) : 0;
+  const networkPercent  = total > 0 ? Math.round((networkComm / total) * 100)    : 0;
 
   return (
     <div className="bg-[#121e3d] border border-[#233763] rounded-3xl p-5 shadow-card text-white">

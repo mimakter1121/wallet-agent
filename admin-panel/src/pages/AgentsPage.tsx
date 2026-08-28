@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { Users, ShieldCheck, Power, Plus, CheckCircle2, AlertTriangle, XCircle, Clock, Search, ShieldAlert, ChevronDown } from 'lucide-react';
+import { Users, ShieldCheck, Power, Plus, CheckCircle2, AlertTriangle, XCircle, Clock, Search, ShieldAlert, ChevronDown, Trash2 } from 'lucide-react';
 import { useAdmin } from '../context/AdminContext';
 import { Agent } from '../types';
 
 export const AgentsPage: React.FC = () => {
-  const { agents, updateAgentStatus, updateAgentKycStatus, addAgent } = useAdmin();
+  const { agents, updateAgentStatus, updateAgentKycStatus, addAgent, deleteAgent } = useAdmin();
 
   const [showAddForm, setShowAddForm] = useState(false);
   const [name, setName] = useState('');
@@ -260,16 +260,29 @@ export const AgentsPage: React.FC = () => {
                     </td>
 
                     <td className="py-4 px-3 text-right">
-                      <button
-                        onClick={() => updateAgentStatus(ag.id, !ag.active)}
-                        className={`px-3 py-1.5 rounded-xl text-[11px] font-extrabold transition-all ${
-                          ag.active
-                            ? 'bg-emerald-100 text-emerald-700 border border-emerald-300 hover:bg-emerald-200'
-                            : 'bg-red-100 text-red-700 border border-red-300 hover:bg-red-200'
-                        }`}
-                      >
-                        {ag.active ? '✓ Account Active' : 'Account Suspended'}
-                      </button>
+                      <div className="flex items-center justify-end gap-2">
+                        <button
+                          onClick={() => updateAgentStatus(ag.id, !ag.active)}
+                          className={`px-3 py-1.5 rounded-xl text-[11px] font-extrabold transition-all ${
+                            ag.active
+                              ? 'bg-emerald-100 text-emerald-700 border border-emerald-300 hover:bg-emerald-200'
+                              : 'bg-red-100 text-red-700 border border-red-300 hover:bg-red-200'
+                          }`}
+                        >
+                          {ag.active ? '✓ Account Active' : 'Account Suspended'}
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (window.confirm(`Delete agent account ${ag.name} (${ag.id})?`)) {
+                              deleteAgent(ag.id);
+                            }
+                          }}
+                          className="p-1.5 rounded-xl text-slate-400 hover:text-red-500 hover:bg-red-500/10 border border-transparent hover:border-red-500/20 transition-all"
+                          title="Delete Agent"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}

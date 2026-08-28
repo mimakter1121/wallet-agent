@@ -51,9 +51,9 @@ export const DashboardPage: React.FC = () => {
     .filter(t => t.type === 'deposit' || t.type === 'withdrawal')
     .reduce((acc, t) => acc + (t.type === 'deposit' ? t.amount * 0.015 : t.amount * 0.012), 0);
 
-  const displayDeposits = agent.todayDeposits > 0 ? agent.todayDeposits : computedDeposits;
-  const displayWithdrawals = agent.todayWithdrawals > 0 ? agent.todayWithdrawals : computedWithdrawals;
-  const displayCommission = agent.commissionBalance > 0 ? agent.commissionBalance : (agent.todayCommission > 0 ? agent.todayCommission : computedCommission);
+  const displayDeposits = computedDeposits;
+  const displayWithdrawals = computedWithdrawals;
+  const displayCommission = computedCommission;
 
   const bdt200 = formatCurrency(usdToLocal(200, 'BDT'), 'BDT');
   const bdt1000 = formatCurrency(usdToLocal(1000, 'BDT'), 'BDT');
