@@ -50,6 +50,28 @@ export const CustomerPortalPage: React.FC = () => {
   const [selectedAgentNumber, setSelectedAgentNumber] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const handleSelectAgentNumber = (accountNum: string) => {
+    setSelectedAgentNumber(accountNum);
+    const matched = activeCollectionAccounts.find(a => a.account_number === accountNum);
+    if (matched && matched.agent_code) {
+      setTargetAgentCode(matched.agent_code);
+    }
+  };
+
+  const handlePaymentMethodChange = (newMethod: string) => {
+    setPaymentMethod(newMethod);
+    const filtered = activeCollectionAccounts.filter(acc => 
+      acc.provider.toLowerCase() === newMethod.toLowerCase() || 
+      (newMethod.includes('USDT') && acc.provider.includes('USDT'))
+    );
+    if (filtered.length > 0) {
+      setSelectedAgentNumber(filtered[0].account_number);
+      if (filtered[0].agent_code) {
+        setTargetAgentCode(filtered[0].agent_code);
+      }
+    }
+  };
+
   useEffect(() => {
     if (agents && agents.length > 0 && !targetAgentCode) {
       setTargetAgentCode(agents[0].id);
@@ -66,6 +88,9 @@ export const CustomerPortalPage: React.FC = () => {
           if (data && data.length > 0) {
             setActiveCollectionAccounts(data);
             setSelectedAgentNumber(data[0].account_number);
+            if (data[0].agent_code) {
+              setTargetAgentCode(data[0].agent_code);
+            }
           }
         });
     }
@@ -409,7 +434,7 @@ export const CustomerPortalPage: React.FC = () => {
               </label>
               <select
                 value={paymentMethod}
-                onChange={(e) => setPaymentMethod(e.target.value)}
+                onChange={(e) => handlePaymentMethodChange(e.target.value)}
                 className="w-full px-3.5 py-2.5 rounded-xl bg-[#1a294e] border border-[#233763] text-white text-xs font-bold focus:outline-none focus:border-[#00c853]"
               >
                 <option value="bKash">bKash (Mobile Wallet)</option>
@@ -429,7 +454,7 @@ export const CustomerPortalPage: React.FC = () => {
                 </label>
                 <select
                   value={selectedAgentNumber}
-                  onChange={(e) => setSelectedAgentNumber(e.target.value)}
+                  onChange={(e) => handleSelectAgentNumber(e.target.value)}
                   className="w-full px-3.5 py-2.5 rounded-xl bg-[#1a294e] border border-[#233763] text-[#00c853] font-mono text-xs font-black focus:outline-none focus:border-[#00c853]"
                 >
                   {activeCollectionAccounts.filter(acc => acc.provider.toLowerCase() === paymentMethod.toLowerCase() || (paymentMethod.includes('USDT') && acc.provider.includes('USDT'))).length > 0 ? (
