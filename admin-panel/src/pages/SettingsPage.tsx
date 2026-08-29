@@ -148,23 +148,23 @@ export const SettingsPage: React.FC = () => {
     <div className="p-6 space-y-6 animate-fadeIn">
       
       {/* Top Banner */}
-      <div className="bg-white dark:bg-navy-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl p-6 shadow-card">
+      <div className="bg-[#121e3d] border border-[#233763] rounded-3xl p-6 shadow-card">
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-2xl bg-emerald-500/20 text-[#00c853] border border-[#00c853]/40 flex items-center justify-center">
               <Settings className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-lg font-bold text-slate-900 dark:text-white">
+              <h2 className="text-lg font-bold text-white">
                 System Settings & Commission Controls
               </h2>
-              <p className="text-xs text-slate-500 dark:text-slate-400">
+              <p className="text-xs text-slate-400">
                 Configure global commission rates and transaction limits — saved directly to database
               </p>
             </div>
           </div>
           {lastSaved && (
-            <div className="flex items-center gap-2 text-xs font-bold text-emerald-600 dark:text-emerald-400">
+            <div className="flex items-center gap-2 text-xs font-bold text-[#00c853]">
               <CheckCircle2 className="w-4 h-4" />
               <span>Saved at {lastSaved}</span>
             </div>
@@ -175,21 +175,21 @@ export const SettingsPage: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         
         {/* Commission Rules Form */}
-        <form onSubmit={handleSaveCommission} className="bg-white dark:bg-navy-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl p-6 shadow-card space-y-4">
-          <div className="flex items-center gap-2 pb-3 border-b border-slate-100 dark:border-slate-800">
-            <Percent className="w-4 h-4 text-emerald-500" />
-            <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+        <form onSubmit={handleSaveCommission} className="bg-[#121e3d] border border-[#233763] rounded-3xl p-6 shadow-card space-y-4">
+          <div className="flex items-center gap-2 pb-3 border-b border-[#233763]">
+            <Percent className="w-4 h-4 text-[#00c853]" />
+            <h3 className="text-sm font-bold text-white">
               Platform Commission Rates
             </h3>
           </div>
 
-          <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-900/10 border border-emerald-200 dark:border-emerald-800/50 text-xs text-emerald-700 dark:text-emerald-400 font-medium flex items-center gap-2">
+          <div className="p-3 rounded-xl bg-emerald-900/20 border border-[#00c853]/40 text-xs text-[#00c853] font-medium flex items-center gap-2">
             <AlertCircle className="w-4 h-4 shrink-0" />
             <span>These rates apply to all agent transactions processed on the platform.</span>
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+            <label className="block text-xs font-semibold text-slate-300 mb-1.5">
               Agent Deposit Commission (%)
             </label>
             <div className="relative">
@@ -200,15 +200,15 @@ export const SettingsPage: React.FC = () => {
                 max="10"
                 value={settings.deposit_commission_rate}
                 onChange={e => handleChange('deposit_commission_rate', e.target.value)}
-                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white text-sm font-bold focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/30"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-[#1a294e] border border-[#233763] text-white text-sm font-bold focus:outline-none focus:border-[#00c853]"
               />
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-emerald-500">%</span>
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-[#00c853]">%</span>
             </div>
             <p className="text-[11px] text-slate-400 mt-1">Current: {settings.deposit_commission_rate}% per approved cash-in</p>
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+            <label className="block text-xs font-semibold text-slate-300 mb-1.5">
               Agent Withdrawal Commission (%)
             </label>
             <div className="relative">
@@ -219,15 +219,15 @@ export const SettingsPage: React.FC = () => {
                 max="10"
                 value={settings.withdrawal_commission_rate}
                 onChange={e => handleChange('withdrawal_commission_rate', e.target.value)}
-                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white text-sm font-bold focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/30"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-[#1a294e] border border-[#233763] text-white text-sm font-bold focus:outline-none focus:border-[#00c853]"
               />
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-emerald-500">%</span>
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-[#00c853]">%</span>
             </div>
             <p className="text-[11px] text-slate-400 mt-1">Current: {settings.withdrawal_commission_rate}% per approved cash-out</p>
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+            <label className="block text-xs font-semibold text-slate-300 mb-1.5">
               Network Clearance Fee (%)
             </label>
             <div className="relative">
@@ -238,16 +238,16 @@ export const SettingsPage: React.FC = () => {
                 max="10"
                 value={settings.clearance_fee_rate}
                 onChange={e => handleChange('clearance_fee_rate', e.target.value)}
-                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white text-sm font-bold focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/30"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-[#1a294e] border border-[#233763] text-white text-sm font-bold focus:outline-none focus:border-[#00c853]"
               />
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-emerald-500">%</span>
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-[#00c853]">%</span>
             </div>
           </div>
 
           <button
             type="submit"
             disabled={isSaving}
-            className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-60 text-white text-sm font-bold shadow-md shadow-emerald-900/20 transition-all"
+            className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl bg-[#00c853] hover:bg-[#00e676] disabled:opacity-60 text-white text-sm font-bold shadow-md transition-all"
           >
             {isSaving ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
             <span>{isSaving ? 'Saving to Database...' : 'Save Commission Rules'}</span>
@@ -255,53 +255,53 @@ export const SettingsPage: React.FC = () => {
         </form>
 
         {/* Transaction Limits Form */}
-        <form onSubmit={handleSaveLimits} className="bg-white dark:bg-navy-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl p-6 shadow-card space-y-4">
-          <div className="flex items-center gap-2 pb-3 border-b border-slate-100 dark:border-slate-800">
-            <DollarSign className="w-4 h-4 text-blue-500" />
-            <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+        <form onSubmit={handleSaveLimits} className="bg-[#121e3d] border border-[#233763] rounded-3xl p-6 shadow-card space-y-4">
+          <div className="flex items-center gap-2 pb-3 border-b border-[#233763]">
+            <DollarSign className="w-4 h-4 text-[#00b0ff]" />
+            <h3 className="text-sm font-bold text-white">
               Transaction Limit Controls
             </h3>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Min Deposit ($)</label>
+              <label className="block text-xs font-semibold text-slate-300 mb-1.5">Min Deposit ($)</label>
               <input
                 type="number"
                 min="1"
                 value={settings.min_deposit_amount}
                 onChange={e => handleChange('min_deposit_amount', e.target.value)}
-                className="w-full px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white text-sm font-bold focus:outline-none focus:border-blue-500"
+                className="w-full px-3 py-2.5 rounded-xl bg-[#1a294e] border border-[#233763] text-white text-sm font-bold focus:outline-none focus:border-[#00b0ff]"
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Max Deposit ($)</label>
+              <label className="block text-xs font-semibold text-slate-300 mb-1.5">Max Deposit ($)</label>
               <input
                 type="number"
                 min="1"
                 value={settings.max_deposit_amount}
                 onChange={e => handleChange('max_deposit_amount', e.target.value)}
-                className="w-full px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white text-sm font-bold focus:outline-none focus:border-blue-500"
+                className="w-full px-3 py-2.5 rounded-xl bg-[#1a294e] border border-[#233763] text-white text-sm font-bold focus:outline-none focus:border-[#00b0ff]"
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Min Withdrawal ($)</label>
+              <label className="block text-xs font-semibold text-slate-300 mb-1.5">Min Withdrawal ($)</label>
               <input
                 type="number"
                 min="1"
                 value={settings.min_withdrawal_amount}
                 onChange={e => handleChange('min_withdrawal_amount', e.target.value)}
-                className="w-full px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white text-sm font-bold focus:outline-none focus:border-blue-500"
+                className="w-full px-3 py-2.5 rounded-xl bg-[#1a294e] border border-[#233763] text-white text-sm font-bold focus:outline-none focus:border-[#00b0ff]"
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Max Withdrawal ($)</label>
+              <label className="block text-xs font-semibold text-slate-300 mb-1.5">Max Withdrawal ($)</label>
               <input
                 type="number"
                 min="1"
                 value={settings.max_withdrawal_amount}
                 onChange={e => handleChange('max_withdrawal_amount', e.target.value)}
-                className="w-full px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white text-sm font-bold focus:outline-none focus:border-blue-500"
+                className="w-full px-3 py-2.5 rounded-xl bg-[#1a294e] border border-[#233763] text-white text-sm font-bold focus:outline-none focus:border-[#00b0ff]"
               />
             </div>
           </div>
@@ -309,7 +309,7 @@ export const SettingsPage: React.FC = () => {
           <button
             type="submit"
             disabled={isSaving}
-            className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl bg-blue-600 hover:bg-blue-500 disabled:opacity-60 text-white text-sm font-bold shadow-md shadow-blue-900/20 transition-all"
+            className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl bg-[#00b0ff] hover:bg-[#40c4ff] disabled:opacity-60 text-white text-sm font-bold shadow-md transition-all"
           >
             {isSaving ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
             <span>{isSaving ? 'Saving to Database...' : 'Save Transaction Limits'}</span>
@@ -317,10 +317,10 @@ export const SettingsPage: React.FC = () => {
         </form>
 
         {/* Telegram Support Channel Form */}
-        <form onSubmit={handleSaveTelegram} className="md:col-span-2 bg-white dark:bg-navy-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl p-6 shadow-card space-y-4">
-          <div className="flex items-center gap-2 pb-3 border-b border-slate-100 dark:border-slate-800">
+        <form onSubmit={handleSaveTelegram} className="md:col-span-2 bg-[#121e3d] border border-[#233763] rounded-3xl p-6 shadow-card space-y-4">
+          <div className="flex items-center gap-2 pb-3 border-b border-[#233763]">
             <Send className="w-4 h-4 text-[#229ED9]" />
-            <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+            <h3 className="text-sm font-bold text-white">
               Agent Portal Telegram Live Support Control
             </h3>
             <span className="ml-auto px-2.5 py-0.5 rounded-full bg-[#229ED9]/10 text-[#229ED9] border border-[#229ED9]/30 text-[10px] font-bold">
@@ -330,7 +330,7 @@ export const SettingsPage: React.FC = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
             <div className="md:col-span-2">
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+              <label className="block text-xs font-semibold text-slate-300 mb-1.5">
                 Telegram Support Handle / Channel Username
               </label>
               <div className="relative">
@@ -340,7 +340,7 @@ export const SettingsPage: React.FC = () => {
                   placeholder="e.g. @baji999_agent_support or https://t.me/baji999_agent_support"
                   value={settings.telegram_username}
                   onChange={e => handleChange('telegram_username', e.target.value)}
-                  className="w-full pl-9 pr-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white text-sm font-bold font-mono focus:outline-none focus:border-[#229ED9]"
+                  className="w-full pl-9 pr-3.5 py-2.5 rounded-xl bg-[#1a294e] border border-[#233763] text-white text-sm font-bold font-mono focus:outline-none focus:border-[#229ED9]"
                 />
                 <Send className="w-4 h-4 text-[#229ED9] absolute left-3 top-1/2 -translate-y-1/2 -rotate-45" />
               </div>
@@ -353,7 +353,7 @@ export const SettingsPage: React.FC = () => {
               <button
                 type="submit"
                 disabled={isSaving}
-                className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-[#229ED9] hover:bg-[#0088cc] disabled:opacity-60 text-white text-sm font-bold shadow-md shadow-cyan-900/30 transition-all"
+                className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-[#229ED9] hover:bg-[#0088cc] disabled:opacity-60 text-white text-sm font-bold shadow-md transition-all"
               >
                 {isSaving ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
                 <span>{isSaving ? 'Saving...' : 'Save Telegram Link'}</span>
@@ -363,26 +363,26 @@ export const SettingsPage: React.FC = () => {
         </form>
 
         {/* DB Status */}
-        <div className="md:col-span-2 bg-white dark:bg-navy-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl p-6 shadow-card">
-          <div className="flex items-center gap-2 pb-3 border-b border-slate-100 dark:border-slate-800 mb-4">
-            <Database className="w-4 h-4 text-slate-500" />
-            <h3 className="text-sm font-bold text-slate-900 dark:text-white">Backend Connectivity</h3>
+        <div className="md:col-span-2 bg-[#121e3d] border border-[#233763] rounded-3xl p-6 shadow-card">
+          <div className="flex items-center gap-2 pb-3 border-b border-[#233763] mb-4">
+            <Database className="w-4 h-4 text-slate-400" />
+            <h3 className="text-sm font-bold text-white">Backend Connectivity</h3>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
-            <div className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200/60 dark:border-slate-700">
+            <div className="p-3 bg-[#1a294e] rounded-xl border border-[#233763]">
               <div className="flex items-center gap-2 mb-1">
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                <span className="font-bold text-slate-900 dark:text-white">Supabase Backend</span>
+                <span className="w-2 h-2 rounded-full bg-[#00c853] animate-pulse" />
+                <span className="font-bold text-white">Supabase Backend</span>
               </div>
-              <div className="font-mono text-emerald-600 dark:text-emerald-400 text-[11px]">xyoiwvzifgfwvvwdqjsf.supabase.co</div>
+              <div className="font-mono text-[#00c853] text-[11px]">xyoiwvzifgfwvvwdqjsf.supabase.co</div>
             </div>
-            <div className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200/60 dark:border-slate-700">
-              <div className="font-bold text-slate-900 dark:text-white mb-1">Database</div>
-              <div className="text-slate-500">PostgreSQL 17.6 — Agent Niyog</div>
+            <div className="p-3 bg-[#1a294e] rounded-xl border border-[#233763]">
+              <div className="font-bold text-white mb-1">Database</div>
+              <div className="text-slate-400">PostgreSQL 17.6 — Agent Niyog</div>
             </div>
-            <div className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200/60 dark:border-slate-700">
-              <div className="font-bold text-slate-900 dark:text-white mb-1">Settings Table</div>
-              <div className="text-emerald-600 dark:text-emerald-400 font-mono">public.system_settings</div>
+            <div className="p-3 bg-[#1a294e] rounded-xl border border-[#233763]">
+              <div className="font-bold text-white mb-1">Settings Table</div>
+              <div className="text-[#00c853] font-mono">public.system_settings</div>
             </div>
           </div>
         </div>
