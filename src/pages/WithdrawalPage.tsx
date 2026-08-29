@@ -30,15 +30,21 @@ export const WithdrawalPage: React.FC = () => {
     if (isSupabaseConfigured()) {
       setIsLoading(true);
       try {
-        let query = supabase.from('withdrawal_requests').select('*');
-
-        const conds: string[] = ['agent_id.is.null'];
+        const conds: string[] = [];
         if (agent?.dbId) conds.push(`agent_id.eq.${agent.dbId}`);
         if (agent?.id) conds.push(`agent_code.eq.${agent.id}`);
 
-        query = query.or(conds.join(','));
+        if (conds.length === 0) {
+          setLiveWithdrawalRequests([]);
+          setIsLoading(false);
+          return;
+        }
 
-        const { data } = await query.order('created_at', { ascending: false });
+        const { data } = await supabase
+          .from('withdrawal_requests')
+          .select('*')
+          .or(conds.join(','))
+          .order('created_at', { ascending: false });
 
         if (data) setLiveWithdrawalRequests(data);
       } catch (err) {
