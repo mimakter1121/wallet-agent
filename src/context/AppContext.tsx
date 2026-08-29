@@ -413,7 +413,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                 total_withdrawal: 0.00,
                 total_commission: 0.00,
                 commission_rate: 0.0150,
-                verification_status: 'verified'
+                verification_status: 'pending'
               }, { onConflict: 'agent_code' })
               .select('*')
               .maybeSingle();
@@ -493,6 +493,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           const freshPending = parseFloat(agentData.pending_balance) || 0;
           const freshComm = parseFloat(agentData.total_commission) || 0;
 
+          const dbKycStatus = agentData.verification_status || 'pending';
+          let mappedKycLevel = 'Tier 1 (Basic)';
+          if (dbKycStatus === 'verified') mappedKycLevel = 'Tier 1 (Verified)';
+          else if (dbKycStatus === 'under_review' || dbKycStatus === 'pending') mappedKycLevel = 'Under Review';
+          else if (dbKycStatus === 'rejected') mappedKycLevel = 'Verification Rejected';
+
           setAgent(prev => ({
             ...prev,
             id: agentData.agent_code || prev.id,
@@ -504,6 +510,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             district: prev.district || agentData.district || '',
             nidNumber: prev.nidNumber || agentData.nid_number || '',
             emergencyContact: prev.emergencyContact || agentData.emergency_contact || '',
+            kycStatus: dbKycStatus as any,
+            kycLevel: mappedKycLevel,
             balance: freshBal,
             pendingBalance: freshPending,
             commissionBalance: freshComm > 0 ? freshComm : computedTodayComm,
@@ -1387,12 +1395,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         storage_path: storagePath || null,
         status: 'pending'
       });
+
+      if (agent.dbId) {
+        await supabase.from('agents').update({ verification_status: 'under_review' }).eq('id', agent.dbId);
+      }
     } catch (err) {
       console.error('Supabase KYC insert error:', err);
     }
 
+    setAgent(prev => ({ ...prev, kycStatus: 'pending', kycLevel: 'Under Review' }));
     setKycDocs(prev => [newDoc, ...prev]);
-    showToast('success', 'Submitted for Review', `${file.name} uploaded & dispatched to Master Admin clearance queue.`);
+    showToast('success', 'Submitted for Review 📄', `${file.name} uploaded & dispatched to Master Admin clearance queue.`);
   };
 
   // Sessions

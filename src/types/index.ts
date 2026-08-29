@@ -55,7 +55,7 @@ export interface AgentProfile {
   mobile: string;
   email: string;
   role: string;
-  kycLevel: 'Tier 1 (Basic)' | 'Tier 2 (Business)' | 'Tier 3 (Master Agent)';
+  kycLevel: string;
   kycStatus: KycStatus;
   balance: number;
   pendingBalance: number;

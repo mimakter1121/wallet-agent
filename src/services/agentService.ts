@@ -100,7 +100,7 @@ export const agentService = {
               total_deposit: 0,
               total_withdrawal: 0,
               total_commission: 0,
-              verification_status: 'verified'
+              verification_status: 'pending'
             })
             .select('id')
             .single();

@@ -70,7 +70,7 @@ export const LoginPage: React.FC = () => {
         balance: parseFloat(authData.agent.balance?.toString() || '0') || 0,
         pendingBalance: parseFloat(authData.agent.pending_balance?.toString() || '0') || 0,
         commissionBalance: parseFloat(authData.agent.total_commission?.toString() || '0') || 0,
-        kycStatus: (authData.agent.verification_status as any) || 'verified'
+        kycStatus: (authData.agent.verification_status as any) || 'unverified'
       });
     } else {
       login({

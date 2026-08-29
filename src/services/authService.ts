@@ -174,7 +174,7 @@ export const authService = {
               total_withdrawal: 0.00,
               total_commission: 0.00,
               commission_rate: 0.0150,
-              verification_status: 'verified'
+              verification_status: 'pending'
             })
             .select('*')
             .maybeSingle();
