@@ -506,6 +506,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           const freshPending = parseFloat(agentData.pending_balance) || 0;
           const freshComm = parseFloat(agentData.total_commission) || 0;
 
+          // Compute pending balance from both database column and active pending transactions
+          const pendingTxsSum = mappedDbTx.filter(t => t.status === 'pending' && t.type === 'topup').reduce((sum, t) => sum + t.amount, 0);
+          const effectivePending = Math.max(freshPending, pendingTxsSum);
+
           const dbKycStatus = agentData.verification_status || 'pending';
           const isKycVerified = dbKycStatus === 'verified';
 
@@ -538,7 +542,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             kycStatus: dbKycStatus as any,
             kycLevel: mappedKycLevel,
             balance: freshBal,
-            pendingBalance: freshPending,
+            pendingBalance: effectivePending,
             commissionBalance: freshComm > 0 ? freshComm : computedTodayComm,
             todayVolume: computedTodayVol,
             todayDeposits: computedTodayDep,
