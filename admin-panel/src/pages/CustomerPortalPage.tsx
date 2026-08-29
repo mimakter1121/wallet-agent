@@ -89,6 +89,7 @@ export const CustomerPortalPage: React.FC = () => {
           amount: parseFloat(d.amount) || 0,
           paymentMethod: d.payment_method || 'bKash',
           refOrAccount: d.transaction_ref || d.sender_number || '-',
+          agentCode: d.agent_code || 'General',
           status: d.status || 'pending',
           createdAt: d.created_at?.substring(0, 16) || new Date().toISOString().substring(0, 16)
         }));
@@ -102,7 +103,7 @@ export const CustomerPortalPage: React.FC = () => {
           amount: parseFloat(w.amount) || 0,
           paymentMethod: w.payment_method || 'Nagad',
           refOrAccount: w.recipient_account || '-',
-          agentCode: w.agent_code || 'AG-88402',
+          agentCode: w.agent_code || 'General',
           status: w.status || 'pending',
           createdAt: w.created_at?.substring(0, 16) || new Date().toISOString().substring(0, 16)
         }));
