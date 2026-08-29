@@ -14,11 +14,20 @@ import { SettingsPage } from './pages/SettingsPage';
 import { CheckCircle2, AlertCircle, Info } from 'lucide-react';
 
 const AdminContent: React.FC = () => {
-  const [currentTab, setCurrentTab] = useState<AdminTab>('dashboard');
+  const [currentTab, setCurrentTab] = useState<AdminTab>(() => {
+    const saved = sessionStorage.getItem('wa_admin_tab') as AdminTab | null;
+    const validTabs: AdminTab[] = ['dashboard', 'customer_portal', 'exchange_rates', 'channels', 'agents', 'kyc_requests', 'transactions', 'settings'];
+    return saved && validTabs.includes(saved) ? saved : 'dashboard';
+  });
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
     return sessionStorage.getItem('wa_admin_auth') === 'true';
   });
   const { toast } = useAdmin();
+
+  const handleTabChange = (tab: AdminTab) => {
+    setCurrentTab(tab);
+    sessionStorage.setItem('wa_admin_tab', tab);
+  };
 
   if (!isAuthenticated) {
     return <AdminLoginGate onAuthenticated={() => setIsAuthenticated(true)} />;
@@ -55,14 +64,14 @@ const AdminContent: React.FC = () => {
   return (
     <div className="flex h-screen bg-[#080e1e] text-slate-100 overflow-hidden">
       {/* Standalone Sidebar */}
-      <AdminSidebar currentTab={currentTab} onTabChange={setCurrentTab} />
+      <AdminSidebar currentTab={currentTab} onTabChange={handleTabChange} />
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0 overflow-y-auto">
         <AdminHeader title={title} subtitle={subtitle} onLogout={handleLogout} />
 
         <main className="flex-1 pb-12">
-          {currentTab === 'dashboard' && <AdminDashboard onNavigate={setCurrentTab} />}
+          {currentTab === 'dashboard' && <AdminDashboard onNavigate={handleTabChange} />}
           {currentTab === 'customer_portal' && <CustomerPortalPage />}
           {currentTab === 'exchange_rates' && <ExchangeRatesPage />}
           {currentTab === 'channels' && <ChannelsPage />}
@@ -75,13 +84,13 @@ const AdminContent: React.FC = () => {
 
       {/* Global Admin Toast Notification */}
       {toast && (
-        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-3 px-4 py-3 rounded-2xl bg-white dark:bg-navy-900 border border-slate-200 dark:border-slate-800 shadow-2xl animate-slideUp">
-          {toast.type === 'success' && <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0" />}
-          {toast.type === 'error' && <AlertCircle className="w-5 h-5 text-red-500 shrink-0" />}
-          {toast.type === 'info' && <Info className="w-5 h-5 text-blue-500 shrink-0" />}
+        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-3 px-4 py-3 rounded-2xl bg-[#121e3d] border border-[#233763] shadow-2xl animate-slideUp">
+          {toast.type === 'success' && <CheckCircle2 className="w-5 h-5 text-[#00c853] shrink-0" />}
+          {toast.type === 'error' && <AlertCircle className="w-5 h-5 text-rose-400 shrink-0" />}
+          {toast.type === 'info' && <Info className="w-5 h-5 text-[#00b0ff] shrink-0" />}
           <div>
-            <div className="text-xs font-bold text-slate-900 dark:text-white">{toast.title}</div>
-            <div className="text-[11px] text-slate-500">{toast.message}</div>
+            <div className="text-xs font-bold text-white">{toast.title}</div>
+            <div className="text-[11px] text-slate-400">{toast.message}</div>
           </div>
         </div>
       )}
