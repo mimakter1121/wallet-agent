@@ -642,7 +642,7 @@ export const CustomerPortalPage: React.FC = () => {
                       <td className="py-3.5 px-3 text-right">
                         {req.status === 'pending' ? (
                           <span className="px-2.5 py-1 rounded-xl bg-[#1a294e] border border-[#233763] text-amber-400 font-bold text-[11px]">
-                            Sent to Agent AG-88402
+                            Sent to Agent {req.agentCode || 'General'}
                           </span>
                         ) : (
                           <span className="text-[10px] font-bold text-slate-400 italic">Settled by Agent</span>
