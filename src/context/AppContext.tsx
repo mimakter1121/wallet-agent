@@ -142,8 +142,10 @@ interface AppContextType {
   showToast: (type: ToastMessage['type'], title: string, message: string) => void;
   removeToast: (id: string) => void;
 
-  // Live Exchange Rates
+  // Live Exchange Rates & System Settings
   exchangeRates: CurrencyRate[];
+  telegramUsername: string;
+  telegramSupportUrl: string;
   bdtExchangeRate: number;
 
   // PWA & Backend Status
@@ -159,7 +161,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // Theme initialization
   const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
     const saved = localStorage.getItem('wa_dark_mode');
-    return saved !== null ? JSON.parse(saved) : false;
+    return saved !== null ? JSON.parse(saved) : true;
   });
 
   useEffect(() => {
@@ -212,9 +214,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return saved ? JSON.parse(saved) : initialCommissions;
   });
 
-  // Live Dynamic Exchange Rates (Synced from Supabase system_settings)
+  // Live Dynamic Exchange Rates & Telegram Setting (Synced from Supabase system_settings)
   const [exchangeRates, setExchangeRates] = useState<CurrencyRate[]>(getExchangeRates);
   const bdtExchangeRate = exchangeRates.find(r => r.code === 'BDT')?.ratePerUSD || 120;
+
+  const [telegramUsername, setTelegramUsername] = useState<string>(() => {
+    return localStorage.getItem('wa_telegram_username') || '@baji999_agent_support';
+  });
+
+  const telegramSupportUrl = telegramUsername.startsWith('http')
+    ? telegramUsername
+    : `https://t.me/${telegramUsername.replace('@', '')}`;
 
   const [subAgents, setSubAgents] = useState<SubAgent[]>(() => {
     const saved = localStorage.getItem('wa_subagents');
@@ -412,10 +422,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           }
         }
 
+        // Fetch Telegram username setting from system_settings
+        const { data: tgData } = await supabase
+          .from('system_settings')
+          .select('value')
+          .eq('key', 'telegram_username')
+          .maybeSingle();
+
+        if (tgData && tgData.value) {
+          setTelegramUsername(tgData.value);
+          localStorage.setItem('wa_telegram_username', tgData.value);
+        }
+
         const activeAgentDbId = agentData?.id || agent.dbId;
-
-        // agent context is handled via auth.uid() RLS — no manual set needed
-
 
         let mappedDbTx: Transaction[] = [];
         if (activeAgentDbId) {
@@ -1472,6 +1491,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         showToast,
         removeToast,
         exchangeRates,
+        telegramUsername,
+        telegramSupportUrl,
         bdtExchangeRate,
         isInstallPromptAvailable,
         triggerPwaInstall,

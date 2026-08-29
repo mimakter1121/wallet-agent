@@ -9,6 +9,7 @@ import { SecurityPinModal } from './components/common/SecurityPinModal';
 import { ReceiptModal } from './components/common/ReceiptModal';
 import { TransactionDetailModal } from './components/common/TransactionDetailModal';
 import { CustomerDetailDrawer } from './components/common/CustomerDetailDrawer';
+import { TelegramFloatingButton } from './components/common/TelegramFloatingButton';
 
 // Pages
 import { LoginPage } from './pages/LoginPage';
@@ -69,7 +70,7 @@ export const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-navy-950 text-slate-900 dark:text-slate-100 flex flex-col transition-colors">
+    <div className="min-h-screen bg-[#080e1e] text-slate-100 flex flex-col transition-colors selection:bg-[#00c853]/30">
       <PWABanner />
       <Header />
 
@@ -88,6 +89,7 @@ export const App: React.FC = () => {
       <ReceiptModal />
       <TransactionDetailModal />
       <CustomerDetailDrawer />
+      <TelegramFloatingButton />
       <ToastContainer />
     </div>
   );

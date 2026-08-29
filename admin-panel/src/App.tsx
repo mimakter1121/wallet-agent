@@ -53,7 +53,7 @@ const AdminContent: React.FC = () => {
   const { title, subtitle } = getTabTitles();
 
   return (
-    <div className="flex h-screen bg-slate-100 dark:bg-navy-950 overflow-hidden">
+    <div className="flex h-screen bg-[#080e1e] text-slate-100 overflow-hidden">
       {/* Standalone Sidebar */}
       <AdminSidebar currentTab={currentTab} onTabChange={setCurrentTab} />
 

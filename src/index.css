@@ -6,11 +6,20 @@
 
 @layer base {
   :root {
-    --bg-main: #0a1128;
+    --bg-main: #080e1e;
     --bg-card: #121e3d;
     --bg-input: #1a294e;
     --border-color: #233763;
     --brand-green: #00c853;
+  }
+
+  html, body, #root {
+    background-color: #080e1e !important;
+    color: #f8fafc;
+    min-height: 100vh;
+    width: 100%;
+    margin: 0;
+    padding: 0;
   }
 
   * {
@@ -19,9 +28,9 @@
   }
 
   body {
-    @apply bg-[#0a1128] text-slate-100 antialiased selection:bg-emerald-500/30 selection:text-emerald-300;
+    @apply bg-[#080e1e] text-slate-100 antialiased selection:bg-emerald-500/30 selection:text-emerald-300;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
-    background-color: #0a1128;
+    background-color: #080e1e !important;
   }
 }
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Settings, ShieldCheck, Check, RefreshCw, Database, Percent, DollarSign, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Settings, ShieldCheck, Check, RefreshCw, Database, Percent, DollarSign, AlertCircle, CheckCircle2, Send, ExternalLink } from 'lucide-react';
 import { useAdmin } from '../context/AdminContext';
 import { supabase } from '../lib/supabase';
 
@@ -20,6 +20,7 @@ export const SettingsPage: React.FC = () => {
     max_deposit_amount: '10000',
     min_withdrawal_amount: '10',
     max_withdrawal_amount: '5000',
+    telegram_username: '@baji999_agent_support',
   });
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -102,6 +103,27 @@ export const SettingsPage: React.FC = () => {
       showToast('success', '✅ Limits Saved', 'Transaction limit rules updated in database successfully.');
     } catch (err) {
       showToast('error', 'Save Failed', 'Could not save transaction limits to database.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleSaveTelegram = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSaving(true);
+    try {
+      let handle = (settings.telegram_username || '@baji999_agent_support').trim();
+      if (!handle.startsWith('@') && !handle.startsWith('http')) {
+        handle = '@' + handle;
+      }
+      await supabase
+        .from('system_settings')
+        .upsert({ key: 'telegram_username', value: handle, label: 'Live Telegram Support Channel Username' }, { onConflict: 'key' });
+
+      setLastSaved(new Date().toLocaleTimeString());
+      showToast('success', '✅ Telegram Support Saved', `Telegram handle updated to ${handle}. Agent Floating Button updated.`);
+    } catch (err) {
+      showToast('error', 'Save Failed', 'Could not save Telegram settings to database.');
     } finally {
       setIsSaving(false);
     }
@@ -292,6 +314,52 @@ export const SettingsPage: React.FC = () => {
             {isSaving ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
             <span>{isSaving ? 'Saving to Database...' : 'Save Transaction Limits'}</span>
           </button>
+        </form>
+
+        {/* Telegram Support Channel Form */}
+        <form onSubmit={handleSaveTelegram} className="md:col-span-2 bg-white dark:bg-navy-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl p-6 shadow-card space-y-4">
+          <div className="flex items-center gap-2 pb-3 border-b border-slate-100 dark:border-slate-800">
+            <Send className="w-4 h-4 text-[#229ED9]" />
+            <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+              Agent Portal Telegram Live Support Control
+            </h3>
+            <span className="ml-auto px-2.5 py-0.5 rounded-full bg-[#229ED9]/10 text-[#229ED9] border border-[#229ED9]/30 text-[10px] font-bold">
+              Live Agent Floating Widget Link
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+            <div className="md:col-span-2">
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                Telegram Support Handle / Channel Username
+              </label>
+              <div className="relative">
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. @baji999_agent_support or https://t.me/baji999_agent_support"
+                  value={settings.telegram_username}
+                  onChange={e => handleChange('telegram_username', e.target.value)}
+                  className="w-full pl-9 pr-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white text-sm font-bold font-mono focus:outline-none focus:border-[#229ED9]"
+                />
+                <Send className="w-4 h-4 text-[#229ED9] absolute left-3 top-1/2 -translate-y-1/2 -rotate-45" />
+              </div>
+              <p className="text-[11px] text-slate-400 mt-1">
+                Enter your Telegram username or full URL. All agent floating support buttons will automatically open this link.
+              </p>
+            </div>
+
+            <div>
+              <button
+                type="submit"
+                disabled={isSaving}
+                className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-[#229ED9] hover:bg-[#0088cc] disabled:opacity-60 text-white text-sm font-bold shadow-md shadow-cyan-900/30 transition-all"
+              >
+                {isSaving ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                <span>{isSaving ? 'Saving...' : 'Save Telegram Link'}</span>
+              </button>
+            </div>
+          </div>
         </form>
 
         {/* DB Status */}
