@@ -302,7 +302,7 @@ export const LoginPage: React.FC = () => {
                     required
                     value={signUpName}
                     onChange={(e) => setSignUpName(e.target.value)}
-                    placeholder="e.g. Rahul Chowdhury"
+                    placeholder="e.g. Alex Morgan"
                     className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-[#1a294e] border border-[#233763] text-white text-xs font-bold focus:outline-none focus:border-[#00c853]"
                   />
                 </div>
@@ -337,7 +337,7 @@ export const LoginPage: React.FC = () => {
                       required
                       value={signUpPhone}
                       onChange={(e) => setSignUpPhone(e.target.value)}
-                      placeholder="+8801700000000"
+                      placeholder="+1 (555) 019-2834"
                       className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-[#1a294e] border border-[#233763] text-white text-xs font-bold focus:outline-none focus:border-[#00c853]"
                     />
                   </div>

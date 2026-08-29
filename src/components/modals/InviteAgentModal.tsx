@@ -129,7 +129,7 @@ export const InviteAgentModal: React.FC<InviteAgentModalProps> = ({ isOpen, onCl
                 </label>
                 <input
                   type="tel"
-                  placeholder="01712345678"
+                  placeholder="+1 555-019-2834"
                   value={mobile}
                   onChange={(e) => setMobile(e.target.value)}
                   className="w-full px-3.5 py-2 rounded-xl bg-[#1a294e] border border-[#233763] text-white text-xs font-mono font-bold focus:outline-none focus:border-[#00c853]"
@@ -143,7 +143,7 @@ export const InviteAgentModal: React.FC<InviteAgentModalProps> = ({ isOpen, onCl
               </label>
               <input
                 type="text"
-                placeholder="e.g. Dhaka Central Hub"
+                placeholder="e.g. Global Financial Hub"
                 value={location}
                 onChange={(e) => setLocation(e.target.value)}
                 className="w-full px-3.5 py-2 rounded-xl bg-[#1a294e] border border-[#233763] text-white text-xs font-bold focus:outline-none focus:border-[#00c853]"

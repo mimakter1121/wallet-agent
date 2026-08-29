@@ -366,7 +366,7 @@ export const ProfilePage: React.FC = () => {
                     required
                     value={formData.name}
                     onChange={e => setFormData({ ...formData, name: e.target.value })}
-                    placeholder="Enter full legal name"
+                    placeholder="e.g. Alexander Morgan"
                     className="w-full px-3.5 py-2.5 pl-9 rounded-xl bg-[#1a294e] border border-[#233763] text-white font-bold focus:outline-none focus:border-[#00c853] focus:ring-1 focus:ring-[#00c853]/30 transition-all"
                   />
                   <User className="w-4 h-4 text-[#00c853] absolute left-3 top-1/2 -translate-y-1/2" />
@@ -384,7 +384,7 @@ export const ProfilePage: React.FC = () => {
                     required
                     value={formData.businessName}
                     onChange={e => setFormData({ ...formData, businessName: e.target.value })}
-                    placeholder="e.g. Baji Digital Cashier Store"
+                    placeholder="e.g. Apex Global FinTech Hub"
                     className="w-full px-3.5 py-2.5 pl-9 rounded-xl bg-[#1a294e] border border-[#233763] text-white font-bold focus:outline-none focus:border-[#00c853] focus:ring-1 focus:ring-[#00c853]/30 transition-all"
                   />
                   <Building2 className="w-4 h-4 text-[#00b0ff] absolute left-3 top-1/2 -translate-y-1/2" />
@@ -401,7 +401,7 @@ export const ProfilePage: React.FC = () => {
                     type="tel"
                     value={formData.emergencyContact}
                     onChange={e => setFormData({ ...formData, emergencyContact: e.target.value })}
-                    placeholder="+880 18XX-XXXXXX"
+                    placeholder="e.g. +1 (555) 019-2834"
                     className="w-full px-3.5 py-2.5 pl-9 rounded-xl bg-[#1a294e] border border-[#233763] text-white font-mono font-bold focus:outline-none focus:border-[#00c853] focus:ring-1 focus:ring-[#00c853]/30 transition-all"
                   />
                   <PhoneCall className="w-4 h-4 text-amber-400 absolute left-3 top-1/2 -translate-y-1/2" />
@@ -411,14 +411,14 @@ export const ProfilePage: React.FC = () => {
               {/* NID / National ID */}
               <div>
                 <label className="block text-slate-200 mb-1.5">
-                  NID / Smart ID Number
+                  NID / Smart ID / Tax Identification
                 </label>
                 <div className="relative">
                   <input
                     type="text"
                     value={formData.nidNumber}
                     onChange={e => setFormData({ ...formData, nidNumber: e.target.value })}
-                    placeholder="Enter National ID number"
+                    placeholder="e.g. US-984029103"
                     className="w-full px-3.5 py-2.5 pl-9 rounded-xl bg-[#1a294e] border border-[#233763] text-white font-mono font-bold focus:outline-none focus:border-[#00c853] focus:ring-1 focus:ring-[#00c853]/30 transition-all"
                   />
                   <FileText className="w-4 h-4 text-purple-400 absolute left-3 top-1/2 -translate-y-1/2" />
@@ -427,13 +427,13 @@ export const ProfilePage: React.FC = () => {
 
               {/* City / Division */}
               <div>
-                <label className="block text-slate-200 mb-1.5">City / Division</label>
+                <label className="block text-slate-200 mb-1.5">City / Region</label>
                 <div className="relative">
                   <input
                     type="text"
                     value={formData.city}
                     onChange={e => setFormData({ ...formData, city: e.target.value })}
-                    placeholder="e.g. Dhaka"
+                    placeholder="e.g. New York"
                     className="w-full px-3.5 py-2.5 pl-9 rounded-xl bg-[#1a294e] border border-[#233763] text-white font-bold focus:outline-none focus:border-[#00c853] transition-all"
                   />
                   <MapPin className="w-4 h-4 text-rose-400 absolute left-3 top-1/2 -translate-y-1/2" />
@@ -442,13 +442,13 @@ export const ProfilePage: React.FC = () => {
 
               {/* District */}
               <div>
-                <label className="block text-slate-200 mb-1.5">District / Thana</label>
+                <label className="block text-slate-200 mb-1.5">District / District Code</label>
                 <div className="relative">
                   <input
                     type="text"
                     value={formData.district}
                     onChange={e => setFormData({ ...formData, district: e.target.value })}
-                    placeholder="e.g. Motijheel"
+                    placeholder="e.g. Manhattan"
                     className="w-full px-3.5 py-2.5 pl-9 rounded-xl bg-[#1a294e] border border-[#233763] text-white font-bold focus:outline-none focus:border-[#00c853] transition-all"
                   />
                   <MapPin className="w-4 h-4 text-rose-400 absolute left-3 top-1/2 -translate-y-1/2" />
@@ -462,7 +462,7 @@ export const ProfilePage: React.FC = () => {
                   type="text"
                   value={formData.address}
                   onChange={e => setFormData({ ...formData, address: e.target.value })}
-                  placeholder="Enter shop or office location details"
+                  placeholder="e.g. 742 Evergreen Terrace, Suite 100, New York, NY 10001"
                   className="w-full px-3.5 py-2.5 rounded-xl bg-[#1a294e] border border-[#233763] text-white font-medium focus:outline-none focus:border-[#00c853] transition-all"
                 />
               </div>
