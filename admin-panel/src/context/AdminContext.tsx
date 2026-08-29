@@ -137,8 +137,8 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           balance: parseFloat(a.balance) || 0,
           pendingBalance: parseFloat(a.pending_balance) || 0,
           commissionBalance: parseFloat(a.total_commission) || 0,
-          active: a.verification_status === 'verified',
-          kycStatus: a.verification_status || 'verified',
+          active: a.is_active !== false,  // use dedicated is_active field
+          kycStatus: a.verification_status || 'pending',
           createdAt: a.created_at?.substring(0, 10) || new Date().toISOString().substring(0, 10)
         }));
         setAgents(mappedAg);
@@ -320,26 +320,57 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   const updateAgentStatus = async (id: string, active: boolean) => {
+    // Optimistically update UI
     setAgents(prev => prev.map(a => a.id === id ? { ...a, active } : a));
-    const newKyc = active ? 'verified' : 'unverified';
     try {
-      await supabase
+      // id is agent_code (e.g. AG-12345), look up the actual UUID first
+      const { data: agData } = await supabase
         .from('agents')
-        .update({ verification_status: newKyc, updated_at: new Date().toISOString() })
-        .or(`agent_code.eq.${id},id.eq.${id}`);
+        .select('id')
+        .eq('agent_code', id)
+        .maybeSingle();
+
+      const agentUuid = agData?.id;
+
+      if (agentUuid) {
+        await supabase
+          .from('agents')
+          .update({ is_active: active, updated_at: new Date().toISOString() })
+          .eq('id', agentUuid);
+      } else {
+        // fallback: try by id directly
+        await supabase
+          .from('agents')
+          .update({ is_active: active, updated_at: new Date().toISOString() })
+          .eq('id', id);
+      }
     } catch (err) {
       console.error('Error updating agent status in Supabase:', err);
     }
-    showToast('info', 'Agent Updated', `Agent account ${active ? 'activated' : 'suspended'}.`);
+    showToast('info', active ? '✅ Agent Activated' : '🔴 Agent Suspended', `Agent account ${id} has been ${active ? 'activated' : 'suspended'}.`);
   };
 
   const updateAgentKycStatus = async (id: string, kycStatus: 'verified' | 'pending' | 'under_review' | 'rejected' | 'unverified') => {
     setAgents(prev => prev.map(a => a.id === id ? { ...a, kycStatus } : a));
     try {
-      await supabase
+      const { data: agData } = await supabase
         .from('agents')
-        .update({ verification_status: kycStatus, updated_at: new Date().toISOString() })
-        .or(`agent_code.eq.${id},id.eq.${id}`);
+        .select('id')
+        .eq('agent_code', id)
+        .maybeSingle();
+
+      const agentUuid = agData?.id;
+      if (agentUuid) {
+        await supabase
+          .from('agents')
+          .update({ verification_status: kycStatus, updated_at: new Date().toISOString() })
+          .eq('id', agentUuid);
+      } else {
+        await supabase
+          .from('agents')
+          .update({ verification_status: kycStatus, updated_at: new Date().toISOString() })
+          .eq('id', id);
+      }
     } catch (err) {
       console.error('Error updating agent KYC in Supabase:', err);
     }

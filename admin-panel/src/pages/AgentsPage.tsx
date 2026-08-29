@@ -267,11 +267,11 @@ export const AgentsPage: React.FC = () => {
                           onClick={() => updateAgentStatus(ag.id, !ag.active)}
                           className={`px-3 py-1.5 rounded-xl text-[11px] font-extrabold transition-all ${
                             ag.active
-                              ? 'bg-emerald-100 text-emerald-700 border border-emerald-300 hover:bg-emerald-200'
-                              : 'bg-red-100 text-red-700 border border-red-300 hover:bg-red-200'
+                              ? 'bg-[#00c853]/20 text-[#00c853] border border-[#00c853]/40 hover:bg-[#00c853]/30'
+                              : 'bg-rose-500/20 text-rose-400 border border-rose-500/40 hover:bg-rose-500/30'
                           }`}
                         >
-                          {ag.active ? '✓ Account Active' : 'Account Suspended'}
+                          {ag.active ? '✓ Account Active' : '⊘ Account Suspended'}
                         </button>
                         <button
                           onClick={() => setConfirmDeleteAgent(ag)}
