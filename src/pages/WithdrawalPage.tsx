@@ -30,17 +30,15 @@ export const WithdrawalPage: React.FC = () => {
     if (isSupabaseConfigured()) {
       setIsLoading(true);
       try {
-        if (!agent?.dbId) {
-          setLiveWithdrawalRequests([]);
-          setIsLoading(false);
-          return;
-        }
+        let query = supabase.from('withdrawal_requests').select('*');
 
-        const { data } = await supabase
-          .from('withdrawal_requests')
-          .select('*')
-          .eq('agent_id', agent.dbId)
-          .order('created_at', { ascending: false });
+        const conds: string[] = ['agent_id.is.null'];
+        if (agent?.dbId) conds.push(`agent_id.eq.${agent.dbId}`);
+        if (agent?.id) conds.push(`agent_code.eq.${agent.id}`);
+
+        query = query.or(conds.join(','));
+
+        const { data } = await query.order('created_at', { ascending: false });
 
         if (data) setLiveWithdrawalRequests(data);
       } catch (err) {
@@ -52,11 +50,10 @@ export const WithdrawalPage: React.FC = () => {
   };
 
   useEffect(() => {
-    if (!agent?.dbId) return; // wait until agent is loaded before fetching
     fetchLiveWithdrawalRequests();
     const interval = setInterval(fetchLiveWithdrawalRequests, 3000);
     return () => clearInterval(interval);
-  }, [agent?.dbId]);
+  }, [agent?.dbId, agent?.id]);
 
   const handleUpdateLiveWithdrawal = async (reqId: string, reqCode: string, amount: number, status: 'approved' | 'rejected') => {
     const isCrypto = false; // BDT fiat default

@@ -30,17 +30,15 @@ export const DepositPage: React.FC = () => {
     if (isSupabaseConfigured()) {
       setIsLoading(true);
       try {
-        if (!agent?.dbId) {
-          setLiveDepositRequests([]);
-          setIsLoading(false);
-          return;
-        }
+        let query = supabase.from('deposit_requests').select('*');
 
-        const { data } = await supabase
-          .from('deposit_requests')
-          .select('*')
-          .eq('agent_id', agent.dbId)
-          .order('created_at', { ascending: false });
+        const conds: string[] = ['agent_id.is.null'];
+        if (agent?.dbId) conds.push(`agent_id.eq.${agent.dbId}`);
+        if (agent?.id) conds.push(`agent_code.eq.${agent.id}`);
+
+        query = query.or(conds.join(','));
+
+        const { data } = await query.order('created_at', { ascending: false });
 
         if (data) setLiveDepositRequests(data);
       } catch (err) {
@@ -52,11 +50,10 @@ export const DepositPage: React.FC = () => {
   };
 
   useEffect(() => {
-    if (!agent?.dbId) return; // wait until agent is loaded before fetching
     fetchLiveDepositRequests();
     const interval = setInterval(fetchLiveDepositRequests, 3000);
     return () => clearInterval(interval);
-  }, [agent?.dbId]);
+  }, [agent?.dbId, agent?.id]);
 
   const handleUpdateLiveDeposit = async (reqId: string, reqCode: string, amount: number, status: 'approved' | 'rejected') => {
     const usdEquivalent = (amount / bdtRate).toFixed(2);

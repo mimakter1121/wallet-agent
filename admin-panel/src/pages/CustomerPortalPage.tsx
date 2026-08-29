@@ -32,7 +32,7 @@ interface CustomerRequestItem {
 }
 
 export const CustomerPortalPage: React.FC = () => {
-  const { showToast } = useAdmin();
+  const { agents, showToast } = useAdmin();
   const [activeSubTab, setActiveSubTab] = useState<'deposits' | 'withdrawals' | 'create_request'>('deposits');
   const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all');
   const [requests, setRequests] = useState<CustomerRequestItem[]>([]);
@@ -45,10 +45,16 @@ export const CustomerPortalPage: React.FC = () => {
   const [customerPhone, setCustomerPhone] = useState('');
   const [amount, setAmount] = useState('');
   const [refOrAccount, setRefOrAccount] = useState('');
-  const [targetAgentCode, setTargetAgentCode] = useState('AG-88402');
+  const [targetAgentCode, setTargetAgentCode] = useState('');
   const [activeCollectionAccounts, setActiveCollectionAccounts] = useState<any[]>([]);
   const [selectedAgentNumber, setSelectedAgentNumber] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (agents && agents.length > 0 && !targetAgentCode) {
+      setTargetAgentCode(agents[0].id);
+    }
+  }, [agents, targetAgentCode]);
 
   useEffect(() => {
     if (isSupabaseConfigured()) {
@@ -158,9 +164,32 @@ export const CustomerPortalPage: React.FC = () => {
 
     if (isSupabaseConfigured()) {
       try {
+        // Resolve agent UUID and details
+        let targetAgentUuid: string | null = null;
+        let targetAgentName: string | null = null;
+        const selectedAg = agents.find(a => a.id === targetAgentCode);
+        if (selectedAg) {
+          targetAgentName = selectedAg.name;
+        }
+
+        if (targetAgentCode) {
+          const { data: agData } = await supabase
+            .from('agents')
+            .select('id, full_name, profiles(full_name)')
+            .eq('agent_code', targetAgentCode)
+            .maybeSingle();
+          if (agData?.id) {
+            targetAgentUuid = agData.id;
+            targetAgentName = (agData as any)?.profiles?.full_name || (agData as any)?.full_name || targetAgentName;
+          }
+        }
+
         if (requestType === 'deposit') {
           await supabase.from('deposit_requests').insert({
             request_code: reqCode,
+            agent_id: targetAgentUuid || null,
+            agent_code: targetAgentCode || null,
+            agent_name: targetAgentName || null,
             customer_name: customerName.trim(),
             customer_phone: customerPhone.trim(),
             amount: numAmt,
@@ -172,16 +201,18 @@ export const CustomerPortalPage: React.FC = () => {
         } else {
           await supabase.from('withdrawal_requests').insert({
             request_code: reqCode,
+            agent_id: targetAgentUuid || null,
+            agent_code: targetAgentCode || null,
+            agent_name: targetAgentName || null,
             customer_name: customerName.trim(),
             customer_phone: customerPhone.trim(),
             amount: numAmt,
             payment_method: paymentMethod,
             recipient_account: refOrAccount.trim(),
-            agent_code: targetAgentCode,
             status: 'pending'
           });
         }
-        showToast('success', 'Request Created', `${requestType.toUpperCase()} #${reqCode} of ৳${numAmt.toLocaleString()} saved to Supabase.`);
+        showToast('success', 'Request Created', `${requestType.toUpperCase()} #${reqCode} of ৳${numAmt.toLocaleString()} assigned to agent ${targetAgentCode || 'General'}.`);
       } catch (err) {
         showToast('error', 'Database Error', 'Failed to save request to Supabase.');
       }
@@ -479,22 +510,23 @@ export const CustomerPortalPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Agent Code for Cashouts */}
-            {requestType === 'withdrawal' && (
-              <div>
-                <label className="block text-xs font-bold text-slate-200 mb-1">
-                  Assign Target Agent Code <span className="text-rose-400">*</span>
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={targetAgentCode}
-                  onChange={(e) => setTargetAgentCode(e.target.value)}
-                  placeholder="e.g. AG-88402"
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#1a294e] border border-[#233763] text-white text-xs font-bold uppercase focus:outline-none focus:border-[#00c853]"
-                />
-              </div>
-            )}
+            {/* Assign Target Agent Selector */}
+            <div>
+              <label className="block text-xs font-bold text-slate-200 mb-1">
+                Assign Target Agent <span className="text-[#00c853]">• Live Routing</span>
+              </label>
+              <select
+                value={targetAgentCode}
+                onChange={(e) => setTargetAgentCode(e.target.value)}
+                className="w-full px-3.5 py-2.5 rounded-xl bg-[#1a294e] border border-[#233763] text-white text-xs font-bold focus:outline-none focus:border-[#00c853]"
+              >
+                {agents.map((ag) => (
+                  <option key={ag.id} value={ag.id} className="bg-[#121e3d] text-white py-1">
+                    {ag.name} ({ag.id}) — Float: ${ag.balance.toLocaleString()} USD
+                  </option>
+                ))}
+              </select>
+            </div>
 
             <button
               type="submit"
