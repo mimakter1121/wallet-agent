@@ -180,9 +180,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return localStorage.getItem('wa_auth') === 'true';
   });
 
-  const [currentPage, setCurrentPage] = useState<PageId>(() => {
-    return localStorage.getItem('wa_auth') === 'true' ? 'dashboard' : 'login';
+  const [currentPage, setCurrentPageState] = useState<PageId>(() => {
+    const isLoggedIn = localStorage.getItem('wa_auth') === 'true';
+    if (!isLoggedIn) return 'login';
+    const validPages: PageId[] = ['dashboard', 'wallet', 'deposits', 'withdrawals', 'customers', 'transactions', 'commission', 'network', 'notifications', 'profile', 'kyc', 'support'];
+    const saved = sessionStorage.getItem('wa_current_page') as PageId | null;
+    return saved && validPages.includes(saved) ? saved : 'dashboard';
   });
+
+  const setCurrentPage = (page: PageId) => {
+    setCurrentPageState(page);
+    if (page !== 'login') {
+      sessionStorage.setItem('wa_current_page', page);
+    } else {
+      sessionStorage.removeItem('wa_current_page');
+    }
+  };
 
   // Data version check — wipes old cached data when version changes
   const DATA_VERSION = 'v12_pwa_cache_purged';
@@ -751,6 +764,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setCommissions(initialCommissions);
     setNotifications(initialNotifications);
     setCurrentPage('login');
+    sessionStorage.removeItem('wa_current_page');
     showToast('info', 'Logged Out', 'Your session has been securely closed.');
   };
 
