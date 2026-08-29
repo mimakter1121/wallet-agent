@@ -97,12 +97,12 @@ export const ProfilePage: React.FC = () => {
     }
   };
 
-  const handleProfileSubmit = (e: React.FormEvent) => {
+  const handleProfileSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmittingProfile(true);
 
-    setTimeout(() => {
-      updateAgentProfile({
+    try {
+      await updateAgentProfile({
         name: formData.name,
         businessName: formData.businessName,
         address: formData.address,
@@ -111,9 +111,11 @@ export const ProfilePage: React.FC = () => {
         nidNumber: formData.nidNumber,
         emergencyContact: formData.emergencyContact,
       });
+    } catch (err) {
+      console.error('Error saving profile:', err);
+    } finally {
       setIsSubmittingProfile(false);
-      showToast('success', 'Profile Updated', 'Agent personal & business details saved.');
-    }, 300);
+    }
   };
 
   const handlePinUpdate = (e: React.FormEvent) => {

@@ -478,6 +478,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             ...prev,
             id: agentData.agent_code || prev.id,
             dbId: agentData.id || prev.dbId,
+            name: agentData.full_name || agentData.name || prev.name,
+            businessName: agentData.business_name || prev.businessName,
+            address: agentData.address || prev.address,
+            city: agentData.city || prev.city,
+            district: agentData.district || prev.district,
+            nidNumber: agentData.nid_number || prev.nidNumber,
+            emergencyContact: agentData.emergency_contact || prev.emergencyContact,
             balance: freshBal,
             pendingBalance: freshPending,
             commissionBalance: freshComm > 0 ? freshComm : computedTodayComm,
@@ -1380,13 +1387,31 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     showToast('success', 'Security Reset', 'All other active sessions have been disconnected.');
   };
 
-  const updateAgentProfile = (updates: Partial<AgentProfile>) => {
+  const updateAgentProfile = async (updates: Partial<AgentProfile>) => {
     setAgent(prev => {
       const updated = { ...prev, ...updates };
       localStorage.setItem('wa_agent', JSON.stringify(updated));
+      localStorage.setItem('wa_agent_profile', JSON.stringify(updated));
       return updated;
     });
-    showToast('success', 'Profile Updated', 'Agent corporate details have been updated successfully.');
+
+    const activeDbId = agent.dbId;
+    if (activeDbId) {
+      try {
+        await supabase.from('agents').update({
+          business_name: updates.businessName,
+          address: updates.address,
+          city: updates.city,
+          district: updates.district,
+          nid_number: updates.nidNumber,
+          emergency_contact: updates.emergencyContact
+        }).eq('id', activeDbId);
+      } catch (err) {
+        console.error('Failed to sync profile update to Supabase:', err);
+      }
+    }
+
+    showToast('success', 'Profile Updated 👤', 'Agent personal & business details saved.');
   };
 
   return (
