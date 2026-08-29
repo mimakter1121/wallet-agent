@@ -387,16 +387,61 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   const deleteAgent = async (id: string) => {
+    // Optimistically update UI
     setAgents(prev => prev.filter(a => a.id !== id));
+
     try {
-      await supabase
-        .from('agents')
-        .delete()
-        .or(`agent_code.eq.${id},id.eq.${id}`);
-    } catch (err) {
+      // 1. Find agent record by agent_code or UUID to get all identifiers
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+      
+      let query = supabase.from('agents').select('id, agent_code, profile_id');
+      if (isUuid) {
+        query = query.or(`id.eq.${id},agent_code.eq.${id}`);
+      } else {
+        query = query.eq('agent_code', id);
+      }
+
+      const { data: agData, error: findError } = await query.maybeSingle();
+
+      if (findError) {
+        console.error('Error finding agent to delete:', findError);
+      }
+
+      if (agData) {
+        const agentUuid = agData.id;
+        const agentCode = agData.agent_code;
+
+        // Delete dependent rows first to prevent FK constraint errors
+        await supabase.from('transactions').delete().or(`agent_id.eq.${agentUuid},agent_code.eq.${agentCode}`);
+        await supabase.from('kyc_documents').delete().eq('agent_code', agentCode);
+        await supabase.from('customers').delete().eq('agent_id', agentUuid);
+
+        // Delete main agent row
+        const { error: delError } = await supabase.from('agents').delete().eq('id', agentUuid);
+        if (delError) {
+          console.error('Failed to delete agent row:', delError);
+          showToast('error', 'Delete Failed', delError.message);
+          fetchLiveAdminData();
+          return;
+        }
+
+        // Delete profile row if linked
+        if (agData.profile_id) {
+          await supabase.from('profiles').delete().eq('id', agData.profile_id);
+        }
+      } else {
+        // Fallback delete by agent_code string
+        await supabase.from('kyc_documents').delete().eq('agent_code', id);
+        await supabase.from('agents').delete().eq('agent_code', id);
+      }
+
+      showToast('info', 'Agent Deleted 🗑️', `Agent account ${id} and associated records removed.`);
+      fetchLiveAdminData();
+    } catch (err: any) {
       console.error('Error deleting agent from Supabase:', err);
+      showToast('error', 'Delete Error', err?.message || 'Could not delete agent from database.');
+      fetchLiveAdminData();
     }
-    showToast('info', 'Agent Deleted', `Agent account ${id} removed.`);
   };
 
   const stats: AdminStats = {
