@@ -58,7 +58,7 @@ export const ProfilePage: React.FC = () => {
 
   const [isSubmittingProfile, setIsSubmittingProfile] = useState(false);
 
-  // Synchronize form when agent updates
+  // Synchronize form initial values once when agent loads
   useEffect(() => {
     setFormData({
       name: agent.name || '',
@@ -69,7 +69,7 @@ export const ProfilePage: React.FC = () => {
       nidNumber: agent.nidNumber || '',
       emergencyContact: agent.emergencyContact || '',
     });
-  }, [agent]);
+  }, [agent.id]);
 
   // Security form states
   const [oldPin, setOldPin] = useState('');
