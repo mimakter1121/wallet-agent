@@ -75,39 +75,43 @@ export const KycPage: React.FC = () => {
     const bdt1000 = formatCurrency(usdToLocal(1000, 'BDT'), 'BDT');
     const bdt70 = formatCurrency(usdToLocal(70, 'BDT'), 'BDT');
 
-    if (level.includes('Tier 1') || level.includes('Basic')) {
+    if (level.includes('Under Review') || level.includes('Verification Rejected')) {
+      return {
+        currentTierNum: 1,
+        usd: '$200.00 USD',
+        bdt: `${bdt200}`,
+        bdt70, bdt200, bdt1000,
+        fundRange: '$70 – $200 USD',
+        nextTier: 'Business Tier (Tier 2)',
+        nextReq: 'Add $200+ funds & complete NID verification to upgrade to Tier 2'
+      };
+    } else if (level.includes('Tier 1') || level.includes('Basic')) {
       return { 
         currentTierNum: 1,
         usd: '$200.00 USD', 
         bdt: `${bdt200}`, 
-        bdt70,
-        bdt200,
-        bdt1000,
+        bdt70, bdt200, bdt1000,
         fundRange: '$70 – $200 USD',
         nextTier: 'Business Tier (Tier 2)',
-        nextReq: 'Add funds $200 – $1,000 USD to upgrade to Tier 2' 
+        nextReq: 'Add $200+ funds + complete NID verification to upgrade to Tier 2'
       };
     } else if (level.includes('Tier 2') || level.includes('Business')) {
       return { 
         currentTierNum: 2,
         usd: '$1,000.00 USD', 
         bdt: `${bdt1000}`, 
-        bdt70,
-        bdt200,
-        bdt1000,
+        bdt70, bdt200, bdt1000,
         fundRange: '$200 – $1,000 USD',
         nextTier: 'Master Tier (Tier 3)',
-        nextReq: 'Add funds > $1,000 USD to upgrade to Master Tier 3' 
+        nextReq: 'Add $1,000+ total funds to upgrade to Master Tier 3'
       };
     } else {
       return { 
         currentTierNum: 3,
         usd: 'Unlimited USD', 
         bdt: 'Unlimited BDT', 
-        bdt70,
-        bdt200,
-        bdt1000,
-        fundRange: '$1,000+ to Unlimited USD',
+        bdt70, bdt200, bdt1000,
+        fundRange: '$1,000+ Unlimited USD',
         nextTier: 'Top Level Active',
         nextReq: 'Maximum Institutional Master Level Unlocked' 
       };

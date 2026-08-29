@@ -507,10 +507,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           const freshComm = parseFloat(agentData.total_commission) || 0;
 
           const dbKycStatus = agentData.verification_status || 'pending';
-          let mappedKycLevel = 'Tier 1 (Basic)';
-          if (dbKycStatus === 'verified') mappedKycLevel = 'Tier 1 (Verified)';
-          else if (dbKycStatus === 'under_review' || dbKycStatus === 'pending') mappedKycLevel = 'Under Review';
-          else if (dbKycStatus === 'rejected') mappedKycLevel = 'Verification Rejected';
+          const isKycVerified = dbKycStatus === 'verified';
+
+          // Tier progression: balance + KYC verification determine tier
+          let mappedKycLevel: string;
+          if (dbKycStatus === 'under_review' || dbKycStatus === 'pending') {
+            mappedKycLevel = freshBal >= 1000 ? 'Tier 3 (Master Agent)' : freshBal >= 200 ? 'Tier 2 (Business)' : 'Under Review';
+          } else if (dbKycStatus === 'rejected') {
+            mappedKycLevel = 'Verification Rejected';
+          } else if (isKycVerified && freshBal >= 1000) {
+            mappedKycLevel = 'Tier 3 (Master Agent)';
+          } else if (isKycVerified && freshBal >= 200) {
+            mappedKycLevel = 'Tier 2 (Business)';
+          } else {
+            // New account or unverified — always Tier 1
+            mappedKycLevel = 'Tier 1 (Basic)';
+          }
 
           setAgent(prev => ({
             ...prev,
@@ -1105,7 +1117,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     else if (tx.type === 'topup' && tx.status === 'pending' && newStatus === 'success') {
       setAgent(ag => {
         const newBal = ag.balance + tx.amount;
-        const newTier = newBal >= 1000 ? 'Tier 3 (Master Agent)' : newBal > 200 ? 'Tier 2 (Business)' : 'Tier 1 (Basic)';
+        const isVerified = ag.kycStatus === 'verified';
+        // Tier 2: $200+ AND KYC verified. Tier 3: $1000+ AND KYC verified. Otherwise Tier 1.
+        const newTier = (isVerified && newBal >= 1000)
+          ? 'Tier 3 (Master Agent)'
+          : (isVerified && newBal >= 200)
+          ? 'Tier 2 (Business)'
+          : 'Tier 1 (Basic)';
         return {
           ...ag,
           balance: newBal,
