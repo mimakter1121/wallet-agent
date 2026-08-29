@@ -47,37 +47,32 @@ export const BalanceCard: React.FC<BalanceCardProps> = ({
   };
 
   return (
-    <div className="cashier-card p-5 sm:p-6 space-y-5 bg-[#121e3d] border border-[#233763]">
-      {/* Header Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-[#233763]">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-[#00c853]/15 text-[#00c853] border border-[#00c853]/30 flex items-center justify-center font-bold">
-            <Wallet className="w-5 h-5" />
+    <div className="bg-[#121e3d] border border-[#233763] rounded-3xl p-4 sm:p-6 shadow-card text-white space-y-4">
+      {/* Header Row */}
+      <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-[#233763]">
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-xl bg-[#00c853]/20 text-[#00c853] flex items-center justify-center border border-[#00c853]/40">
+            <Wallet className="w-4 h-4" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-300">
-                Agent Cashier Float Balance
-              </h3>
-              <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-[#00c853]/20 text-[#00c853] border border-[#00c853]/30">
-                LIVE
-              </span>
+              <span className="text-xs font-black tracking-wider text-slate-300 uppercase">Agent Cashier Float Balance</span>
+              <span className="w-2 h-2 rounded-full bg-[#00c853] animate-pulse" />
             </div>
-            <p className="text-[11px] text-slate-400 mt-0.5">
-              Available float for Instant Customer Deposits (Cash In) & Payouts (Cash Out)
+            <p className="text-[10px] text-slate-400 font-medium hidden sm:block">
+              Available float for instant Customer Deposits (Cash In) & Payouts (Cash Out)
             </p>
           </div>
         </div>
 
-        {/* Controls */}
-        <div className="flex items-center gap-2">
-          {/* Currency Switcher */}
-          <div className="flex items-center bg-[#1a294e] border border-[#233763] rounded-lg p-1 text-xs font-bold">
+        {/* Currency Selector & Controls */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center bg-[#1a294e] border border-[#233763] rounded-lg p-0.5 sm:p-1 text-[10px] sm:text-xs font-bold overflow-x-auto max-w-[210px] sm:max-w-none">
             {(['USD', 'BDT', 'INR', 'PKR'] as const).map(curr => (
               <button
                 key={curr}
                 onClick={() => setDisplayCurrency(curr)}
-                className={`px-2.5 py-1 rounded transition-all ${
+                className={`px-1.5 sm:px-2.5 py-1 rounded transition-all shrink-0 ${
                   displayCurrency === curr
                     ? 'bg-[#00c853] text-white shadow'
                     : 'text-slate-400 hover:text-white'
@@ -88,21 +83,23 @@ export const BalanceCard: React.FC<BalanceCardProps> = ({
             ))}
           </div>
 
-          <button 
-            onClick={() => setHideBalance(!hideBalance)}
-            className="p-2 rounded-lg bg-[#1a294e] hover:bg-[#233763] text-slate-300 transition-colors border border-[#233763]"
-            title={hideBalance ? 'Show Balance' : 'Hide Balance'}
-          >
-            {hideBalance ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
-          </button>
+          <div className="flex items-center gap-1.5 shrink-0">
+            <button 
+              onClick={() => setHideBalance(!hideBalance)}
+              className="p-1.5 sm:p-2 rounded-lg bg-[#1a294e] hover:bg-[#233763] text-slate-300 transition-colors border border-[#233763]"
+              title={hideBalance ? 'Show Balance' : 'Hide Balance'}
+            >
+              {hideBalance ? <Eye className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> : <EyeOff className="w-3.5 h-3.5 sm:w-4 sm:h-4" />}
+            </button>
 
-          <button 
-            onClick={handleRefresh}
-            className="p-2 rounded-lg bg-[#1a294e] hover:bg-[#233763] text-slate-300 transition-colors border border-[#233763]"
-            title="Refresh Float"
-          >
-            <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin text-[#00c853]' : ''}`} />
-          </button>
+            <button 
+              onClick={handleRefresh}
+              className="p-1.5 sm:p-2 rounded-lg bg-[#1a294e] hover:bg-[#233763] text-slate-300 transition-colors border border-[#233763]"
+              title="Refresh Float"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${isRefreshing ? 'animate-spin text-[#00c853]' : ''}`} />
+            </button>
+          </div>
         </div>
       </div>
 

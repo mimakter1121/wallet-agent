@@ -218,10 +218,10 @@ export const AddFundsModal: React.FC<AddFundsModalProps> = ({ isOpen, onClose })
 
         {/* STEP 1: Select Admin Collection Wallet */}
         {step === 'select_channel' && (
-          <div className="p-6 space-y-4">
+          <div className="p-4 sm:p-6 space-y-4">
             
             {/* Category Filter Tabs */}
-            <div className="flex items-center gap-1.5 p-1 bg-[#1a294e] border border-[#233763] rounded-2xl text-xs font-bold">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-1 p-1 bg-[#1a294e] border border-[#233763] rounded-2xl text-[11px] sm:text-xs font-bold">
               {[
                 { id: 'all', label: 'All Wallets' },
                 { id: 'crypto', label: 'Crypto (USDT)' },
@@ -231,7 +231,7 @@ export const AddFundsModal: React.FC<AddFundsModalProps> = ({ isOpen, onClose })
                 <button
                   key={tab.id}
                   onClick={() => setActiveCategory(tab.id as any)}
-                  className={`flex-1 py-2 rounded-xl transition-all ${
+                  className={`py-2 px-1 rounded-xl transition-all text-center truncate ${
                     activeCategory === tab.id
                       ? 'bg-[#00c853] text-white shadow font-black'
                       : 'text-slate-300 hover:text-white'
@@ -263,31 +263,31 @@ export const AddFundsModal: React.FC<AddFundsModalProps> = ({ isOpen, onClose })
                       setSelectedAccount(account);
                       setStep('enter_amount');
                     }}
-                    className="w-full p-4 rounded-2xl bg-[#1a294e] hover:bg-[#233763] border border-[#233763] hover:border-[#00c853]/60 transition-all flex items-center justify-between text-left group"
+                    className="w-full p-3.5 sm:p-4 rounded-2xl bg-[#1a294e] hover:bg-[#233763] border border-[#233763] hover:border-[#00c853]/60 transition-all flex items-center justify-between text-left group overflow-hidden"
                   >
-                    <div className="flex items-center gap-3.5">
-                      <div className="w-10 h-10 rounded-2xl bg-[#121e3d] border border-[#233763] flex items-center justify-center font-black text-sm text-[#00c853] group-hover:scale-105 transition-transform">
+                    <div className="flex items-center gap-3 min-w-0 flex-1 mr-2">
+                      <div className="w-10 h-10 rounded-2xl bg-[#121e3d] border border-[#233763] flex items-center justify-center font-black text-sm text-[#00c853] group-hover:scale-105 transition-transform shrink-0">
                         {getProviderSymbol(account.provider)}
                       </div>
 
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="font-black text-sm text-white group-hover:text-[#00c853] transition-colors">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <span className="font-black text-xs sm:text-sm text-white group-hover:text-[#00c853] transition-colors truncate max-w-[130px] sm:max-w-none">
                             {account.provider}
                           </span>
-                          <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-[#00c853]/20 text-[#00c853] border border-[#00c853]/40 uppercase">
+                          <span className="px-1.5 sm:px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-black bg-[#00c853]/20 text-[#00c853] border border-[#00c853]/40 uppercase shrink-0">
                             {getProviderBadge(account.provider, account.account_category)}
                           </span>
                         </div>
 
-                        <div className="text-[11px] text-slate-300 font-mono font-bold mt-0.5 flex items-center gap-2">
-                          <span className="text-white">{account.account_number}</span>
-                          <span>•</span>
-                          <span className="text-[#00b0ff] font-sans font-medium">{getAccountCategoryLabel(account.provider, account.account_category)}</span>
+                        <div className="text-[11px] text-slate-300 font-mono font-bold mt-0.5 flex flex-wrap items-center gap-1.5 min-w-0">
+                          <span className="text-white font-mono break-all line-clamp-1 max-w-[150px] xs:max-w-[200px] sm:max-w-xs">{account.account_number}</span>
+                          <span className="hidden xs:inline">•</span>
+                          <span className="text-[#00b0ff] font-sans font-medium text-[10px] sm:text-[11px] shrink-0">{getAccountCategoryLabel(account.provider, account.account_category)}</span>
                         </div>
 
                         {account.notes && (
-                          <div className="text-[10px] text-slate-400 mt-0.5">
+                          <div className="text-[10px] text-slate-400 mt-0.5 truncate">
                             {account.notes}
                           </div>
                         )}
