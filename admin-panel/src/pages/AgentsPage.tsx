@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Users, ShieldCheck, Power, Plus, CheckCircle2, AlertTriangle, XCircle, Clock, Search, ShieldAlert, ChevronDown, Trash2 } from 'lucide-react';
+import { Users, ShieldCheck, Power, Plus, CheckCircle2, AlertTriangle, XCircle, Clock, Search, ShieldAlert, ChevronDown, Trash2, AlertCircle } from 'lucide-react';
 import { useAdmin } from '../context/AdminContext';
 import { Agent } from '../types';
 
@@ -13,6 +13,8 @@ export const AgentsPage: React.FC = () => {
   const [role, setRole] = useState('Liquidity Agent');
   const [balance, setBalance] = useState('1000');
   const [kycStatus, setKycStatus] = useState<'verified' | 'pending' | 'under_review' | 'rejected' | 'unverified'>('verified');
+  const [confirmDeleteAgent, setConfirmDeleteAgent] = useState<Agent | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const handleAddSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -272,11 +274,7 @@ export const AgentsPage: React.FC = () => {
                           {ag.active ? '✓ Account Active' : 'Account Suspended'}
                         </button>
                         <button
-                          onClick={() => {
-                            if (window.confirm(`Delete agent account ${ag.name} (${ag.id})?`)) {
-                              deleteAgent(ag.id);
-                            }
-                          }}
+                          onClick={() => setConfirmDeleteAgent(ag)}
                           className="p-1.5 rounded-xl text-slate-400 hover:text-red-500 hover:bg-red-500/10 border border-transparent hover:border-red-500/20 transition-all"
                           title="Delete Agent"
                         >
@@ -292,6 +290,55 @@ export const AgentsPage: React.FC = () => {
         )}
 
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {confirmDeleteAgent && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="bg-[#121e3d] border border-rose-500/40 rounded-3xl p-6 shadow-2xl w-full max-w-md mx-4 space-y-5 animate-fadeIn">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-rose-500/20 border border-rose-500/40 flex items-center justify-center">
+                <AlertCircle className="w-5 h-5 text-rose-400" />
+              </div>
+              <div>
+                <h3 className="text-sm font-black text-white">Confirm Agent Deletion</h3>
+                <p className="text-xs text-slate-400">This action cannot be undone</p>
+              </div>
+            </div>
+
+            <div className="p-3 bg-rose-500/10 border border-rose-500/30 rounded-xl text-xs text-rose-300 space-y-1">
+              <p className="font-bold">⚠️ You are about to permanently delete:</p>
+              <p><span className="text-white font-black">{confirmDeleteAgent.name}</span> ({confirmDeleteAgent.id})</p>
+              <p className="text-rose-400 mt-2">This will also remove all associated KYC documents, transactions, and customer records from the database.</p>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setConfirmDeleteAgent(null)}
+                disabled={isDeleting}
+                className="flex-1 py-2.5 rounded-xl bg-[#1a294e] border border-[#233763] text-slate-300 text-sm font-bold hover:bg-[#233763] transition-all disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={async () => {
+                  setIsDeleting(true);
+                  await deleteAgent(confirmDeleteAgent.id);
+                  setIsDeleting(false);
+                  setConfirmDeleteAgent(null);
+                }}
+                disabled={isDeleting}
+                className="flex-1 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-sm font-black transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {isDeleting ? (
+                  <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /><span>Deleting...</span></>
+                ) : (
+                  <><Trash2 className="w-4 h-4" /><span>Delete Agent</span></>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );
