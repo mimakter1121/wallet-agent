@@ -102,7 +102,7 @@ export const NetworkPage: React.FC = () => {
       </div>
 
       {/* 4 Stat Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
         <StatCard
           title="Direct Sub-Agents"
           value={directCount}
@@ -131,9 +131,9 @@ export const NetworkPage: React.FC = () => {
         />
 
         <StatCard
-          title="Network Clearing Volume"
+          title="Clearing Volume"
           value={`$${totalVolume.toLocaleString('en-US', { minimumFractionDigits: 2 })}`}
-          subtitle="Gross Float Volume"
+          subtitle="Gross Partner Float"
           icon={TrendingUp}
           iconBgColor="bg-purple-500/15 border-purple-500/30"
           iconColor="text-purple-400"
