@@ -155,33 +155,42 @@ export const VolumeChart: React.FC = () => {
       </div>
 
       {/* Metrics Row */}
-      <div className="grid grid-cols-3 gap-3 my-4">
-        <div className="p-3 rounded-xl bg-[#1a294e] border border-[#233763]">
-          <div className="flex items-center gap-1.5 text-[11px] font-bold text-slate-300">
-            <span className="w-2 h-2 rounded-full bg-[#00c853] inline-block" />
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3 my-4">
+        <div className="p-3 sm:p-3.5 rounded-2xl bg-[#1a294e] border border-[#233763] min-w-0 overflow-hidden flex sm:flex-col justify-between sm:justify-start items-center sm:items-start gap-1">
+          <div className="flex items-center gap-1.5 text-xs font-bold text-slate-300 shrink-0">
+            <span className="w-2 h-2 rounded-full bg-[#00c853] shrink-0" />
             <span>Deposits</span>
           </div>
-          <div className="text-base font-black text-white mt-0.5 font-mono">
-            ${totalDeposit.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+          <div 
+            className="text-sm sm:text-base font-black text-white font-mono truncate tracking-tight"
+            title={`$${totalDeposit.toLocaleString('en-US', { minimumFractionDigits: 2 })}`}
+          >
+            ${totalDeposit.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </div>
         </div>
 
-        <div className="p-3 rounded-xl bg-[#1a294e] border border-[#233763]">
-          <div className="flex items-center gap-1.5 text-[11px] font-bold text-slate-300">
-            <span className="w-2 h-2 rounded-full bg-[#00b0ff] inline-block" />
+        <div className="p-3 sm:p-3.5 rounded-2xl bg-[#1a294e] border border-[#233763] min-w-0 overflow-hidden flex sm:flex-col justify-between sm:justify-start items-center sm:items-start gap-1">
+          <div className="flex items-center gap-1.5 text-xs font-bold text-slate-300 shrink-0">
+            <span className="w-2 h-2 rounded-full bg-[#00b0ff] shrink-0" />
             <span>Withdrawals</span>
           </div>
-          <div className="text-base font-black text-white mt-0.5 font-mono">
-            ${totalWithdrawal.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+          <div 
+            className="text-sm sm:text-base font-black text-white font-mono truncate tracking-tight"
+            title={`$${totalWithdrawal.toLocaleString('en-US', { minimumFractionDigits: 2 })}`}
+          >
+            ${totalWithdrawal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </div>
         </div>
 
-        <div className="p-3 rounded-xl bg-[#1a294e] border border-[#233763]">
-          <div className="flex items-center gap-1.5 text-[11px] font-bold text-slate-300">
-            <span className="w-2 h-2 rounded-full bg-amber-400 inline-block" />
-            <span>Commission</span>
+        <div className="p-3 sm:p-3.5 rounded-2xl bg-[#1a294e] border border-[#233763] min-w-0 overflow-hidden flex sm:flex-col justify-between sm:justify-start items-center sm:items-start gap-1">
+          <div className="flex items-center gap-1.5 text-xs font-bold text-slate-300 shrink-0">
+            <span className="w-2 h-2 rounded-full bg-amber-400 shrink-0" />
+            <span>Net Commission</span>
           </div>
-          <div className="text-base font-black text-[#00c853] mt-0.5 font-mono">
+          <div 
+            className="text-sm sm:text-base font-black text-[#00c853] font-mono truncate tracking-tight"
+            title={`+$${totalComm.toLocaleString('en-US', { minimumFractionDigits: 2 })}`}
+          >
             +${totalComm.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </div>
         </div>
@@ -211,7 +220,7 @@ export const VolumeChart: React.FC = () => {
                 >
                   {/* Tooltip */}
                   {isHovered && (
-                    <div className="absolute -top-20 z-20 bg-slate-900 text-white text-[11px] py-2 px-3 rounded-xl shadow-xl border border-slate-700 whitespace-nowrap pointer-events-none animate-fadeIn">
+                    <div className="absolute -top-20 z-20 bg-slate-900/95 backdrop-blur-sm text-white text-[11px] py-2 px-3 rounded-xl shadow-xl border border-slate-700 whitespace-nowrap pointer-events-none animate-fadeIn">
                       <div className="font-bold text-[#00c853] mb-1">{item.label}</div>
                       <div className="text-[#00c853]">↓ Dep: ${item.deposit.toFixed(2)}</div>
                       <div className="text-[#00b0ff]">↑ Wth: ${item.withdrawal.toFixed(2)}</div>
@@ -228,6 +237,7 @@ export const VolumeChart: React.FC = () => {
                         item.deposit === 0 ? 'bg-[#233763]/50' : isHovered ? 'bg-[#00e676]' : 'bg-[#00c853]'
                       }`}
                     />
+
                     {/* Withdrawal Bar */}
                     <div 
                       style={{ height: `${item.withdrawal > 0 ? wthHeightPercent : 4}%` }}
@@ -249,13 +259,13 @@ export const VolumeChart: React.FC = () => {
 
         {/* Legend */}
         {hasData && (
-          <div className="flex items-center justify-center gap-6 mt-4 pt-3 border-t border-[#233763]">
+          <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-6 mt-4 pt-3 border-t border-[#233763]">
             <div className="flex items-center gap-2 text-[11px] font-bold text-slate-300">
-              <span className="w-3 h-3 rounded-sm bg-[#00c853]" />
+              <span className="w-3 h-3 rounded-sm bg-[#00c853] shrink-0" />
               <span>Customer Deposit (Cash-In)</span>
             </div>
             <div className="flex items-center gap-2 text-[11px] font-bold text-slate-300">
-              <span className="w-3 h-3 rounded-sm bg-[#00b0ff]" />
+              <span className="w-3 h-3 rounded-sm bg-[#00b0ff] shrink-0" />
               <span>Customer Withdrawal (Cash-Out)</span>
             </div>
           </div>

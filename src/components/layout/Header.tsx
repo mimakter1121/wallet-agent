@@ -128,65 +128,73 @@ export const Header: React.FC = () => {
 
             {/* Notifications Dropdown */}
             {showNotifDropdown && (
-              <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-[#121e3d] rounded-2xl shadow-2xl border border-[#233763] py-3 z-50 animate-fadeIn">
-                <div className="px-4 py-2 border-b border-[#233763] flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-black uppercase tracking-wider text-white">
-                      Notifications
-                    </span>
-                    {unreadCount > 0 && (
-                      <span className="px-2 py-0.5 rounded-full bg-[#00c853]/20 text-[#00c853] text-[10px] font-bold">
-                        {unreadCount} New
+              <>
+                {/* Backdrop overlay to close on tap outside */}
+                <div 
+                  className="fixed inset-0 z-40 bg-black/40 backdrop-blur-[1px] sm:bg-transparent sm:backdrop-blur-none"
+                  onClick={() => setShowNotifDropdown(false)}
+                />
+
+                <div className="fixed sm:absolute top-16 sm:top-full left-3 right-3 sm:left-auto sm:right-0 sm:mt-2 max-w-sm sm:max-w-none sm:w-96 bg-[#121e3d] rounded-2xl shadow-2xl border border-[#233763] py-3 z-50 animate-fadeIn text-white">
+                  <div className="px-4 py-2 border-b border-[#233763] flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-black uppercase tracking-wider text-white">
+                        Notifications
                       </span>
+                      {unreadCount > 0 && (
+                        <span className="px-2 py-0.5 rounded-full bg-[#00c853]/20 text-[#00c853] text-[10px] font-bold">
+                          {unreadCount} New
+                        </span>
+                      )}
+                    </div>
+                    {unreadCount > 0 && (
+                      <button
+                        onClick={markAllNotificationsAsRead}
+                        className="text-[11px] font-bold text-[#00c853] hover:underline"
+                      >
+                        Mark all read
+                      </button>
                     )}
                   </div>
-                  {unreadCount > 0 && (
-                    <button
-                      onClick={markAllNotificationsAsRead}
-                      className="text-[11px] font-bold text-[#00c853] hover:underline"
-                    >
-                      Mark all read
-                    </button>
-                  )}
-                </div>
 
-                <div className="max-h-72 overflow-y-auto divide-y divide-[#233763]">
-                  {notifications.slice(0, 4).map(notif => (
-                    <div 
-                      key={notif.id}
+                  <div className="max-h-72 overflow-y-auto divide-y divide-[#233763]">
+                    {notifications.slice(0, 4).map(notif => (
+                      <div 
+                        key={notif.id}
+                        onClick={() => {
+                          setShowNotifDropdown(false);
+                          setCurrentPage('notifications');
+                        }}
+                        className={`p-3.5 hover:bg-[#1a294e] cursor-pointer transition-colors ${!notif.read ? 'bg-[#00c853]/10' : ''}`}
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <span className="text-xs font-bold text-white break-words">
+                            {notif.title}
+                          </span>
+                          <span className="text-[10px] text-slate-400 font-mono whitespace-nowrap shrink-0">
+                            {notif.timestamp}
+                          </span>
+                        </div>
+                        <p className="text-xs text-slate-300 mt-1 line-clamp-2 break-words">
+                          {notif.message}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="px-4 pt-2 border-t border-[#233763] text-center">
+                    <button
                       onClick={() => {
                         setShowNotifDropdown(false);
                         setCurrentPage('notifications');
                       }}
-                      className={`p-3.5 hover:bg-[#1a294e] cursor-pointer transition-colors ${!notif.read ? 'bg-[#00c853]/10' : ''}`}
+                      className="text-xs font-bold text-[#00c853] hover:underline"
                     >
-                      <div className="flex items-start justify-between gap-2">
-                        <span className="text-xs font-bold text-white">
-                          {notif.title}
-                        </span>
-                        <span className="text-[10px] text-slate-400 font-mono whitespace-nowrap">
-                          {notif.timestamp}
-                        </span>
-                      </div>
-                      <p className="text-xs text-slate-300 mt-1 line-clamp-2">
-                        {notif.message}
-                      </p>
-                    </div>
-                  ))}
+                      View All Notifications
+                    </button>
+                  </div>
                 </div>
-
-                <div className="px-4 pt-2 border-t border-[#233763] text-center">
-                  <button
-                    onClick={() => {
-                      setShowNotifDropdown(false);
-                      setCurrentPage('notifications');
-                    }}
-                    className="text-xs font-bold text-[#00c853] hover:underline"
-                  >
-                    View All Notifications
-                  </button>
-                </div>
-              </div>
+              </>
             )}
           </div>
 
@@ -220,53 +228,61 @@ export const Header: React.FC = () => {
 
             {/* Profile Dropdown */}
             {showProfileMenu && (
-              <div className="absolute right-0 mt-2 w-56 bg-[#121e3d] rounded-2xl shadow-2xl border border-[#233763] py-2 z-50 animate-fadeIn text-white">
-                <div className="px-4 py-3 border-b border-[#233763]">
-                  <div className="text-xs font-black text-white">{agent.name}</div>
-                  <div className="text-[11px] text-slate-300 truncate font-mono mt-0.5">{agent.email}</div>
-                  <div className="mt-1.5 flex items-center gap-1 text-[10px] font-bold text-[#00c853]">
-                    <CheckCircle2 className="w-3 h-3" />
-                    <span>{agent.kycLevel}</span>
+              <>
+                {/* Backdrop overlay to close on tap outside */}
+                <div 
+                  className="fixed inset-0 z-40 bg-black/20 sm:bg-transparent"
+                  onClick={() => setShowProfileMenu(false)}
+                />
+
+                <div className="absolute right-0 mt-2 w-56 max-w-[calc(100vw-1.5rem)] bg-[#121e3d] rounded-2xl shadow-2xl border border-[#233763] py-2 z-50 animate-fadeIn text-white">
+                  <div className="px-4 py-3 border-b border-[#233763]">
+                    <div className="text-xs font-black text-white">{agent.name}</div>
+                    <div className="text-[11px] text-slate-300 truncate font-mono mt-0.5">{agent.email}</div>
+                    <div className="mt-1.5 flex items-center gap-1 text-[10px] font-bold text-[#00c853]">
+                      <CheckCircle2 className="w-3 h-3" />
+                      <span>{agent.kycLevel}</span>
+                    </div>
+                  </div>
+
+                  <div className="py-1">
+                    <button
+                      onClick={() => {
+                        setShowProfileMenu(false);
+                        setCurrentPage('profile');
+                      }}
+                      className="w-full px-4 py-2.5 text-left text-xs font-bold text-slate-200 hover:bg-[#1a294e] hover:text-white flex items-center gap-2.5"
+                    >
+                      <User className="w-4 h-4 text-[#00c853]" />
+                      <span>Agent Profile & PIN</span>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        setShowProfileMenu(false);
+                        setCurrentPage('kyc');
+                      }}
+                      className="w-full px-4 py-2.5 text-left text-xs font-bold text-slate-200 hover:bg-[#1a294e] hover:text-white flex items-center gap-2.5"
+                    >
+                      <FileCheck className="w-4 h-4 text-[#00c853]" />
+                      <span>Verification & Limits</span>
+                    </button>
+                  </div>
+
+                  <div className="pt-1 border-t border-[#233763]">
+                    <button
+                      onClick={() => {
+                        setShowProfileMenu(false);
+                        logout();
+                      }}
+                      className="w-full px-4 py-2.5 text-left text-xs font-bold text-rose-400 hover:bg-rose-950/40 flex items-center gap-2.5"
+                    >
+                      <LogOut className="w-4 h-4" />
+                      <span>Sign Out</span>
+                    </button>
                   </div>
                 </div>
-
-                <div className="py-1">
-                  <button
-                    onClick={() => {
-                      setShowProfileMenu(false);
-                      setCurrentPage('profile');
-                    }}
-                    className="w-full px-4 py-2.5 text-left text-xs font-bold text-slate-200 hover:bg-[#1a294e] hover:text-white flex items-center gap-2.5"
-                  >
-                    <User className="w-4 h-4 text-[#00c853]" />
-                    <span>Agent Profile & PIN</span>
-                  </button>
-
-                  <button
-                    onClick={() => {
-                      setShowProfileMenu(false);
-                      setCurrentPage('kyc');
-                    }}
-                    className="w-full px-4 py-2.5 text-left text-xs font-bold text-slate-200 hover:bg-[#1a294e] hover:text-white flex items-center gap-2.5"
-                  >
-                    <FileCheck className="w-4 h-4 text-[#00c853]" />
-                    <span>Verification & Limits</span>
-                  </button>
-                </div>
-
-                <div className="pt-1 border-t border-[#233763]">
-                  <button
-                    onClick={() => {
-                      setShowProfileMenu(false);
-                      logout();
-                    }}
-                    className="w-full px-4 py-2.5 text-left text-xs font-bold text-rose-400 hover:bg-rose-950/40 flex items-center gap-2.5"
-                  >
-                    <LogOut className="w-4 h-4" />
-                    <span>Sign Out</span>
-                  </button>
-                </div>
-              </div>
+              </>
             )}
           </div>
         </div>
