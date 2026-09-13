@@ -33,6 +33,7 @@ import { commissionService } from '../services/commissionService';
 import { notificationService } from '../services/notificationService';
 import { supportService } from '../services/supportService';
 import { storageService } from '../services/storageService';
+import { subAgentService } from '../services/subAgentService';
 import { CurrencyRate, getExchangeRates, saveExchangeRates } from '../config/currencyRates';
 
 export type PageId = 
@@ -361,11 +362,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setNotifications(prev => [item, ...prev]);
     });
 
+    // Realtime Sub-Agents Listener
+    const subAgentChannel = supabase
+      .channel('agent_sub_agents_realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'sub_agents' }, async () => {
+        const targetCode = agent.id || 'AG-55353';
+        const freshSubs = await subAgentService.getSubAgents(targetCode);
+        if (freshSubs && freshSubs.length > 0) {
+          setSubAgents(freshSubs);
+        }
+      })
+      .subscribe();
+
     return () => {
       authSubscription?.subscription?.unsubscribe();
       unsubscribeNotif();
+      supabase.removeChannel(subAgentChannel);
     };
-  }, []);
+  }, [agent.id]);
 
   const isSyncingRef = useRef(false);
 
@@ -449,7 +463,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       try {
         // Parallel queries via Promise.all (1 single round-trip instead of 6 sequential awaits)
-        const [agentRes, txRes] = await Promise.all([
+        const [agentRes, txRes, subAgentsList] = await Promise.all([
           targetDbId
             ? supabase.from('agents').select('*').eq('id', targetDbId).maybeSingle()
             : supabase.from('agents').select('*').eq('agent_code', targetAgentCode).maybeSingle(),
@@ -458,8 +472,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             .select('*')
             .eq('agent_id', targetDbId)
             .order('created_at', { ascending: false })
-            .limit(60)
+            .limit(60),
+          subAgentService.getSubAgents(targetAgentCode)
         ]);
+
+        if (subAgentsList && subAgentsList.length > 0) {
+          setSubAgents(subAgentsList);
+        }
 
         let agentData = agentRes.data;
 
@@ -1265,22 +1284,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   // Sub-agents
-  const inviteSubAgent = (name: string, email: string, mobile: string, location: string) => {
-    const newSub: SubAgent = {
-      id: 'SUB-' + Math.floor(3000 + Math.random() * 9000),
-      name,
-      email,
-      mobile,
-      location,
-      status: 'pending',
-      todayVolume: 0,
-      totalVolume: 0,
-      commissionEarned: 0,
-      joinedDate: new Date().toISOString().split('T')[0],
-      directReferrals: 0
-    };
-    setSubAgents(prev => [newSub, ...prev]);
-    showToast('success', 'Invitation Dispatched', `Partner invite sent to ${email}. Tracking ID: ${newSub.id}`);
+  const inviteSubAgent = async (name: string, email: string, mobile: string, location: string) => {
+    const parentCode = agent.id || 'AG-55353';
+    const newSub = await subAgentService.createSubAgent(parentCode, { name, email, mobile, location });
+    setSubAgents(prev => [newSub, ...prev.filter(s => s.id !== newSub.id)]);
+    showToast('success', 'Invitation Dispatched', `Partner invite registered in Supabase database. Tracking ID: ${newSub.id}`);
   };
 
   // Notifications

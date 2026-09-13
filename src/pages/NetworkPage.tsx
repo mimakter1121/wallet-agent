@@ -9,9 +9,12 @@ import {
   Copy, 
   Check, 
   QrCode, 
-  Sparkles,
-  ShieldCheck,
-  Building2
+  Sparkles, 
+  ShieldCheck, 
+  Building2,
+  Search,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { StatCard } from '../components/common/StatCard';
@@ -24,6 +27,11 @@ export const NetworkPage: React.FC = () => {
   const [copiedLink, setCopiedLink] = useState(false);
   const [copiedCode, setCopiedCode] = useState(false);
 
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'pending' | 'suspended'>('all');
+  const [currentPageNum, setCurrentPageNum] = useState(1);
+  const itemsPerPage = 10;
+
   const directCount = subAgents.length;
   const activeCount = subAgents.filter(s => s.status === 'active').length;
   const pendingCount = subAgents.filter(s => s.status === 'pending').length;
@@ -31,6 +39,25 @@ export const NetworkPage: React.FC = () => {
 
   const activeRefCode = agent.referralCode || (agent.id ? 'AGENT-' + agent.id.replace('AG-', '') : 'AGENT-PARTNER');
   const inviteLink = `${window.location.origin}/signup?ref=${activeRefCode}`;
+
+  const filteredSubAgents = subAgents.filter(s => {
+    const q = searchQuery.toLowerCase().trim();
+    const matchesSearch = 
+      !q ||
+      s.name.toLowerCase().includes(q) ||
+      s.mobile.includes(q) ||
+      s.location.toLowerCase().includes(q) ||
+      (s.id || '').toLowerCase().includes(q);
+
+    const matchesStatus = statusFilter === 'all' || s.status === statusFilter;
+    return matchesSearch && matchesStatus;
+  });
+
+  const totalPages = Math.ceil(filteredSubAgents.length / itemsPerPage) || 1;
+  const paginatedSubAgents = filteredSubAgents.slice(
+    (currentPageNum - 1) * itemsPerPage,
+    currentPageNum * itemsPerPage
+  );
 
   const handleCopyLink = () => {
     navigator.clipboard.writeText(inviteLink);
@@ -152,68 +179,129 @@ export const NetworkPage: React.FC = () => {
         </div>
       </div>
 
+      {/* Filter and Search Bar */}
+      <div className="bg-[#121e3d] border border-[#233763] rounded-2xl p-4 shadow-card">
+        <div className="flex flex-col sm:flex-row items-center gap-3">
+          <div className="relative flex-1 w-full">
+            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              placeholder="Search by Sub-Agent name, mobile, location, code..."
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setCurrentPageNum(1);
+              }}
+              className="w-full pl-10 pr-4 py-2.5 text-xs rounded-xl bg-[#1a294e] border border-[#233763] text-white placeholder-slate-400 focus:outline-none focus:border-[#00c853]"
+            />
+          </div>
+
+          <div className="w-full sm:w-auto">
+            <select
+              value={statusFilter}
+              onChange={(e) => {
+                setStatusFilter(e.target.value as any);
+                setCurrentPageNum(1);
+              }}
+              className="w-full sm:w-auto px-3.5 py-2.5 rounded-xl bg-[#1a294e] border border-[#233763] text-white text-xs font-bold focus:outline-none"
+            >
+              <option value="all" className="bg-[#121e3d]">All Statuses ({subAgents.length})</option>
+              <option value="active" className="bg-[#121e3d]">Active Hubs ({activeCount})</option>
+              <option value="pending" className="bg-[#121e3d]">Pending Verification ({pendingCount})</option>
+              <option value="suspended" className="bg-[#121e3d]">Suspended</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
       {/* Sub-Agents Directory Table */}
-      <div className="bg-[#121e3d] border border-[#233763] rounded-3xl p-6 shadow-card">
+      <div className="bg-[#121e3d] border border-[#233763] rounded-3xl p-4 sm:p-6 shadow-card">
         <div className="flex items-center justify-between pb-4 border-b border-[#233763]">
           <div>
             <h3 className="text-sm font-black text-white flex items-center gap-2">
               <Users className="w-4 h-4 text-[#00c853]" />
-              <span>Sub-Agent Network Partners</span>
+              <span>Sub-Agent Network Partners ({filteredSubAgents.length})</span>
             </h3>
             <p className="text-xs text-slate-300 mt-0.5 font-medium">
-              Registered tier 2 agents operating under your liquidity desk
+              Registered tier 2 agents operating under your liquidity desk in Supabase
             </p>
           </div>
         </div>
 
-        {subAgents.length === 0 ? (
+        {filteredSubAgents.length === 0 ? (
           <div className="text-center py-12 text-slate-400">
             <Network className="w-10 h-10 mx-auto mb-3 opacity-30 text-[#00b0ff]" />
-            <p className="text-sm font-bold text-white">No sub-agents in network yet</p>
-            <p className="text-xs text-slate-300 mt-1">Invite partners using your referral link above</p>
+            <p className="text-sm font-bold text-white">No sub-agents match criteria</p>
+            <p className="text-xs text-slate-300 mt-1">Try resetting search term or filters</p>
           </div>
         ) : (
-          <div className="overflow-x-auto mt-2">
-            <table className="w-full text-left text-xs">
-              <thead>
-                <tr className="border-b border-[#233763] text-slate-400 font-bold uppercase text-[10px]">
-                  <th className="py-3 px-3">Agent Name</th>
-                  <th className="py-3 px-3">Location / Region</th>
-                  <th className="py-3 px-3">Cleared Volume</th>
-                  <th className="py-3 px-3">0.5% Commission Yield</th>
-                  <th className="py-3 px-3">Status</th>
-                  <th className="py-3 px-3 text-right">Joined Date</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[#233763]">
-                {subAgents.map(agent => {
-                  const overrideYield = parseFloat((agent.totalVolume * 0.005).toFixed(2));
-                  return (
-                    <tr key={agent.id} className="hover:bg-[#1a294e] transition-colors">
-                      <td className="py-3.5 px-3">
-                        <div className="font-black text-white">{agent.name}</div>
-                        <div className="text-[10px] text-slate-400 font-mono">{agent.mobile}</div>
-                      </td>
-                      <td className="py-3.5 px-3 text-slate-300">
-                        {agent.location}
-                      </td>
-                      <td className="py-3.5 px-3 font-bold text-white font-mono">
-                        ${agent.totalVolume.toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                      </td>
-                      <td className="py-3.5 px-3 font-black text-[#00c853] font-mono">
-                        +${overrideYield.toFixed(2)}
-                      </td>
-                      <td className="py-3.5 px-3">
-                        <StatusBadge status={agent.status} size="sm" />
-                      </td>
-                      <td className="py-3.5 px-3 text-right text-slate-400 font-mono">
-                        {agent.joinedDate}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+          <div>
+            <div className="overflow-x-auto mt-2">
+              <table className="w-full text-left text-xs">
+                <thead>
+                  <tr className="border-b border-[#233763] text-slate-400 font-bold uppercase text-[10px]">
+                    <th className="py-3 px-3 min-w-[140px]">Agent Name / ID</th>
+                    <th className="py-3 px-3 min-w-[130px]">Location / Region</th>
+                    <th className="py-3 px-3 min-w-[110px]">Cleared Volume</th>
+                    <th className="py-3 px-3 min-w-[120px]">0.5% Commission Yield</th>
+                    <th className="py-3 px-3 min-w-[100px]">Status</th>
+                    <th className="py-3 px-3 text-right min-w-[110px]">Joined Date</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[#233763]">
+                  {paginatedSubAgents.map(ag => {
+                    const overrideYield = ag.commissionEarned > 0 ? ag.commissionEarned : parseFloat((ag.totalVolume * 0.005).toFixed(2));
+                    return (
+                      <tr key={ag.id} className="hover:bg-[#1a294e] transition-colors">
+                        <td className="py-3.5 px-3">
+                          <div className="font-black text-white">{ag.name}</div>
+                          <div className="text-[10px] text-slate-400 font-mono">{ag.id} • {ag.mobile}</div>
+                        </td>
+                        <td className="py-3.5 px-3 text-slate-300">
+                          {ag.location}
+                        </td>
+                        <td className="py-3.5 px-3 font-bold text-white font-mono">
+                          ${ag.totalVolume.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                        </td>
+                        <td className="py-3.5 px-3 font-black text-[#00c853] font-mono">
+                          +${overrideYield.toFixed(2)}
+                        </td>
+                        <td className="py-3.5 px-3">
+                          <StatusBadge status={ag.status} size="sm" />
+                        </td>
+                        <td className="py-3.5 px-3 text-right text-slate-400 font-mono">
+                          {ag.joinedDate}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Pagination Controls */}
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 border-t border-[#233763] text-xs font-bold text-slate-300 text-center sm:text-left mt-2">
+              <div>
+                Showing {(currentPageNum - 1) * itemsPerPage + 1} to {Math.min(currentPageNum * itemsPerPage, filteredSubAgents.length)} of {filteredSubAgents.length} sub-agents
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  disabled={currentPageNum === 1}
+                  onClick={() => setCurrentPageNum(p => Math.max(1, p - 1))}
+                  className="p-2 rounded-xl bg-[#1a294e] border border-[#233763] disabled:opacity-40 hover:bg-[#233763] transition-colors"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+                <span>Page {currentPageNum} of {totalPages}</span>
+                <button
+                  disabled={currentPageNum === totalPages}
+                  onClick={() => setCurrentPageNum(p => Math.min(totalPages, p + 1))}
+                  className="p-2 rounded-xl bg-[#1a294e] border border-[#233763] disabled:opacity-40 hover:bg-[#233763] transition-colors"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
           </div>
         )}
       </div>
