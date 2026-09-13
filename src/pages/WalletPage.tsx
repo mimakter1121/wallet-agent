@@ -124,86 +124,88 @@ export const WalletPage: React.FC = () => {
           </div>
 
           {/* Action Buttons */}
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2.5 w-full lg:w-auto">
             <button
               onClick={() => setIsAddFundsOpen(true)}
-              className="flex items-center gap-2 bg-[#00c853] hover:bg-[#00e676] text-white px-4 py-2.5 rounded-xl font-black text-xs transition-all shadow-md shadow-emerald-950/50 active:scale-98"
+              className="flex items-center justify-center gap-1.5 sm:gap-2 bg-[#00c853] hover:bg-[#00e676] text-white px-3 sm:px-4 py-2.5 rounded-xl font-black text-xs transition-all shadow-md shadow-emerald-950/50 active:scale-98 text-center"
             >
-              <PlusCircle className="w-4 h-4" />
-              <span>Add Liquidity Funds</span>
+              <PlusCircle className="w-4 h-4 flex-shrink-0" />
+              <span className="truncate">Add Funds</span>
             </button>
 
             <button
               onClick={() => setIsExchangeOpen(true)}
-              className="flex items-center gap-2 bg-[#00b0ff] hover:bg-[#40c4ff] text-white px-4 py-2.5 rounded-xl font-black text-xs transition-all shadow-md active:scale-98"
+              className="flex items-center justify-center gap-1.5 sm:gap-2 bg-[#00b0ff] hover:bg-[#40c4ff] text-white px-3 sm:px-4 py-2.5 rounded-xl font-black text-xs transition-all shadow-md active:scale-98 text-center"
             >
-              <RefreshCw className="w-4 h-4" />
-              <span>Exchange Rates & Swap</span>
+              <RefreshCw className="w-4 h-4 flex-shrink-0" />
+              <span className="truncate">Swap & Rates</span>
             </button>
 
             <button
               onClick={() => setIsTransferOpen(true)}
-              className="flex items-center gap-2 bg-[#1a294e] hover:bg-[#233763] text-white px-4 py-2.5 rounded-xl font-bold text-xs border border-[#233763] transition-all active:scale-98"
+              className="flex items-center justify-center gap-1.5 sm:gap-2 bg-[#1a294e] hover:bg-[#233763] text-white px-3 sm:px-4 py-2.5 rounded-xl font-bold text-xs border border-[#233763] transition-all active:scale-98 text-center"
             >
-              <Send className="w-4 h-4 text-[#00b0ff]" />
-              <span>Transfer to Agent</span>
+              <Send className="w-4 h-4 text-[#00b0ff] flex-shrink-0" />
+              <span className="truncate">Transfer</span>
             </button>
 
             <button
               onClick={() => setCurrentPage('withdrawals')}
-              className="flex items-center gap-2 bg-[#1a294e] hover:bg-[#233763] text-white px-4 py-2.5 rounded-xl font-bold text-xs border border-[#233763] transition-all active:scale-98"
+              className="flex items-center justify-center gap-1.5 sm:gap-2 bg-[#1a294e] hover:bg-[#233763] text-white px-3 sm:px-4 py-2.5 rounded-xl font-bold text-xs border border-[#233763] transition-all active:scale-98 text-center"
             >
-              <ArrowUpRight className="w-4 h-4 text-[#00c853]" />
-              <span>Request Payout</span>
+              <ArrowUpRight className="w-4 h-4 text-[#00c853] flex-shrink-0" />
+              <span className="truncate">Payout</span>
             </button>
           </div>
         </div>
 
         {/* 4 Financial Pill Indicators — in local currency */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-6 pt-6 border-t border-[#233763]">
-          <div className="p-3.5 rounded-2xl bg-[#1a294e] border border-[#233763]">
-            <div className="text-[11px] font-bold text-slate-300 uppercase">Available Balance</div>
-            <div className="text-lg font-black text-white mt-1 font-mono">
+          <div className="p-3.5 rounded-2xl bg-[#1a294e] border border-[#233763] min-w-0">
+            <div className="text-[11px] font-bold text-slate-300 uppercase truncate">Available Balance</div>
+            <div className="text-base sm:text-lg font-black text-white mt-1 font-mono truncate">
               {displayCurrency.symbol}{localBalance.toLocaleString('en-US', { maximumFractionDigits: 0 })}
             </div>
-            <div className="text-[10px] text-slate-400 mt-0.5 font-semibold">≈ ${agent.balance.toFixed(2)} USD</div>
+            <div className="text-[10px] text-slate-400 mt-0.5 font-semibold truncate">≈ ${agent.balance.toFixed(2)} USD</div>
           </div>
 
-          <div className="p-3.5 rounded-2xl bg-[#1a294e] border border-[#233763]">
-            <div className="text-[11px] font-bold text-slate-300 uppercase">Pending Hold</div>
-            <div className="text-lg font-black text-amber-400 mt-1 font-mono">
+          <div className="p-3.5 rounded-2xl bg-[#1a294e] border border-[#233763] min-w-0">
+            <div className="text-[11px] font-bold text-slate-300 uppercase truncate">Pending Hold</div>
+            <div className="text-base sm:text-lg font-black text-amber-400 mt-1 font-mono truncate">
               {displayCurrency.symbol}{localPending.toLocaleString('en-US', { maximumFractionDigits: 0 })}
             </div>
-            <div className="text-[10px] text-amber-400 mt-0.5 font-semibold">≈ ${agent.pendingBalance.toFixed(2)} USD</div>
+            <div className="text-[10px] text-amber-400 mt-0.5 font-semibold truncate">≈ ${agent.pendingBalance.toFixed(2)} USD</div>
           </div>
 
-          <div className="p-3.5 rounded-2xl bg-[#1a294e] border border-[#233763]">
-            <div className="text-[11px] font-bold text-slate-300 uppercase">Commission</div>
-            <div className="text-lg font-black text-[#00c853] mt-1 flex items-center justify-between font-mono">
-              <span>+{displayCurrency.symbol}{localCommission.toLocaleString('en-US', { maximumFractionDigits: 0 })}</span>
+          <div className="p-3.5 rounded-2xl bg-[#1a294e] border border-[#233763] min-w-0 flex flex-col justify-between">
+            <div className="flex items-center justify-between gap-1">
+              <div className="text-[11px] font-bold text-slate-300 uppercase truncate">Commission</div>
               <button
                 onClick={() => setIsClaimOpen(true)}
-                className="text-[10px] bg-[#00c853] text-white font-black px-2.5 py-0.5 rounded-md hover:bg-[#00e676]"
+                className="text-[10px] bg-[#00c853] hover:bg-[#00e676] text-white font-black px-2 py-0.5 rounded-md transition-colors shadow-sm flex-shrink-0"
               >
                 Claim
               </button>
             </div>
-            <div className="text-[10px] text-slate-400 mt-0.5 font-semibold">≈ ${agent.commissionBalance.toFixed(2)} USD</div>
+            <div className="text-base sm:text-lg font-black text-[#00c853] mt-1 font-mono truncate">
+              +{displayCurrency.symbol}{localCommission.toLocaleString('en-US', { maximumFractionDigits: 0 })}
+            </div>
+            <div className="text-[10px] text-slate-400 mt-0.5 font-semibold truncate">≈ ${agent.commissionBalance.toFixed(2)} USD</div>
           </div>
 
-          <div className="p-3.5 rounded-2xl bg-[#1a294e] border border-[#233763]">
-            <div className="text-[11px] font-bold text-slate-300 uppercase">Today's Volume</div>
-            <div className="text-lg font-black text-[#00b0ff] mt-1 font-mono">
+          <div className="p-3.5 rounded-2xl bg-[#1a294e] border border-[#233763] min-w-0">
+            <div className="text-[11px] font-bold text-slate-300 uppercase truncate">Today's Volume</div>
+            <div className="text-base sm:text-lg font-black text-[#00b0ff] mt-1 font-mono truncate">
               {displayCurrency.symbol}{localVolume.toLocaleString('en-US', { maximumFractionDigits: 0 })}
             </div>
-            <div className="text-[10px] text-slate-400 mt-0.5 font-semibold">≈ ${agent.todayVolume.toFixed(2)} USD</div>
+            <div className="text-[10px] text-slate-400 mt-0.5 font-semibold truncate">≈ ${agent.todayVolume.toFixed(2)} USD</div>
           </div>
         </div>
       </div>
 
       {/* Wallet Activity Ledger Timeline */}
-      <div className="bg-[#121e3d] border border-[#233763] rounded-3xl p-6 shadow-card text-white">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#233763]">
+      <div className="bg-[#121e3d] border border-[#233763] rounded-3xl p-4 sm:p-6 shadow-card text-white">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-[#233763]">
           <div>
             <h3 className="text-sm font-black text-white flex items-center gap-2">
               <Building2 className="w-4 h-4 text-[#00c853]" />
@@ -215,12 +217,12 @@ export const WalletPage: React.FC = () => {
           </div>
 
           {/* Type filter tabs */}
-          <div className="flex items-center bg-[#1a294e] border border-[#233763] p-1 rounded-xl text-xs font-bold">
+          <div className="flex items-center bg-[#1a294e] border border-[#233763] p-1 rounded-xl text-xs font-bold overflow-x-auto max-w-full no-scrollbar">
             {['all', 'deposit', 'withdrawal', 'transfer', 'topup'].map(t => (
               <button
                 key={t}
                 onClick={() => setFilterType(t)}
-                className={`px-3 py-1.5 rounded-lg capitalize transition-all ${
+                className={`px-3 py-1.5 rounded-lg capitalize transition-all whitespace-nowrap flex-shrink-0 ${
                   filterType === t
                     ? 'bg-[#00c853] text-white shadow'
                     : 'text-slate-300 hover:text-white'
@@ -242,13 +244,13 @@ export const WalletPage: React.FC = () => {
             <table className="w-full text-left text-xs">
               <thead>
                 <tr className="border-b border-[#233763] text-slate-400 font-bold uppercase text-[10px]">
-                  <th className="py-3 px-3">Transaction / Ref</th>
-                  <th className="py-3 px-3">Activity Type</th>
-                  <th className="py-3 px-3">Counterparty / Customer</th>
-                  <th className="py-3 px-3">Method & Account</th>
-                  <th className="py-3 px-3">Date & Time</th>
-                  <th className="py-3 px-3">Gross Amount</th>
-                  <th className="py-3 px-3 text-right">Ledger Status</th>
+                  <th className="py-3 px-3 min-w-[140px]">Transaction / Ref</th>
+                  <th className="py-3 px-3 min-w-[110px]">Activity Type</th>
+                  <th className="py-3 px-3 min-w-[140px]">Counterparty / Customer</th>
+                  <th className="py-3 px-3 min-w-[130px]">Method & Account</th>
+                  <th className="py-3 px-3 min-w-[130px]">Date & Time</th>
+                  <th className="py-3 px-3 min-w-[110px]">Gross Amount</th>
+                  <th className="py-3 px-3 text-right min-w-[110px]">Ledger Status</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#233763]">

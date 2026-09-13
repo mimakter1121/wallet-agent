@@ -127,7 +127,7 @@ export const TransactionsPage: React.FC = () => {
             />
           </div>
 
-          <div className="flex items-center gap-2 w-full sm:w-auto">
+          <div className="grid grid-cols-2 sm:flex sm:items-center gap-2 w-full md:w-auto">
             {/* Type Select */}
             <select
               value={typeFilter}
@@ -135,7 +135,7 @@ export const TransactionsPage: React.FC = () => {
                 setTypeFilter(e.target.value);
                 setCurrentPageNum(1);
               }}
-              className="px-3 py-2 rounded-xl bg-[#1a294e] border border-[#233763] text-white text-xs font-bold focus:outline-none"
+              className="w-full sm:w-auto px-3 py-2 rounded-xl bg-[#1a294e] border border-[#233763] text-white text-xs font-bold focus:outline-none truncate"
             >
               <option value="all" className="bg-[#121e3d]">All Types</option>
               <option value="deposit" className="bg-[#121e3d]">Deposit (Cash In)</option>
@@ -151,7 +151,7 @@ export const TransactionsPage: React.FC = () => {
                 setStatusFilter(e.target.value);
                 setCurrentPageNum(1);
               }}
-              className="px-3 py-2 rounded-xl bg-[#1a294e] border border-[#233763] text-white text-xs font-bold focus:outline-none"
+              className="w-full sm:w-auto px-3 py-2 rounded-xl bg-[#1a294e] border border-[#233763] text-white text-xs font-bold focus:outline-none truncate"
             >
               <option value="all" className="bg-[#121e3d]">All Statuses</option>
               <option value="success" className="bg-[#121e3d]">Cleared (Success)</option>
@@ -164,7 +164,7 @@ export const TransactionsPage: React.FC = () => {
       </div>
 
       {/* Ledger Table */}
-      <div className="bg-[#121e3d] border border-[#233763] rounded-3xl p-6 shadow-card">
+      <div className="bg-[#121e3d] border border-[#233763] rounded-3xl p-4 sm:p-6 shadow-card">
         {paginatedTransactions.length === 0 ? (
           <div className="text-center py-12 text-slate-400">
             <ReceiptText className="w-10 h-10 mx-auto mb-3 opacity-30 text-[#00c853]" />
@@ -177,15 +177,15 @@ export const TransactionsPage: React.FC = () => {
               <table className="w-full text-left text-xs">
                 <thead>
                   <tr className="border-b border-[#233763] text-slate-400 font-bold uppercase text-[10px]">
-                    <th className="py-3 px-3">Tx ID</th>
-                    <th className="py-3 px-3">Customer Username</th>
-                    <th className="py-3 px-3">Type</th>
-                    <th className="py-3 px-3">Gross Amount</th>
-                    <th className="py-3 px-3">Net Settled</th>
-                    <th className="py-3 px-3">Payment Method</th>
-                    <th className="py-3 px-3">Date & Time</th>
-                    <th className="py-3 px-3">Status</th>
-                    <th className="py-3 px-3 text-right">Voucher</th>
+                    <th className="py-3 px-3 min-w-[130px]">Tx ID</th>
+                    <th className="py-3 px-3 min-w-[140px]">Customer Username</th>
+                    <th className="py-3 px-3 min-w-[100px]">Type</th>
+                    <th className="py-3 px-3 min-w-[110px]">Gross Amount</th>
+                    <th className="py-3 px-3 min-w-[110px]">Net Settled</th>
+                    <th className="py-3 px-3 min-w-[120px]">Payment Method</th>
+                    <th className="py-3 px-3 min-w-[130px]">Date & Time</th>
+                    <th className="py-3 px-3 min-w-[100px]">Status</th>
+                    <th className="py-3 px-3 text-right min-w-[70px]">Voucher</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#233763]">
@@ -207,7 +207,7 @@ export const TransactionsPage: React.FC = () => {
                           <div className="text-[10px] text-slate-400 font-mono">{tx.reference}</div>
                         </td>
                         <td className="py-3.5 px-3 font-bold text-white">
-                          <div>{tx.customerName}</div>
+                          <div className="truncate max-w-[130px]">{tx.customerName}</div>
                           <div className="text-[10px] text-slate-400 font-mono">{tx.customerPhone}</div>
                         </td>
                         <td className="py-3.5 px-3">
@@ -247,7 +247,7 @@ export const TransactionsPage: React.FC = () => {
             </div>
 
             {/* Pagination Controls */}
-            <div className="flex items-center justify-between pt-4 border-t border-[#233763] text-xs font-bold text-slate-300">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 border-t border-[#233763] text-xs font-bold text-slate-300 text-center sm:text-left">
               <div>
                 Showing {(currentPageNum - 1) * itemsPerPage + 1} to {Math.min(currentPageNum * itemsPerPage, filteredTransactions.length)} of {filteredTransactions.length} entries
               </div>

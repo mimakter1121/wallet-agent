@@ -75,13 +75,13 @@ export const TransactionsPage: React.FC = () => {
             <table className="w-full text-left text-xs">
               <thead>
                 <tr className="border-b border-slate-100 dark:border-slate-800 text-slate-400 font-semibold uppercase text-[10px]">
-                  <th className="py-3 px-3">Tx ID</th>
-                  <th className="py-3 px-3">Agent</th>
-                  <th className="py-3 px-3">Customer</th>
-                  <th className="py-3 px-3">Amount (USD)</th>
-                  <th className="py-3 px-3">Channel / Method</th>
-                  <th className="py-3 px-3">Reference</th>
-                  <th className="py-3 px-3 text-right">Action</th>
+                  <th className="py-3 px-3 min-w-[130px]">Tx ID</th>
+                  <th className="py-3 px-3 min-w-[140px]">Agent</th>
+                  <th className="py-3 px-3 min-w-[140px]">Customer</th>
+                  <th className="py-3 px-3 min-w-[110px]">Amount (USD)</th>
+                  <th className="py-3 px-3 min-w-[130px]">Channel / Method</th>
+                  <th className="py-3 px-3 min-w-[120px]">Reference</th>
+                  <th className="py-3 px-3 text-right min-w-[180px]">Action</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
@@ -95,17 +95,17 @@ export const TransactionsPage: React.FC = () => {
                     <td className="py-3.5 px-3 font-mono text-[11px] text-slate-400">{tx.reference}</td>
                     <td className="py-3.5 px-3 text-right">
                       {tx.status === 'pending' || tx.status === 'processing' ? (
-                        <div className="flex justify-end gap-1.5">
+                        <div className="flex justify-end gap-1.5 whitespace-nowrap">
                           <button
                             onClick={() => approveTransaction(tx.id)}
-                            className="px-3 py-1 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[11px] shadow-sm flex items-center gap-1 transition-all"
+                            className="px-3 py-1 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[11px] shadow-sm flex items-center gap-1 transition-all whitespace-nowrap"
                           >
                             <CheckCheck className="w-3.5 h-3.5" />
                             <span>Approve Clearance</span>
                           </button>
                           <button
                             onClick={() => rejectTransaction(tx.id)}
-                            className="px-3 py-1 rounded-xl bg-rose-500/20 hover:bg-rose-500 text-rose-400 hover:text-white border border-rose-500/40 font-bold text-[11px] transition-all flex items-center gap-1"
+                            className="px-3 py-1 rounded-xl bg-rose-500/20 hover:bg-rose-500 text-rose-400 hover:text-white border border-rose-500/40 font-bold text-[11px] transition-all flex items-center gap-1 whitespace-nowrap"
                           >
                             <XCircle className="w-3.5 h-3.5" />
                             <span>Reject</span>
