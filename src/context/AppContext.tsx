@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { 
   AgentProfile, 
   Customer, 
@@ -367,133 +367,150 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
   }, []);
 
-  // Real-time Agent Float Balance & Transactions Polling Sync from Supabase
+  const isSyncingRef = useRef(false);
+
+  // 1. Static platform settings (exchange rates & telegram) fetched once on mount & every 60s
   useEffect(() => {
+    if (!isSupabaseConfigured()) return;
+    const fetchSystemSettings = async () => {
+      try {
+        const { data: sysSettingsRes } = await supabase.from('system_settings').select('*');
+        if (sysSettingsRes && sysSettingsRes.length > 0) {
+          const currentRates = getExchangeRates();
+          const rateMap: Record<string, number> = {};
+          sysSettingsRes.forEach((row: any) => {
+            if (row.key === 'telegram_username') {
+              setTelegramUsername(row.value);
+              localStorage.setItem('wa_telegram_username', row.value);
+            }
+            if (row.key === 'usd_bdt_rate') rateMap['BDT'] = parseFloat(row.value);
+            if (row.key === 'usd_inr_rate') rateMap['INR'] = parseFloat(row.value);
+            if (row.key === 'usd_pkr_rate') rateMap['PKR'] = parseFloat(row.value);
+          });
+
+          const updatedRates = currentRates.map(r => 
+            rateMap[r.code] ? { ...r, ratePerUSD: rateMap[r.code] } : r
+          );
+          saveExchangeRates(updatedRates);
+          setExchangeRates(updatedRates);
+        }
+      } catch (err) {
+        console.error('Error fetching system settings:', err);
+      }
+    };
+
+    fetchSystemSettings();
+    const interval = setInterval(fetchSystemSettings, 60000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // 2. KYC documents status fetched on mount & when agent changes
+  useEffect(() => {
+    if (!isSupabaseConfigured() || !agent.id) return;
+    const fetchKycDocs = async () => {
+      try {
+        const { data } = await supabase
+          .from('kyc_documents')
+          .select('*')
+          .eq('agent_code', agent.id)
+          .order('created_at', { ascending: false });
+
+        if (data && data.length > 0) {
+          const mappedDocs: KycDocument[] = data.map((d: any) => ({
+            id: d.doc_id || d.id,
+            title: d.title || d.document_type,
+            documentType: d.document_type as any,
+            fileName: d.file_name,
+            fileSize: d.file_size || '1.5 MB',
+            status: d.status as any,
+            uploadedAt: d.created_at?.substring(0, 10) || new Date().toISOString().substring(0, 10),
+            fileUrl: d.file_url || undefined,
+            storagePath: d.storage_path || undefined
+          }));
+          setKycDocs(mappedDocs);
+        }
+      } catch (err) {
+        console.error('Error fetching KYC documents:', err);
+      }
+    };
+    fetchKycDocs();
+  }, [agent.id]);
+
+  // 3. Ultra-fast Real-time Agent Float Balance & Transactions Sync (Parallelized via Promise.all + Realtime WebSocket)
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    const targetDbId = agent.dbId || 'e3f85535-3000-4000-8000-000000055353';
+    const targetAgentCode = agent.id || 'AG-55353';
+
     const syncAgentFloatData = async () => {
-      if (!isAuthenticated) return;
+      if (isSyncingRef.current) return;
+      isSyncingRef.current = true;
 
       try {
-        if (!agent.id && !agent.email) return;
+        // Parallel queries via Promise.all (1 single round-trip instead of 6 sequential awaits)
+        const [agentRes, txRes] = await Promise.all([
+          targetDbId
+            ? supabase.from('agents').select('*').eq('id', targetDbId).maybeSingle()
+            : supabase.from('agents').select('*').eq('agent_code', targetAgentCode).maybeSingle(),
+          supabase
+            .from('transactions')
+            .select('*')
+            .eq('agent_id', targetDbId)
+            .order('created_at', { ascending: false })
+            .limit(60)
+        ]);
 
-        // 1. Query agent row SPECIFICALLY for this logged-in agent
-        let agQuery = supabase.from('agents').select('*');
-        if (agent.dbId) {
-          agQuery = agQuery.eq('id', agent.dbId);
-        } else if (agent.id) {
-          agQuery = agQuery.eq('agent_code', agent.id);
-        }
+        let agentData = agentRes.data;
 
-        let { data: agentData } = await agQuery.maybeSingle();
-
-        // If not found by agent_code / dbId, search ONLY by email in profiles (never by phone — default phone matches multiple agents)
+        // Fallback: If agent not found by ID, query by email once
         if (!agentData && agent.email && agent.email !== 'agent@walletagent.com') {
           const { data: profRows } = await supabase
             .from('profiles')
             .select('id, agents(*)')
             .eq('email', agent.email)
             .limit(1);
-          
           if (profRows && profRows.length > 0 && (profRows[0] as any).agents?.[0]) {
             agentData = (profRows[0] as any).agents[0];
           }
         }
 
-        // If STILL not found in DB, auto-create this specific agent in Supabase with 0 balance
-        if (!agentData && (agent.id || agent.email)) {
-          const cleanCode = agent.id || ('AG-' + Math.floor(10000 + Math.random() * 90000));
-          const agentEmail = agent.email || `${cleanCode.toLowerCase().replace(/[^a-z0-9]/g, '')}@walletagent.com`;
-          
-          let { data: newProf } = await supabase
-            .from('profiles')
-            .upsert({
-              full_name: agent.name || 'Agent User',
-              email: agentEmail,
-              phone: agent.mobile || '',
-              role: 'agent',
-              status: 'active'
-            }, { onConflict: 'email' })
-            .select('id')
-            .maybeSingle();
-
-          if (newProf?.id) {
-            const { data: newAg } = await supabase
-              .from('agents')
-              .upsert({
-                profile_id: newProf.id,
-                agent_code: cleanCode,
-                balance: 0.00,
-                pending_balance: 0.00,
-                total_deposit: 0.00,
-                total_withdrawal: 0.00,
-                total_commission: 0.00,
-                commission_rate: 0.0150,
-                verification_status: 'pending'
-              }, { onConflict: 'agent_code' })
-              .select('*')
-              .maybeSingle();
-            
-            if (newAg) agentData = newAg;
-          }
-        }
-
-        // Fetch Telegram username setting from system_settings
-        const { data: tgData } = await supabase
-          .from('system_settings')
-          .select('value')
-          .eq('key', 'telegram_username')
-          .maybeSingle();
-
-        if (tgData && tgData.value) {
-          setTelegramUsername(tgData.value);
-          localStorage.setItem('wa_telegram_username', tgData.value);
-        }
-
-        const activeAgentDbId = agentData?.id || agent.dbId;
-
+        // Process transactions
         let mappedDbTx: Transaction[] = [];
-        if (activeAgentDbId) {
-          const { data: txData } = await supabase
-            .from('transactions')
-            .select('*')
-            .eq('agent_id', activeAgentDbId)
-            .order('created_at', { ascending: false });
+        if (txRes.data && txRes.data.length > 0) {
+          mappedDbTx = txRes.data.map((t: any) => {
+            const rawCode = t.transaction_code || '';
+            const rawType = t.type || '';
+            const isDeposit = rawType === 'deposit' || rawCode.startsWith('DEP');
+            const isWithdrawal = rawType === 'withdrawal' || rawCode.startsWith('WTH');
+            const mappedType: 'deposit' | 'withdrawal' | 'topup' = isDeposit ? 'deposit' : (isWithdrawal ? 'withdrawal' : 'topup');
 
-          if (txData && txData.length > 0) {
-            mappedDbTx = txData.map((t: any) => {
-              const rawCode = t.transaction_code || '';
-              const rawType = t.type || '';
-              const isDeposit = rawType === 'deposit' || rawCode.startsWith('DEP');
-              const isWithdrawal = rawType === 'withdrawal' || rawCode.startsWith('WTH');
-              const mappedType: 'deposit' | 'withdrawal' | 'topup' = isDeposit ? 'deposit' : (isWithdrawal ? 'withdrawal' : 'topup');
+            const displayName = t.customer_name 
+              || (t.note && !t.note.startsWith('Agent Topup') ? t.note.replace('Customer Cash-In Approved: ', '').replace('Customer Cash-Out Approved: ', '') : (isDeposit ? 'Customer Cash-In' : (isWithdrawal ? 'Customer Cash-Out' : `${agent.name || 'Agent'} Topup`)));
+            const displayPhone = t.customer_phone || agent.mobile || '01700000000';
 
-              const displayName = t.customer_name 
-                || (t.note && !t.note.startsWith('Agent Topup') ? t.note.replace('Customer Cash-In Approved: ', '').replace('Customer Cash-Out Approved: ', '') : (isDeposit ? 'Customer Cash-In' : (isWithdrawal ? 'Customer Cash-Out' : `${agent.name || 'Agent'} Topup`)));
-              const displayPhone = t.customer_phone || agent.mobile || '01700000000';
-
-              return {
-                id: t.transaction_code || 'TX-' + t.id.substring(0, 5),
-                customerId: t.agent_id || 'AGENT-SELF',
-                customerName: displayName,
-                customerPhone: displayPhone,
-                type: mappedType,
-                amount: parseFloat(t.amount) || 0,
-                fee: 0,
-                netAmount: parseFloat(t.amount) || 0,
-                paymentMethod: t.payment_method || 'USDT TRC20',
-                reference: t.reference || t.transaction_code || '-',
-                status: t.status === 'approved' ? 'success' : (t.status === 'rejected' ? 'rejected' : 'pending'),
-                createdAt: t.created_at?.substring(0, 16) || new Date().toISOString().substring(0, 16),
-                updatedAt: t.updated_at?.substring(0, 16) || new Date().toISOString().substring(0, 16),
-                adminNote: t.note || 'Master Admin Clearance',
-                receiptNumber: 'RCP-TX-' + Math.floor(10000 + Math.random() * 90000)
-              };
-            });
-          }
+            return {
+              id: t.transaction_code || 'TX-' + t.id.substring(0, 5),
+              customerId: t.agent_id || 'AGENT-SELF',
+              customerName: displayName,
+              customerPhone: displayPhone,
+              type: mappedType,
+              amount: parseFloat(t.amount) || 0,
+              fee: 0,
+              netAmount: parseFloat(t.amount) || 0,
+              paymentMethod: t.payment_method || 'USDT TRC20',
+              reference: t.reference || t.transaction_code || '-',
+              status: t.status === 'approved' ? 'success' : (t.status === 'rejected' ? 'rejected' : 'pending'),
+              createdAt: t.created_at?.substring(0, 16) || new Date().toISOString().substring(0, 16),
+              updatedAt: t.updated_at?.substring(0, 16) || new Date().toISOString().substring(0, 16),
+              adminNote: t.note || 'Master Admin Clearance',
+              receiptNumber: 'RCP-TX-' + Math.floor(10000 + Math.random() * 90000)
+            };
+          });
+          setTransactions(mappedDbTx);
         }
 
-        setTransactions(mappedDbTx);
-
-        // Compute metrics accurately based strictly on this agent's own data
+        // Metrics computation
         const nowUTCDate = new Date().toISOString().substring(0, 10);
         const localToday = new Date().toLocaleDateString('en-CA');
         const todaySuccessTxs = mappedDbTx.filter(t => t.status === 'success' && (t.createdAt?.startsWith(localToday) || t.createdAt?.startsWith(nowUTCDate)));
@@ -507,14 +524,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           const freshPending = parseFloat(agentData.pending_balance) || 0;
           const freshComm = parseFloat(agentData.total_commission) || 0;
 
-          // Compute pending balance from both database column and active pending transactions
           const pendingTxsSum = mappedDbTx.filter(t => t.status === 'pending' && t.type === 'topup').reduce((sum, t) => sum + t.amount, 0);
           const effectivePending = Math.max(freshPending, pendingTxsSum);
 
           const dbKycStatus = agentData.verification_status || 'pending';
           const isKycVerified = dbKycStatus === 'verified';
 
-          // Tier progression: balance + KYC verification determine tier
           let mappedKycLevel: string;
           if (dbKycStatus === 'under_review' || dbKycStatus === 'pending') {
             mappedKycLevel = freshBal >= 1000 ? 'Tier 3 (Master Agent)' : freshBal >= 200 ? 'Tier 2 (Business)' : 'Under Review';
@@ -525,7 +540,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           } else if (isKycVerified && freshBal >= 200) {
             mappedKycLevel = 'Tier 2 (Business)';
           } else {
-            // New account or unverified — always Tier 1
             mappedKycLevel = 'Tier 1 (Basic)';
           }
 
@@ -550,20 +564,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             todayWithdrawals: computedTodayWth,
             todayCommission: computedTodayComm
           }));
-        } else {
-          setAgent(prev => ({
-            ...prev,
-            balance: 0,
-            pendingBalance: 0,
-            commissionBalance: 0,
-            todayVolume: 0,
-            todayDeposits: 0,
-            todayWithdrawals: 0,
-            todayCommission: 0
-          }));
         }
 
-        // Auto-generate notifications from this agent's live transactions only
+        // Auto-generate notifications
         const readIds: Set<string> = new Set(
           JSON.parse(localStorage.getItem('wa_notif_read_ids') || '[]')
         );
@@ -604,55 +607,38 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           .reverse();
 
         setNotifications(autoNotifs);
-
-        // Fetch live KYC documents status for this agent from Supabase
-        const kycRes = await supabase
-          .from('kyc_documents')
-          .select('*')
-          .eq('agent_code', agent.id)
-          .order('created_at', { ascending: false });
-
-        if (kycRes.data && kycRes.data.length > 0) {
-          const mappedDocs: KycDocument[] = kycRes.data.map((d: any) => ({
-            id: d.doc_id || d.id,
-            title: d.title || d.document_type,
-            documentType: d.document_type as any,
-            fileName: d.file_name,
-            fileSize: d.file_size || '1.5 MB',
-            status: d.status as any,
-            uploadedAt: d.created_at?.substring(0, 10) || new Date().toISOString().substring(0, 10),
-            fileUrl: d.file_url || undefined,
-            storagePath: d.storage_path || undefined
-          }));
-          setKycDocs(mappedDocs);
-        }
-
-        // Fetch live Dollar Exchange Rates from Supabase system_settings
-        const sysSettingsRes = await supabase.from('system_settings').select('*');
-        if (sysSettingsRes.data && sysSettingsRes.data.length > 0) {
-          const currentRates = getExchangeRates();
-          const rateMap: Record<string, number> = {};
-          sysSettingsRes.data.forEach((row: any) => {
-            if (row.key === 'usd_bdt_rate') rateMap['BDT'] = parseFloat(row.value);
-            if (row.key === 'usd_inr_rate') rateMap['INR'] = parseFloat(row.value);
-            if (row.key === 'usd_pkr_rate') rateMap['PKR'] = parseFloat(row.value);
-          });
-
-          const updatedRates = currentRates.map(r => 
-            rateMap[r.code] ? { ...r, ratePerUSD: rateMap[r.code] } : r
-          );
-          saveExchangeRates(updatedRates);
-          setExchangeRates(updatedRates);
-        }
       } catch (err) {
         console.error('Error syncing live agent balance & transactions from Supabase:', err);
+      } finally {
+        isSyncingRef.current = false;
       }
     };
 
+    // Initial instant sync
     syncAgentFloatData();
-    const interval = setInterval(syncAgentFloatData, 3000);
-    return () => clearInterval(interval);
-  }, [isAuthenticated, agent.id]);
+
+    // Supabase Realtime Channel: Instantly updates whenever transactions or agent row change in DB
+    let channel: any = null;
+    if (isSupabaseConfigured() && targetDbId) {
+      channel = supabase
+        .channel(`agent_live_sync_${targetDbId}`)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'transactions', filter: `agent_id=eq.${targetDbId}` }, () => {
+          syncAgentFloatData();
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'agents', filter: `id=eq.${targetDbId}` }, () => {
+          syncAgentFloatData();
+        })
+        .subscribe();
+    }
+
+    // Relaxed fallback poll: every 15s instead of aggressive 3s
+    const interval = setInterval(syncAgentFloatData, 15000);
+
+    return () => {
+      if (channel) supabase.removeChannel(channel);
+      clearInterval(interval);
+    };
+  }, [isAuthenticated, agent.id, agent.dbId]);
 
   // PWA Events
   useEffect(() => {

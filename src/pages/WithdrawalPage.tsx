@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   ArrowUpRight, 
   ShieldCheck, 
@@ -26,39 +26,56 @@ export const WithdrawalPage: React.FC = () => {
   const [liveWithdrawalRequests, setLiveWithdrawalRequests] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
+  const isFetchingRef = useRef(false);
+
   const fetchLiveWithdrawalRequests = async () => {
-    if (isSupabaseConfigured()) {
-      setIsLoading(true);
-      try {
-        const conds: string[] = [];
-        if (agent?.dbId) conds.push(`agent_id.eq.${agent.dbId}`);
-        if (agent?.id) conds.push(`agent_code.eq.${agent.id}`);
+    if (isFetchingRef.current || !isSupabaseConfigured()) return;
+    isFetchingRef.current = true;
+    setIsLoading(true);
 
-        if (conds.length === 0) {
-          setLiveWithdrawalRequests([]);
-          setIsLoading(false);
-          return;
-        }
+    try {
+      const conds: string[] = [];
+      if (agent?.dbId) conds.push(`agent_id.eq.${agent.dbId}`);
+      if (agent?.id) conds.push(`agent_code.eq.${agent.id}`);
 
-        const { data } = await supabase
-          .from('withdrawal_requests')
-          .select('*')
-          .or(conds.join(','))
-          .order('created_at', { ascending: false });
-
-        if (data) setLiveWithdrawalRequests(data);
-      } catch (err) {
-        console.error('Error fetching live withdrawal requests:', err);
-      } finally {
-        setIsLoading(false);
+      if (conds.length === 0) {
+        setLiveWithdrawalRequests([]);
+        return;
       }
+
+      const { data } = await supabase
+        .from('withdrawal_requests')
+        .select('*')
+        .or(conds.join(','))
+        .order('created_at', { ascending: false });
+
+      if (data) setLiveWithdrawalRequests(data);
+    } catch (err) {
+      console.error('Error fetching live withdrawal requests:', err);
+    } finally {
+      isFetchingRef.current = false;
+      setIsLoading(false);
     }
   };
 
   useEffect(() => {
     fetchLiveWithdrawalRequests();
-    const interval = setInterval(fetchLiveWithdrawalRequests, 3000);
-    return () => clearInterval(interval);
+
+    if (!isSupabaseConfigured()) return undefined;
+
+    const channel = supabase
+      .channel('withdrawal_page_requests_realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'withdrawal_requests' }, () => {
+        fetchLiveWithdrawalRequests();
+      })
+      .subscribe();
+
+    const interval = setInterval(fetchLiveWithdrawalRequests, 15000);
+
+    return () => {
+      supabase.removeChannel(channel);
+      clearInterval(interval);
+    };
   }, [agent?.dbId, agent?.id]);
 
   const handleUpdateLiveWithdrawal = async (reqId: string, reqCode: string, amount: number, status: 'approved' | 'rejected') => {
