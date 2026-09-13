@@ -95,7 +95,6 @@ export const CustomerPortalPage: React.FC = () => {
         .select('*')
         .eq('status', 'active')
         .not('provider', 'ilike', '%USDT%')
-        .not('notes', 'ilike', '%Treasury%')
         .order('created_at', { ascending: false });
 
       const accounts = data || [];

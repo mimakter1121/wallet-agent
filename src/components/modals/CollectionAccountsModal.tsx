@@ -28,6 +28,7 @@ import {
   toggleCollectionAccountStatus,
   deleteCollectionAccount
 } from '../../config/collectionAccounts';
+import { supabase, isSupabaseConfigured } from '../../lib/supabase/client';
 import { collectionAccountService } from '../../services/collectionAccountService';
 import { useApp } from '../../context/AppContext';
 import {
@@ -66,14 +67,31 @@ export const CollectionAccountsModal: React.FC<CollectionAccountsModalProps> = (
 
   const [isLoading, setIsLoading] = useState(false);
 
+  const loadAccounts = () => {
+    const agentCodeToUse = agent.id || (agent as any).agentCode || 'AG-55353';
+    setIsLoading(true);
+    collectionAccountService.fetchAllAccounts(agentCodeToUse, agent.dbId, agent.email).then(data => {
+      setAccounts(data || []);
+      setIsLoading(false);
+    }).catch(() => setIsLoading(false));
+  };
+
   useEffect(() => {
     if (isOpen) {
-      const agentCodeToUse = agent.id || (agent as any).agentCode || 'AG-55353';
-      setIsLoading(true);
-      collectionAccountService.fetchAllAccounts(agentCodeToUse, agent.dbId, agent.email).then(data => {
-        setAccounts(data || []);
-        setIsLoading(false);
-      }).catch(() => setIsLoading(false));
+      loadAccounts();
+
+      if (isSupabaseConfigured()) {
+        const channel = supabase
+          .channel('agent_modal_collection_accounts_realtime')
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'collection_accounts' }, () => {
+            loadAccounts();
+          })
+          .subscribe();
+
+        return () => {
+          supabase.removeChannel(channel);
+        };
+      }
     }
   }, [isOpen, agent.id, (agent as any).agentCode, agent.dbId, agent.email]);
 

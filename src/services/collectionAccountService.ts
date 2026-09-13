@@ -30,7 +30,6 @@ export const collectionAccountService = {
           .select('*')
           .or(`agent_code.ilike.${cleanCode},agent_code.eq.${cleanCode}`)
           .not('provider', 'ilike', '%USDT%')
-          .not('notes', 'ilike', '%Treasury%')
           .order('created_at', { ascending: false });
 
         // If no rows found and cleanCode might be a UUID, resolve agent_code from agents table
@@ -49,7 +48,6 @@ export const collectionAccountService = {
               .select('*')
               .ilike('agent_code', ag.agent_code)
               .not('provider', 'ilike', '%USDT%')
-              .not('notes', 'ilike', '%Treasury%')
               .order('created_at', { ascending: false });
 
             if (!retryRes.error && retryRes.data && retryRes.data.length > 0) {
@@ -93,8 +91,7 @@ export const collectionAccountService = {
           .from('collection_accounts')
           .select('*')
           .eq('status', 'active')
-          .not('provider', 'ilike', '%USDT%')
-          .not('notes', 'ilike', '%Treasury%');
+          .not('provider', 'ilike', '%USDT%');
 
         if (agentCode && agentCode.trim()) {
           query = query.eq('agent_code', agentCode.trim());

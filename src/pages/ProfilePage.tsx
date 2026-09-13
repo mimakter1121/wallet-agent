@@ -26,6 +26,7 @@ import { useApp } from '../context/AppContext';
 import { CollectionAccountsModal } from '../components/modals/CollectionAccountsModal';
 import { collectionAccountService } from '../services/collectionAccountService';
 import { storageService } from '../services/storageService';
+import { supabase, isSupabaseConfigured } from '../lib/supabase/client';
 
 export const ProfilePage: React.FC = () => {
   const { 
@@ -43,11 +44,28 @@ export const ProfilePage: React.FC = () => {
   const [isCollectionModalOpen, setIsCollectionModalOpen] = useState(false);
   const [accountsCount, setAccountsCount] = useState<number>(0);
 
-  useEffect(() => {
+  const fetchActiveCount = () => {
     const agentCode = agent.id || (agent as any).agentCode || 'AG-55353';
     collectionAccountService.fetchAllAccounts(agentCode, agent.dbId, agent.email).then(accs => {
       setAccountsCount(accs.filter(a => a.status === 'active').length);
-    });
+    }).catch(() => {});
+  };
+
+  useEffect(() => {
+    fetchActiveCount();
+
+    if (isSupabaseConfigured()) {
+      const channel = supabase
+        .channel('profile_collection_accounts_realtime')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'collection_accounts' }, () => {
+          fetchActiveCount();
+        })
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    }
   }, [agent.id, (agent as any).agentCode, agent.dbId, agent.email]);
   const [avatarUrl, setAvatarUrl] = useState(agent.avatar);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
