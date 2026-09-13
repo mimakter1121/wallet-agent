@@ -11,7 +11,7 @@ interface DataPoint {
 }
 
 export const VolumeChart: React.FC = () => {
-  const { transactions } = useApp();
+  const { transactions, commissionRates } = useApp();
   const [range, setRange] = useState<TimeRange>('7days');
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
 
@@ -29,6 +29,8 @@ export const VolumeChart: React.FC = () => {
 
   const getLiveData = (): DataPoint[] => {
     const approvedTxs = transactions.filter(t => t.status === 'success');
+    const depRate = commissionRates.deposit;
+    const wthRate = commissionRates.withdrawal;
 
     if (range === 'today') {
       // Use UTC today date to match Supabase UTC timestamps
@@ -53,7 +55,7 @@ export const VolumeChart: React.FC = () => {
 
         const dep = slotTxs.filter(t => t.type === 'deposit').reduce((sum, t) => sum + t.amount, 0);
         const wth = slotTxs.filter(t => t.type === 'withdrawal').reduce((sum, t) => sum + t.amount, 0);
-        const comm = slotTxs.reduce((sum, t) => sum + (t.type === 'deposit' ? t.amount * 0.015 : t.type === 'withdrawal' ? t.amount * 0.012 : 0), 0);
+        const comm = slotTxs.reduce((sum, t) => sum + (t.type === 'deposit' ? t.amount * depRate : t.type === 'withdrawal' ? t.amount * wthRate : 0), 0);
 
         return { label: slot.label, deposit: dep, withdrawal: wth, commission: comm };
       });
@@ -74,7 +76,7 @@ export const VolumeChart: React.FC = () => {
         const dayTxs = approvedTxs.filter(t => t.createdAt && getUTCDateStr(t.createdAt) === item.dateStr);
         const dep = dayTxs.filter(t => t.type === 'deposit').reduce((sum, t) => sum + t.amount, 0);
         const wth = dayTxs.filter(t => t.type === 'withdrawal').reduce((sum, t) => sum + t.amount, 0);
-        const comm = dayTxs.reduce((sum, t) => sum + (t.type === 'deposit' ? t.amount * 0.015 : t.type === 'withdrawal' ? t.amount * 0.012 : 0), 0);
+        const comm = dayTxs.reduce((sum, t) => sum + (t.type === 'deposit' ? t.amount * depRate : t.type === 'withdrawal' ? t.amount * wthRate : 0), 0);
 
         return { label: item.label, deposit: dep, withdrawal: wth, commission: comm };
       });
@@ -100,7 +102,7 @@ export const VolumeChart: React.FC = () => {
 
         const dep = weekTxs.filter(t => t.type === 'deposit').reduce((sum, t) => sum + t.amount, 0);
         const wth = weekTxs.filter(t => t.type === 'withdrawal').reduce((sum, t) => sum + t.amount, 0);
-        const comm = weekTxs.reduce((sum, t) => sum + (t.type === 'deposit' ? t.amount * 0.015 : t.type === 'withdrawal' ? t.amount * 0.012 : 0), 0);
+        const comm = weekTxs.reduce((sum, t) => sum + (t.type === 'deposit' ? t.amount * depRate : t.type === 'withdrawal' ? t.amount * wthRate : 0), 0);
 
         return { label, deposit: dep, withdrawal: wth, commission: comm };
       }).reverse(); // show oldest week first

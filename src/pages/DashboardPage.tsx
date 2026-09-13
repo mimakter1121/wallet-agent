@@ -28,6 +28,7 @@ export const DashboardPage: React.FC = () => {
   const { 
     agent, 
     transactions, 
+    commissionRates,
     setCurrentPage, 
     setSelectedTransaction, 
     setIsDetailOpen 
@@ -49,7 +50,7 @@ export const DashboardPage: React.FC = () => {
 
   const computedCommission = todayTxs
     .filter(t => t.type === 'deposit' || t.type === 'withdrawal')
-    .reduce((acc, t) => acc + (t.type === 'deposit' ? t.amount * 0.015 : t.amount * 0.012), 0);
+    .reduce((acc, t) => acc + (t.type === 'deposit' ? t.amount * commissionRates.deposit : t.amount * commissionRates.withdrawal), 0);
 
   const displayDeposits = computedDeposits;
   const displayWithdrawals = computedWithdrawals;

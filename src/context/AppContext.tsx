@@ -148,6 +148,11 @@ interface AppContextType {
   telegramUsername: string;
   telegramSupportUrl: string;
   bdtExchangeRate: number;
+  commissionRates: {
+    deposit: number;
+    withdrawal: number;
+    clearance: number;
+  };
 
   // PWA & Backend Status
   isInstallPromptAvailable: boolean;
@@ -239,6 +244,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const telegramSupportUrl = telegramUsername.startsWith('http')
     ? telegramUsername
     : `https://t.me/${telegramUsername.replace('@', '')}`;
+
+  const [commissionRates, setCommissionRates] = useState<{ deposit: number; withdrawal: number; clearance: number }>(() => {
+    const cached = localStorage.getItem('wa_commission_rates');
+    if (cached) {
+      try {
+        return JSON.parse(cached);
+      } catch (_) {}
+    }
+    return { deposit: 0.05, withdrawal: 0.03, clearance: 0.005 };
+  });
+  const commissionRatesRef = useRef(commissionRates);
+  useEffect(() => {
+    commissionRatesRef.current = commissionRates;
+  }, [commissionRates]);
 
   const [subAgents, setSubAgents] = useState<SubAgent[]>(() => {
     const saved = localStorage.getItem('wa_subagents');
@@ -392,6 +411,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         if (sysSettingsRes && sysSettingsRes.length > 0) {
           const currentRates = getExchangeRates();
           const rateMap: Record<string, number> = {};
+          let newDep = commissionRatesRef.current.deposit;
+          let newWth = commissionRatesRef.current.withdrawal;
+          let newClr = commissionRatesRef.current.clearance;
+          let commUpdated = false;
+
           sysSettingsRes.forEach((row: any) => {
             if (row.key === 'telegram_username') {
               setTelegramUsername(row.value);
@@ -400,7 +424,26 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             if (row.key === 'usd_bdt_rate') rateMap['BDT'] = parseFloat(row.value);
             if (row.key === 'usd_inr_rate') rateMap['INR'] = parseFloat(row.value);
             if (row.key === 'usd_pkr_rate') rateMap['PKR'] = parseFloat(row.value);
+            if (row.key === 'deposit_commission_rate') {
+              const val = parseFloat(row.value) / 100;
+              if (!isNaN(val)) { newDep = val; commUpdated = true; }
+            }
+            if (row.key === 'withdrawal_commission_rate') {
+              const val = parseFloat(row.value) / 100;
+              if (!isNaN(val)) { newWth = val; commUpdated = true; }
+            }
+            if (row.key === 'clearance_fee_rate') {
+              const val = parseFloat(row.value) / 100;
+              if (!isNaN(val)) { newClr = val; commUpdated = true; }
+            }
           });
+
+          if (commUpdated) {
+            const updatedComm = { deposit: newDep, withdrawal: newWth, clearance: newClr };
+            commissionRatesRef.current = updatedComm;
+            setCommissionRates(updatedComm);
+            localStorage.setItem('wa_commission_rates', JSON.stringify(updatedComm));
+          }
 
           const updatedRates = currentRates.map(r => 
             rateMap[r.code] ? { ...r, ratePerUSD: rateMap[r.code] } : r
@@ -536,7 +579,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         const computedTodayVol = todaySuccessTxs.reduce((sum, t) => sum + t.amount, 0);
         const computedTodayDep = todaySuccessTxs.filter(t => t.type === 'deposit').reduce((sum, t) => sum + t.amount, 0);
         const computedTodayWth = todaySuccessTxs.filter(t => t.type === 'withdrawal').reduce((sum, t) => sum + t.amount, 0);
-        const computedTodayComm = todaySuccessTxs.reduce((sum, t) => sum + (t.type === 'deposit' ? t.amount * 0.015 : (t.type === 'withdrawal' ? t.amount * 0.012 : 0)), 0);
+        const currentDepRate = commissionRatesRef.current.deposit;
+        const currentWthRate = commissionRatesRef.current.withdrawal;
+        const computedTodayComm = todaySuccessTxs.reduce((sum, t) => sum + (t.type === 'deposit' ? t.amount * currentDepRate : (t.type === 'withdrawal' ? t.amount * currentWthRate : 0)), 0);
 
         if (agentData) {
           const freshBal = parseFloat(agentData.balance) || 0;
@@ -595,9 +640,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             const isDeposit = t.type === 'deposit';
             const isWithdrawal = t.type === 'withdrawal';
             const commission = isDeposit
-              ? (t.amount * 0.015).toFixed(2)
+              ? (t.amount * currentDepRate).toFixed(2)
               : isWithdrawal
-              ? (t.amount * 0.012).toFixed(2)
+              ? (t.amount * currentWthRate).toFixed(2)
               : '0.00';
             const notifId = 'NOTIF-' + t.id;
 
@@ -617,9 +662,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               timestamp: t.createdAt || new Date().toISOString().substring(0, 16),
               read: readIds.has(notifId),
               badge: isDeposit
-                ? `Commission +$${commission} (1.5%)`
+                ? `Commission +$${commission} (${(currentDepRate * 100).toFixed(1)}%)`
                 : isWithdrawal
-                ? `Commission +$${commission} (1.2%)`
+                ? `Commission +$${commission} (${(currentWthRate * 100).toFixed(1)}%)`
                 : undefined
             };
           })
@@ -840,9 +885,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       mobile: '+1 (555) 000-0000'
     };
 
-    const fee = parseFloat((data.amount * 0.005).toFixed(2));
+    const currentDepRate = commissionRatesRef.current.deposit;
+    const currentClearanceRate = commissionRatesRef.current.clearance;
+    const fee = parseFloat((data.amount * currentClearanceRate).toFixed(2));
     const netAmount = parseFloat((data.amount - fee).toFixed(2));
-    const commissionEarned = parseFloat((data.amount * 0.015).toFixed(2));
+    const commissionEarned = parseFloat((data.amount * currentDepRate).toFixed(2));
 
     // Execute atomic Supabase RPC if live backend is connected
     if (isSupabaseConfigured()) {
@@ -893,7 +940,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       transactionId: newTx.id,
       type: 'deposit',
       transactionAmount: data.amount,
-      commissionRate: 0.015,
+      commissionRate: currentDepRate,
       commissionAmount: commissionEarned,
       status: 'pending'
     };
@@ -928,9 +975,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       mobile: '+1 (555) 000-0000'
     };
 
-    const fee = parseFloat((data.amount * 0.005).toFixed(2));
+    const currentWthRate = commissionRatesRef.current.withdrawal;
+    const currentClearanceRate = commissionRatesRef.current.clearance;
+    const fee = parseFloat((data.amount * currentClearanceRate).toFixed(2));
     const netAmount = parseFloat((data.amount - fee).toFixed(2));
-    const commissionEarned = parseFloat((data.amount * 0.012).toFixed(2));
+    const commissionEarned = parseFloat((data.amount * currentWthRate).toFixed(2));
 
     if (isSupabaseConfigured()) {
       const res = await withdrawalService.submitWithdrawalRequest({
@@ -982,7 +1031,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       transactionId: newTx.id,
       type: 'withdrawal',
       transactionAmount: data.amount,
-      commissionRate: 0.012,
+      commissionRate: currentWthRate,
       commissionAmount: commissionEarned,
       status: 'credited'
     };
@@ -1087,7 +1136,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     // ── DEPOSIT: Approved (pending → success) ─────────────────────────────────
     // Agent receives net amount into balance + commission is credited
     if (tx.type === 'deposit' && tx.status === 'pending' && newStatus === 'success') {
-      const commissionEarned = parseFloat((tx.amount * 0.015).toFixed(2));
+      const depRate = commissionRatesRef.current.deposit;
+      const commissionEarned = parseFloat((tx.amount * depRate).toFixed(2));
       setAgent(ag => ({
         ...ag,
         balance: ag.balance + tx.netAmount,
@@ -1102,7 +1152,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         transactionId: tx.id,
         type: 'deposit',
         transactionAmount: tx.amount,
-        commissionRate: 0.015,
+        commissionRate: depRate,
         commissionAmount: commissionEarned,
         status: 'credited'
       };
@@ -1156,7 +1206,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     // ── WITHDRAWAL: Completed (processing → success) ───────────────────────────
     // Balance was already deducted when created; just confirm and add commission
     else if (tx.type === 'withdrawal' && tx.status === 'processing' && newStatus === 'success') {
-      const commissionEarned = parseFloat((tx.amount * 0.012).toFixed(2));
+      const wthRate = commissionRatesRef.current.withdrawal;
+      const commissionEarned = parseFloat((tx.amount * wthRate).toFixed(2));
       setAgent(ag => ({
         ...ag,
         commissionBalance: ag.commissionBalance + commissionEarned,
@@ -1168,7 +1219,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         transactionId: tx.id,
         type: 'withdrawal',
         transactionAmount: tx.amount,
-        commissionRate: 0.012,
+        commissionRate: wthRate,
         commissionAmount: commissionEarned,
         status: 'credited'
       };
@@ -1538,6 +1589,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         telegramUsername,
         telegramSupportUrl,
         bdtExchangeRate,
+        commissionRates,
         isInstallPromptAvailable,
         triggerPwaInstall,
         isOnline,

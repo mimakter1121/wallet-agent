@@ -50,6 +50,7 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const [agents, setAgents] = useState<Agent[]>([]);
   const [transactions, setTransactions] = useState<PlatformTransaction[]>([]);
+  const [commRates, setCommRates] = useState<{ deposit: number; withdrawal: number }>({ deposit: 0.05, withdrawal: 0.03 });
   const [toast, setToast] = useState<{ type: 'success' | 'error' | 'info'; title: string; message: string } | null>(null);
 
   const showToast = (type: 'success' | 'error' | 'info', title: string, message: string) => {
@@ -172,17 +173,28 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         setChannels(mappedCol);
       }
 
-      // Fetch live exchange rates from system_settings
+      // Fetch live exchange rates & commission settings from system_settings
       const { data: sysData } = await supabase.from('system_settings').select('*');
       if (sysData && sysData.length > 0) {
         const rateMap: Record<string, number> = {};
+        let depR = 0.05;
+        let wthR = 0.03;
         sysData.forEach((row: any) => {
           if (row.key === 'usd_bdt_rate') rateMap['BDT'] = parseFloat(row.value);
           if (row.key === 'usd_inr_rate') rateMap['INR'] = parseFloat(row.value);
           if (row.key === 'usd_pkr_rate') rateMap['PKR'] = parseFloat(row.value);
+          if (row.key === 'deposit_commission_rate') {
+            const val = parseFloat(row.value) / 100;
+            if (!isNaN(val)) depR = val;
+          }
+          if (row.key === 'withdrawal_commission_rate') {
+            const val = parseFloat(row.value) / 100;
+            if (!isNaN(val)) wthR = val;
+          }
         });
 
         setRates(prev => prev.map(r => rateMap[r.code] ? { ...r, ratePerUSD: rateMap[r.code] } : r));
+        setCommRates({ deposit: depR, withdrawal: wthR });
       }
     } catch (err) {
       console.error('Error fetching Supabase admin data:', err);
@@ -492,7 +504,11 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     pendingClearanceUSD: transactions.reduce((acc, t) => t.status === 'pending' || t.status === 'processing' ? acc + t.amountUSD : acc, 0),
     totalAgents: agents.length,
     activeChannelsCount: channels.filter(c => c.status === 'active').length,
-    totalCommissionsUSD: transactions.reduce((acc, t) => t.status === 'success' ? acc + (t.amountUSD * 0.015) : acc, 0)
+    totalCommissionsUSD: transactions.reduce((acc, t) => {
+      if (t.status !== 'success') return acc;
+      const rate = t.type === 'deposit' ? commRates.deposit : commRates.withdrawal;
+      return acc + (t.amountUSD * rate);
+    }, 0)
   };
 
   return (

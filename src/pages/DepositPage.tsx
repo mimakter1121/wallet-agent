@@ -20,7 +20,8 @@ export const DepositPage: React.FC = () => {
     transactions, 
     showToast,
     requestPinConfirmation,
-    bdtExchangeRate: bdtRate
+    bdtExchangeRate: bdtRate,
+    commissionRates
   } = useApp();
 
   const [liveDepositRequests, setLiveDepositRequests] = useState<any[]>([]);
@@ -93,8 +94,8 @@ export const DepositPage: React.FC = () => {
                 await supabase.from('deposit_requests').update({ status: 'approved' }).eq('id', reqId);
               }
               const deductedUsd = data?.amount_usd || usdEquivalent;
-              const commEarned = data?.commission_earned || ((amount / bdtRate) * 0.015).toFixed(2);
-              showToast('success', 'Cash-In Approved 💸', `Customer deposit ${reqCode} approved! Float balance decreased by -$${deductedUsd} USD (৳${amount.toLocaleString()} BDT). Commission: +$${commEarned} USD (1.5%)`);
+              const commEarned = data?.commission_earned || ((amount / bdtRate) * commissionRates.deposit).toFixed(2);
+              showToast('success', 'Cash-In Approved 💸', `Customer deposit ${reqCode} approved! Float balance decreased by -$${deductedUsd} USD (৳${amount.toLocaleString()} BDT). Commission: +$${commEarned} USD (${(commissionRates.deposit * 100).toFixed(1)}%)`);
             } else {
               await supabase.from('deposit_requests').update({ status: 'rejected' }).eq('id', reqId);
               showToast('info', 'Deposit Rejected', `Customer deposit ${reqCode} rejected.`);

@@ -20,7 +20,8 @@ export const WithdrawalPage: React.FC = () => {
     transactions, 
     showToast,
     requestPinConfirmation,
-    bdtExchangeRate: bdtRate
+    bdtExchangeRate: bdtRate,
+    commissionRates
   } = useApp();
 
   const [liveWithdrawalRequests, setLiveWithdrawalRequests] = useState<any[]>([]);
@@ -94,8 +95,8 @@ export const WithdrawalPage: React.FC = () => {
                 await supabase.from('withdrawal_requests').update({ status: 'approved' }).eq('id', reqId);
               }
               const creditedUsd = data?.amount_usd || usdEquivalent;
-              const commEarned = data?.commission_earned || ((amount / bdtRate) * 0.012).toFixed(2);
-              showToast('success', 'Cash-Out Approved 💰', `Customer cashout ${reqCode} approved! Float balance increased by +$${creditedUsd} USD (৳${amount.toLocaleString()} BDT). Commission: +$${commEarned} USD (1.2%)`);
+              const commEarned = data?.commission_earned || ((amount / bdtRate) * commissionRates.withdrawal).toFixed(2);
+              showToast('success', 'Cash-Out Approved 💰', `Customer cashout ${reqCode} approved! Float balance increased by +$${creditedUsd} USD (৳${amount.toLocaleString()} BDT). Commission: +$${commEarned} USD (${(commissionRates.withdrawal * 100).toFixed(1)}%)`);
             } else {
               await supabase.from('withdrawal_requests').update({ status: 'rejected' }).eq('id', reqId);
               showToast('info', 'Cashout Rejected', `Customer cashout ${reqCode} rejected.`);

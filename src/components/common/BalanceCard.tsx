@@ -14,7 +14,7 @@ export const BalanceCard: React.FC<BalanceCardProps> = ({
   onRequestWithdrawal,
   onNewDeposit
 }) => {
-  const { agent, transactions, showToast } = useApp();
+  const { agent, transactions, commissionRates, showToast } = useApp();
 
   // Compute live stats from today's approved transactions with timezone resilience
   const nowUTCDate = new Date().toISOString().substring(0, 10);
@@ -24,7 +24,7 @@ export const BalanceCard: React.FC<BalanceCardProps> = ({
   const todayVolume = computedTodayVol;
   const netRevenue = transactions
     .filter(t => t.status === 'success' && (t.type === 'deposit' || t.type === 'withdrawal'))
-    .reduce((sum, t) => sum + (t.type === 'deposit' ? t.amount * 0.015 : t.amount * 0.012), 0);
+    .reduce((sum, t) => sum + (t.type === 'deposit' ? t.amount * commissionRates.deposit : t.amount * commissionRates.withdrawal), 0);
   const displayCommission = agent.commissionBalance > 0 ? agent.commissionBalance : netRevenue;
   const [hideBalance, setHideBalance] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);

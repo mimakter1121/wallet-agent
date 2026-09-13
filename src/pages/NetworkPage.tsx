@@ -22,7 +22,7 @@ import { StatusBadge } from '../components/common/StatusBadge';
 import { InviteAgentModal } from '../components/modals/InviteAgentModal';
 
 export const NetworkPage: React.FC = () => {
-  const { agent, subAgents, showToast } = useApp();
+  const { agent, subAgents, commissionRates, showToast } = useApp();
   const [isInviteOpen, setIsInviteOpen] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
   const [copiedCode, setCopiedCode] = useState(false);
@@ -243,14 +243,14 @@ export const NetworkPage: React.FC = () => {
                     <th className="py-3 px-3 min-w-[140px]">Agent Name / ID</th>
                     <th className="py-3 px-3 min-w-[130px]">Location / Region</th>
                     <th className="py-3 px-3 min-w-[110px]">Cleared Volume</th>
-                    <th className="py-3 px-3 min-w-[120px]">0.5% Commission Yield</th>
+                    <th className="py-3 px-3 min-w-[120px]">{(commissionRates.clearance * 100).toFixed(1)}% Commission Yield</th>
                     <th className="py-3 px-3 min-w-[100px]">Status</th>
                     <th className="py-3 px-3 text-right min-w-[110px]">Joined Date</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#233763]">
                   {paginatedSubAgents.map(ag => {
-                    const overrideYield = ag.commissionEarned > 0 ? ag.commissionEarned : parseFloat((ag.totalVolume * 0.005).toFixed(2));
+                    const overrideYield = ag.commissionEarned > 0 ? ag.commissionEarned : parseFloat((ag.totalVolume * commissionRates.clearance).toFixed(2));
                     return (
                       <tr key={ag.id} className="hover:bg-[#1a294e] transition-colors">
                         <td className="py-3.5 px-3">
