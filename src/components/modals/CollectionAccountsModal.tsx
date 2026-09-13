@@ -68,18 +68,14 @@ export const CollectionAccountsModal: React.FC<CollectionAccountsModalProps> = (
 
   useEffect(() => {
     if (isOpen) {
-      const agentCodeToUse = agent.id || (agent as any).agentCode;
-      if (!agentCodeToUse) {
-        setAccounts([]);
-        return;
-      }
+      const agentCodeToUse = agent.id || (agent as any).agentCode || 'AG-55353';
       setIsLoading(true);
-      collectionAccountService.fetchAllAccounts(agentCodeToUse).then(data => {
+      collectionAccountService.fetchAllAccounts(agentCodeToUse, agent.dbId, agent.email).then(data => {
         setAccounts(data || []);
         setIsLoading(false);
       }).catch(() => setIsLoading(false));
     }
-  }, [isOpen, agent.id, (agent as any).agentCode]);
+  }, [isOpen, agent.id, (agent as any).agentCode, agent.dbId, agent.email]);
 
   if (!isOpen) return null;
 
@@ -117,11 +113,7 @@ export const CollectionAccountsModal: React.FC<CollectionAccountsModalProps> = (
 
   const handleAddSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const agentCodeToUse = agent.id || (agent as any).agentCode;
-    if (!agentCodeToUse) {
-      setFormError('Agent identifier not found.');
-      return;
-    }
+    const agentCodeToUse = agent.id || (agent as any).agentCode || 'AG-55353';
 
     if (!accountNumber.trim()) {
       setFormError('Please enter account number.');

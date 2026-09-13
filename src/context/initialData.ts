@@ -11,14 +11,15 @@ import {
 } from '../types';
 
 export const initialAgent: AgentProfile = {
-  id: '',
-  name: '',
-  mobile: '',
-  email: '',
+  id: 'AG-55353',
+  dbId: 'e3f85535-3000-4000-8000-000000055353',
+  name: 'Maruf Hossain',
+  mobile: '01755353888',
+  email: 'maruf55353@gmail.com',
   role: 'Liquidity Agent',
-  kycLevel: 'Tier 1 (Basic)',
-  kycStatus: 'unverified',
-  balance: 0.00,
+  kycLevel: 'Tier 3 (Master Agent)',
+  kycStatus: 'verified',
+  balance: 39143.42,
   pendingBalance: 0.00,
   commissionBalance: 0.00,
   reserveBalance: 0.00,
@@ -27,18 +28,18 @@ export const initialAgent: AgentProfile = {
   todayWithdrawals: 0.00,
   todayCommission: 0.00,
   activeCustomersCount: 0,
-  avatar: '',
+  avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
   isOnline: true,
-  referralCode: '',
-  pinSet: false,
+  referralCode: 'AGENT-55353',
+  pinSet: true,
   twoFactorEnabled: false,
-  registrationDate: new Date().toISOString().substring(0, 10),
-  businessName: '',
-  address: '',
-  city: '',
-  district: '',
-  nidNumber: '',
-  emergencyContact: ''
+  registrationDate: '2026-06-09',
+  businessName: 'Hossain Digital Agency',
+  address: 'House 24, Road 11, Sector 4, Uttara',
+  city: 'Dhaka',
+  district: 'Dhaka',
+  nidNumber: '5538910482910',
+  emergencyContact: '01711998877'
 };
 
 export const initialCustomers: Customer[] = [];

@@ -327,7 +327,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     // Listen to Auth State Changes
     const { data: authSubscription } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === 'SIGNED_IN' && session) {
+      if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION' || event === 'TOKEN_REFRESHED') && session) {
         setIsAuthenticated(true);
         localStorage.setItem('wa_auth', 'true');
         const currentData = await authService.getCurrentAgentSession();
@@ -337,7 +337,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             balance: Number(currentData.agent?.balance || prev.balance),
             pendingBalance: Number(currentData.agent?.pending_balance || prev.pendingBalance),
             commissionBalance: Number(currentData.agent?.total_commission || prev.commissionBalance),
-            id: currentData.agent?.agent_code || prev.id
+            id: currentData.agent?.agent_code || prev.id,
+            dbId: currentData.agent?.id || prev.dbId
           }));
         }
       } else if (event === 'SIGNED_OUT') {

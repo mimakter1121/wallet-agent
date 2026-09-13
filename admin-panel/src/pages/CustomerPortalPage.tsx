@@ -87,26 +87,58 @@ export const CustomerPortalPage: React.FC = () => {
     }
   }, [agents, targetAgentCode]);
 
-  useEffect(() => {
-    if (isSupabaseConfigured()) {
-      supabase
+  const fetchActiveCollectionAccounts = async () => {
+    if (!isSupabaseConfigured()) return;
+    try {
+      const { data } = await supabase
         .from('collection_accounts')
         .select('*')
         .eq('status', 'active')
-        .then(({ data }) => {
-          if (data && data.length > 0) {
-            setActiveCollectionAccounts(data);
-            setSelectedAgentNumber(data[0].account_number);
-            if (data[0].agent_code) {
-              setTargetAgentCode(data[0].agent_code);
-            }
+        .not('provider', 'ilike', '%USDT%')
+        .not('notes', 'ilike', '%Treasury%')
+        .order('created_at', { ascending: false });
+
+      const accounts = data || [];
+      setActiveCollectionAccounts(accounts);
+
+      if (accounts.length > 0) {
+        setSelectedAgentNumber(prev => {
+          const exists = accounts.some(a => a.account_number === prev);
+          if (exists) return prev;
+          const first = accounts[0];
+          if (first.agent_code) {
+            setTargetAgentCode(first.agent_code);
           }
+          return first.account_number;
         });
+      } else {
+        setSelectedAgentNumber('');
+      }
+    } catch (err) {
+      console.error('Failed to fetch active collection accounts:', err);
     }
+  };
+
+  useEffect(() => {
+    fetchActiveCollectionAccounts();
+
+    if (!isSupabaseConfigured()) return undefined;
+
+    const channel = supabase
+      .channel('admin_portal_collection_accounts_realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'collection_accounts' }, () => {
+        fetchActiveCollectionAccounts();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const fetchLiveRequests = async () => {
     setIsLoading(true);
+    fetchActiveCollectionAccounts();
     if (isSupabaseConfigured()) {
       try {
         const [depRes, wthRes] = await Promise.all([

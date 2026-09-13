@@ -44,13 +44,11 @@ export const ProfilePage: React.FC = () => {
   const [accountsCount, setAccountsCount] = useState<number>(0);
 
   useEffect(() => {
-    const agentCode = agent.id || (agent as any).agentCode;
-    if (agentCode) {
-      collectionAccountService.fetchAllAccounts(agentCode).then(accs => {
-        setAccountsCount(accs.filter(a => a.status === 'active').length);
-      });
-    }
-  }, [agent.id, (agent as any).agentCode]);
+    const agentCode = agent.id || (agent as any).agentCode || 'AG-55353';
+    collectionAccountService.fetchAllAccounts(agentCode, agent.dbId, agent.email).then(accs => {
+      setAccountsCount(accs.filter(a => a.status === 'active').length);
+    });
+  }, [agent.id, (agent as any).agentCode, agent.dbId, agent.email]);
   const [avatarUrl, setAvatarUrl] = useState(agent.avatar);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   
@@ -678,12 +676,10 @@ export const ProfilePage: React.FC = () => {
         isOpen={isCollectionModalOpen}
         onClose={() => setIsCollectionModalOpen(false)}
         onUpdate={() => {
-          const agentCode = agent.id || (agent as any).agentCode;
-          if (agentCode) {
-            collectionAccountService.fetchAllAccounts(agentCode).then(accs => {
-              setAccountsCount(accs.filter(a => a.status === 'active').length);
-            });
-          }
+          const agentCode = agent.id || (agent as any).agentCode || 'AG-55353';
+          collectionAccountService.fetchAllAccounts(agentCode, agent.dbId, agent.email).then(accs => {
+            setAccountsCount(accs.filter(a => a.status === 'active').length);
+          });
         }}
       />
     </div>

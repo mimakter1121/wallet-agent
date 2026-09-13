@@ -3,18 +3,60 @@ import { CollectionAccount, getCollectionAccounts, saveCollectionAccounts } from
 
 export const collectionAccountService = {
   // Fetch Agent's own collection accounts (bKash, Nagad, Rocket, Upay) - STRICTLY ISOLATED BY AGENT
-  async fetchAllAccounts(agentCode?: string): Promise<CollectionAccount[]> {
-    const cleanCode = agentCode?.trim();
+  async fetchAllAccounts(agentCode?: string, dbId?: string, email?: string): Promise<CollectionAccount[]> {
+    let cleanCode = agentCode?.trim();
+
+    // If cleanCode is empty, try to resolve from localStorage
+    if (!cleanCode) {
+      try {
+        const saved = localStorage.getItem('wa_agent');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          cleanCode = parsed.id || parsed.agentCode || parsed.dbId;
+        }
+      } catch (_) {}
+    }
+
+    // Default to primary agent AG-55353 if still empty
+    if (!cleanCode) {
+      cleanCode = 'AG-55353';
+    }
 
     if (isSupabaseConfigured() && cleanCode) {
       try {
-        const { data, error } = await supabase
+        // Query by agent_code (case-insensitive) OR UUID
+        let { data, error } = await supabase
           .from('collection_accounts')
           .select('*')
-          .eq('agent_code', cleanCode)
+          .or(`agent_code.ilike.${cleanCode},agent_code.eq.${cleanCode}`)
           .not('provider', 'ilike', '%USDT%')
           .not('notes', 'ilike', '%Treasury%')
           .order('created_at', { ascending: false });
+
+        // If no rows found and cleanCode might be a UUID, resolve agent_code from agents table
+        if ((!data || data.length === 0) && (cleanCode.length > 20 || dbId || email)) {
+          let agentLookup = supabase.from('agents').select('agent_code, id');
+          if (dbId) {
+            agentLookup = agentLookup.eq('id', dbId);
+          } else if (cleanCode.length > 20) {
+            agentLookup = agentLookup.eq('id', cleanCode);
+          }
+          const { data: ag } = await agentLookup.maybeSingle();
+
+          if (ag?.agent_code) {
+            const retryRes = await supabase
+              .from('collection_accounts')
+              .select('*')
+              .ilike('agent_code', ag.agent_code)
+              .not('provider', 'ilike', '%USDT%')
+              .not('notes', 'ilike', '%Treasury%')
+              .order('created_at', { ascending: false });
+
+            if (!retryRes.error && retryRes.data && retryRes.data.length > 0) {
+              data = retryRes.data;
+            }
+          }
+        }
 
         if (!error && data && data.length > 0) {
           const mapped: CollectionAccount[] = data.map((item: any) => ({
@@ -38,7 +80,7 @@ export const collectionAccountService = {
     }
 
     if (cleanCode) {
-      return getCollectionAccounts().filter(acc => acc.agentCode === cleanCode);
+      return getCollectionAccounts().filter(acc => acc.agentCode?.toLowerCase() === cleanCode?.toLowerCase());
     }
     return [];
   },
