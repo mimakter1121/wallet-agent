@@ -2,13 +2,16 @@ import { supabase, isSupabaseConfigured } from '../lib/supabase/client';
 import { CollectionAccount, getCollectionAccounts, saveCollectionAccounts } from '../config/collectionAccounts';
 
 export const collectionAccountService = {
-  // Fetch Agent's own collection accounts (bKash, Nagad, Rocket, Upay)
+  // Fetch Agent's own collection accounts (bKash, Nagad, Rocket, Upay) - STRICTLY ISOLATED BY AGENT
   async fetchAllAccounts(agentCode?: string): Promise<CollectionAccount[]> {
-    if (isSupabaseConfigured()) {
+    const cleanCode = agentCode?.trim();
+
+    if (isSupabaseConfigured() && cleanCode) {
       try {
         const { data, error } = await supabase
           .from('collection_accounts')
           .select('*')
+          .eq('agent_code', cleanCode)
           .not('provider', 'ilike', '%USDT%')
           .not('notes', 'ilike', '%Treasury%')
           .order('created_at', { ascending: false });
@@ -27,27 +30,35 @@ export const collectionAccountService = {
             createdAt: item.created_at?.substring(0, 10) || new Date().toISOString().substring(0, 10)
           }));
 
-          saveCollectionAccounts(mapped);
           return mapped;
         }
       } catch (err) {
         console.error('Error fetching collection accounts from Supabase:', err);
       }
     }
-    return getCollectionAccounts().filter(acc => !acc.notes?.includes('Treasury') && !acc.provider.includes('USDT'));
+
+    if (cleanCode) {
+      return getCollectionAccounts().filter(acc => acc.agentCode === cleanCode);
+    }
+    return [];
   },
 
   // Fetch ACTIVE collection accounts for Customer Portal dispatch
-  async fetchActiveAccounts(): Promise<CollectionAccount[]> {
+  async fetchActiveAccounts(agentCode?: string): Promise<CollectionAccount[]> {
     if (isSupabaseConfigured()) {
       try {
-        const { data, error } = await supabase
+        let query = supabase
           .from('collection_accounts')
           .select('*')
           .eq('status', 'active')
           .not('provider', 'ilike', '%USDT%')
-          .not('notes', 'ilike', '%Treasury%')
-          .order('created_at', { ascending: false });
+          .not('notes', 'ilike', '%Treasury%');
+
+        if (agentCode && agentCode.trim()) {
+          query = query.eq('agent_code', agentCode.trim());
+        }
+
+        const { data, error } = await query.order('created_at', { ascending: false });
 
         if (!error && data) {
           return data.map((item: any) => ({
@@ -67,7 +78,12 @@ export const collectionAccountService = {
         console.error('Error fetching active collection accounts from Supabase:', err);
       }
     }
-    return getCollectionAccounts().filter(acc => acc.status === 'active' && !acc.notes?.includes('Treasury') && !acc.provider.includes('USDT'));
+    return getCollectionAccounts().filter(acc => 
+      acc.status === 'active' && 
+      (!agentCode || acc.agentCode === agentCode) &&
+      !acc.notes?.includes('Treasury') && 
+      !acc.provider.includes('USDT')
+    );
   },
 
   // Fetch Admin Platform Treasury Accounts (for AddFundsModal)
@@ -142,43 +158,45 @@ export const collectionAccountService = {
       }
     }
 
-    const current = getCollectionAccounts();
-    const updated = [localAcc, ...current];
-    saveCollectionAccounts(updated);
+    if (account.agentCode) {
+      const current = getCollectionAccounts();
+      const updated = [localAcc, ...current];
+      saveCollectionAccounts(updated);
+    }
 
     return localAcc;
   },
 
   // Toggle active / inactive status in Supabase & localStorage
-  async toggleStatus(id: string): Promise<CollectionAccount[]> {
-    const current = getCollectionAccounts();
-    let newStatus: 'active' | 'inactive' = 'active';
-
-    const updated = current.map(acc => {
-      if (acc.id === id) {
-        newStatus = acc.status === 'active' ? 'inactive' : 'active';
-        return { ...acc, status: newStatus };
-      }
-      return acc;
-    });
-
+  async toggleStatus(id: string, newStatus?: 'active' | 'inactive'): Promise<void> {
     if (isSupabaseConfigured()) {
       try {
+        let statusToSet = newStatus;
+        if (!statusToSet) {
+          const { data } = await supabase.from('collection_accounts').select('status').eq('id', id).single();
+          statusToSet = data?.status === 'active' ? 'inactive' : 'active';
+        }
         await supabase
           .from('collection_accounts')
-          .update({ status: newStatus })
+          .update({ status: statusToSet })
           .eq('id', id);
       } catch (err) {
         console.error('Error updating status in Supabase:', err);
       }
     }
 
+    const current = getCollectionAccounts();
+    const updated = current.map(acc => {
+      if (acc.id === id) {
+        return { ...acc, status: newStatus || (acc.status === 'active' ? 'inactive' : 'active') };
+      }
+      return acc;
+    });
     saveCollectionAccounts(updated);
-    return updated;
   },
 
   // Delete collection account from Supabase & localStorage
-  async deleteAccount(id: string): Promise<CollectionAccount[]> {
+  async deleteAccount(id: string): Promise<void> {
     if (isSupabaseConfigured()) {
       try {
         await supabase
@@ -192,6 +210,5 @@ export const collectionAccountService = {
     const current = getCollectionAccounts();
     const updated = current.filter(acc => acc.id !== id);
     saveCollectionAccounts(updated);
-    return updated;
   }
 };

@@ -21,7 +21,7 @@ export interface CollectionAccount {
   createdAt: string;
 }
 
-// Initial Collection Accounts — starts blank, added dynamically by agent/admin
+// Clean Initial Collection Accounts — zero demo data
 export const DEFAULT_COLLECTION_ACCOUNTS: CollectionAccount[] = [];
 
 /** Get all collection accounts from localStorage (or defaults) */

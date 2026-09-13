@@ -49,7 +49,7 @@ export const CollectionAccountsModal: React.FC<CollectionAccountsModalProps> = (
   onUpdate
 }) => {
   const { agent, showToast } = useApp();
-  const [accounts, setAccounts] = useState<CollectionAccount[]>(() => getCollectionAccounts());
+  const [accounts, setAccounts] = useState<CollectionAccount[]>([]);
   const [showAddForm, setShowAddForm] = useState(false);
 
   // Form states
@@ -68,14 +68,14 @@ export const CollectionAccountsModal: React.FC<CollectionAccountsModalProps> = (
 
   useEffect(() => {
     if (isOpen) {
+      const agentCodeToUse = agent.id || (agent as any).agentCode;
+      if (!agentCodeToUse) {
+        setAccounts([]);
+        return;
+      }
       setIsLoading(true);
-      collectionAccountService.fetchAllAccounts(agent.id || (agent as any).agentCode).then(data => {
-        if (data && data.length > 0) {
-          setAccounts(data);
-        } else {
-          const fallback = getCollectionAccounts().filter(acc => !acc.notes?.includes('Treasury') && !acc.provider.includes('USDT'));
-          setAccounts(fallback);
-        }
+      collectionAccountService.fetchAllAccounts(agentCodeToUse).then(data => {
+        setAccounts(data || []);
         setIsLoading(false);
       }).catch(() => setIsLoading(false));
     }
@@ -96,8 +96,9 @@ export const CollectionAccountsModal: React.FC<CollectionAccountsModalProps> = (
       return;
     }
 
-    const updated = await collectionAccountService.toggleStatus(acc.id);
-    setAccounts(updated);
+    const newStatus: 'active' | 'inactive' = isActivating ? 'active' : 'inactive';
+    await collectionAccountService.toggleStatus(acc.id, newStatus);
+    setAccounts(prev => prev.map(a => a.id === acc.id ? { ...a, status: newStatus } : a));
     if (onUpdate) onUpdate();
 
     showToast(
@@ -108,14 +109,20 @@ export const CollectionAccountsModal: React.FC<CollectionAccountsModalProps> = (
   };
 
   const handleDelete = async (id: string) => {
-    const updated = await collectionAccountService.deleteAccount(id);
-    setAccounts(updated);
+    await collectionAccountService.deleteAccount(id);
+    setAccounts(prev => prev.filter(a => a.id !== id));
     if (onUpdate) onUpdate();
     showToast('info', 'Account Deleted', 'Collection account removed.');
   };
 
   const handleAddSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const agentCodeToUse = agent.id || (agent as any).agentCode;
+    if (!agentCodeToUse) {
+      setFormError('Agent identifier not found.');
+      return;
+    }
+
     if (!accountNumber.trim()) {
       setFormError('Please enter account number.');
       return;
@@ -125,7 +132,7 @@ export const CollectionAccountsModal: React.FC<CollectionAccountsModalProps> = (
     const defaultStatus = hasSufficientBalance ? 'active' : 'inactive';
 
     const saved = await collectionAccountService.saveAccount({
-      agentCode: agent.id,
+      agentCode: agentCodeToUse,
       provider,
       accountCategory: category,
       accountNumber: accountNumber.trim(),
@@ -183,72 +190,72 @@ export const CollectionAccountsModal: React.FC<CollectionAccountsModalProps> = (
   const activeCount = hasSufficientBalance ? accounts.filter(a => a.status === 'active').length : 0;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fadeIn select-none">
-      <div className="bg-[#121e3d] border border-[#233763] rounded-3xl w-full max-w-2xl shadow-2xl overflow-hidden animate-slideUp text-white">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/80 backdrop-blur-md animate-fadeIn select-none overflow-y-auto">
+      <div className="bg-[#121e3d] border border-[#233763] rounded-3xl w-full max-w-2xl my-auto shadow-2xl overflow-hidden animate-slideUp text-white">
 
         {/* Modal Header */}
-        <div className="px-6 py-4 border-b border-[#233763] flex items-center justify-between bg-[#0a1128]">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-[#00c853]/20 text-[#00c853] border border-[#00c853]/40 flex items-center justify-center font-bold">
-              <Building2 className="w-5 h-5" />
+        <div className="px-4 py-3.5 sm:px-6 sm:py-4 border-b border-[#233763] flex items-center justify-between bg-[#0a1128]">
+          <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1 mr-2">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-[#00c853]/20 text-[#00c853] border border-[#00c853]/40 flex items-center justify-center font-bold shrink-0">
+              <Building2 className="w-4.5 h-4.5 sm:w-5 sm:h-5" />
             </div>
-            <div>
-              <h3 className="text-sm font-black text-white flex items-center gap-2">
-                <span>Payment Collection Accounts</span>
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                <h3 className="text-xs sm:text-sm font-black text-white">Payment Collection Accounts</h3>
                 {hasSufficientBalance ? (
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-[#00c853]/20 text-[#00c853] border border-[#00c853]/40">
+                  <span className="px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-black bg-[#00c853]/20 text-[#00c853] border border-[#00c853]/40 shrink-0">
                     {activeCount} ACTIVE
                   </span>
                 ) : (
-                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-amber-500/20 text-amber-400 border border-amber-500/40 flex items-center gap-1">
-                    <Lock className="w-3 h-3" />
-                    <span>LOCKED (&lt; ৳3,000 BDT)</span>
+                  <span className="px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-black bg-amber-500/20 text-amber-400 border border-amber-500/40 flex items-center gap-1 shrink-0">
+                    <Lock className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+                    <span>LOCKED (&lt; ৳3,000)</span>
                   </span>
                 )}
-              </h3>
-              <p className="text-[11px] text-slate-300 font-medium">
-                Manage Agent / Personal / Merchant collection numbers for bKash, Nagad, Rocket, Upay
+              </div>
+              <p className="text-[10px] sm:text-[11px] text-slate-300 font-medium truncate sm:whitespace-normal">
+                Manage Agent / Personal / Merchant collection numbers
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-[#1a294e] transition-colors"
+            className="p-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-[#1a294e] transition-colors shrink-0"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        <div className="p-6 space-y-5 max-h-[75vh] overflow-y-auto">
+        <div className="p-3.5 sm:p-6 space-y-4 sm:space-y-5 max-h-[85vh] overflow-y-auto">
 
           {/* BELOW 3,000 BDT BALANCE WARNING BANNER */}
           {!hasSufficientBalance && (
-            <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs flex items-start gap-3 shadow-md">
-              <Lock className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
-              <div className="space-y-1 w-full">
-                <div className="flex items-center justify-between">
-                  <span className="font-black text-amber-400 flex items-center gap-1.5 text-xs uppercase tracking-wide">
-                    🔒 Number Activation Locked (&lt; ৳3,000 BDT Balance)
+            <div className="p-3 sm:p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs flex items-start gap-2.5 sm:gap-3 shadow-md">
+              <Lock className="w-4 h-4 sm:w-5 sm:h-5 text-amber-400 shrink-0 mt-0.5" />
+              <div className="space-y-1 w-full min-w-0">
+                <div className="flex flex-col xs:flex-row xs:items-center justify-between gap-1">
+                  <span className="font-black text-amber-400 flex items-center gap-1 text-[11px] sm:text-xs uppercase tracking-wide">
+                    🔒 Number Activation Locked
                   </span>
-                  <span className="text-[11px] font-black text-amber-300 bg-amber-500/20 px-2 py-0.5 rounded-lg border border-amber-500/40">
+                  <span className="text-[10px] sm:text-[11px] font-black text-amber-300 bg-amber-500/20 px-2 py-0.5 rounded-lg border border-amber-500/40 self-start xs:self-auto">
                     Current: {formatCurrency(agentBalanceBDT, 'BDT')}
                   </span>
                 </div>
-                <p className="text-[11px] text-slate-300 font-medium leading-relaxed">
-                  Wallet Agents must maintain a minimum floating liquidity balance of <strong>৳3,000 BDT</strong> ($27.27 USD) to activate collection numbers for receiving customer cash-in requests. All numbers remain locked until required float is added.
+                <p className="text-[10px] sm:text-[11px] text-slate-300 font-medium leading-relaxed">
+                  Wallet Agents must maintain a minimum floating liquidity balance of <strong>৳3,000 BDT</strong> ($27.27 USD) to activate collection numbers for receiving customer cash-in requests.
                 </p>
               </div>
             </div>
           )}
 
           {/* Action Header bar */}
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-2">
             <h4 className="text-xs font-black text-white uppercase tracking-wider">
               My Collection Numbers List
             </h4>
             <button
               onClick={() => setShowAddForm(!showAddForm)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#00c853] hover:bg-[#00e676] text-white text-xs font-black transition-all shadow-md shadow-emerald-950/50"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#00c853] hover:bg-[#00e676] text-white text-xs font-black transition-all shadow-md shadow-emerald-950/50 shrink-0"
             >
               <Plus className="w-4 h-4" />
               <span>{showAddForm ? 'Cancel' : 'Add New Account'}</span>
@@ -387,41 +394,41 @@ export const CollectionAccountsModal: React.FC<CollectionAccountsModalProps> = (
               return (
                 <div
                   key={acc.id}
-                  className={`p-4 rounded-2xl border transition-all flex items-center justify-between ${
+                  className={`p-3 sm:p-4 rounded-2xl border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
                     isEligibleActive
                       ? 'bg-[#1a294e] border-[#233763]'
                       : 'bg-[#121e3d] border-[#233763] opacity-75'
                   }`}
                 >
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-[#121e3d] border border-[#233763] flex items-center justify-center shrink-0">
-                      <Smartphone className="w-5 h-5 text-[#00c853]" />
+                  <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
+                    <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-[#121e3d] border border-[#233763] flex items-center justify-center shrink-0">
+                      <Smartphone className="w-4.5 h-4.5 sm:w-5 sm:h-5 text-[#00c853]" />
                     </div>
 
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-mono font-black text-sm text-white">{acc.accountNumber}</span>
-                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-black ${getProviderBadge(acc.provider)}`}>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                        <span className="font-mono font-black text-xs sm:text-sm text-white">{acc.accountNumber}</span>
+                        <span className={`px-1.5 sm:px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-black ${getProviderBadge(acc.provider)} shrink-0`}>
                           {acc.provider}
                         </span>
-                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${getCategoryBadge(acc.accountCategory)}`}>
+                        <span className={`px-1.5 sm:px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-bold ${getCategoryBadge(acc.accountCategory)} shrink-0`}>
                           {acc.accountCategory?.toUpperCase()}
                         </span>
                       </div>
 
-                      <div className="text-[11px] text-slate-400 mt-0.5 font-medium flex items-center gap-3">
-                        {acc.accountName && <span>Holder: {acc.accountName}</span>}
-                        {acc.notes && <span>• {acc.notes}</span>}
+                      <div className="text-[10px] sm:text-[11px] text-slate-400 mt-0.5 font-medium flex flex-wrap items-center gap-1.5 sm:gap-3">
+                        {acc.accountName && <span className="truncate max-w-[160px] sm:max-w-none">Holder: {acc.accountName}</span>}
+                        {acc.notes && <span className="truncate max-w-[160px] sm:max-w-none">• {acc.notes}</span>}
                       </div>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center justify-between sm:justify-end gap-2 w-full sm:w-auto pt-2 sm:pt-0 border-t sm:border-t-0 border-[#233763]/60 shrink-0">
                     <button
                       onClick={() => handleToggleStatus(acc)}
                       disabled={isActivationDisabled}
                       title={isActivationDisabled ? 'Activation Locked: Minimum ৳3,000 BDT float balance required.' : ''}
-                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+                      className={`flex-1 sm:flex-initial px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
                         isEligibleActive
                           ? 'bg-[#00c853]/20 text-[#00c853] border border-[#00c853]/40 hover:bg-[#00c853]/30 cursor-pointer'
                           : isActivationDisabled
@@ -441,7 +448,7 @@ export const CollectionAccountsModal: React.FC<CollectionAccountsModalProps> = (
 
                     <button
                       onClick={() => handleDelete(acc.id)}
-                      className="p-2 rounded-xl text-slate-400 hover:text-rose-400 hover:bg-[#121e3d] border border-transparent hover:border-rose-500/30 transition-colors"
+                      className="p-2 rounded-xl text-slate-400 hover:text-rose-400 hover:bg-[#121e3d] border border-transparent hover:border-rose-500/30 transition-colors shrink-0"
                       title="Delete Account"
                     >
                       <Trash2 className="w-4 h-4" />

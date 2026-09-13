@@ -442,10 +442,17 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         const agentUuid = agData.id;
         const agentCode = agData.agent_code;
 
-        // Delete dependent rows first to prevent FK constraint errors
-        await supabase.from('transactions').delete().or(`agent_id.eq.${agentUuid},agent_code.eq.${agentCode}`);
-        await supabase.from('kyc_documents').delete().eq('agent_code', agentCode);
-        await supabase.from('customers').delete().eq('agent_id', agentUuid);
+        // Delete all dependent records across tables to avoid foreign key violations
+        await Promise.allSettled([
+          supabase.from('transactions').delete().or(`agent_id.eq.${agentUuid},agent_code.eq.${agentCode}`),
+          supabase.from('deposit_requests').delete().or(`agent_id.eq.${agentUuid},agent_code.eq.${agentCode}`),
+          supabase.from('withdrawal_requests').delete().or(`agent_id.eq.${agentUuid},agent_code.eq.${agentCode}`),
+          supabase.from('wallet_transactions').delete().eq('agent_id', agentUuid),
+          supabase.from('commission_transactions').delete().eq('agent_id', agentUuid),
+          supabase.from('kyc_documents').delete().eq('agent_code', agentCode),
+          supabase.from('customers').delete().eq('agent_id', agentUuid),
+          supabase.from('collection_accounts').update({ agent_code: null }).eq('agent_code', agentCode)
+        ]);
 
         // Delete main agent row
         const { error: delError } = await supabase.from('agents').delete().eq('id', agentUuid);
@@ -462,8 +469,13 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         }
       } else {
         // Fallback delete by agent_code string
-        await supabase.from('kyc_documents').delete().eq('agent_code', id);
-        await supabase.from('agents').delete().eq('agent_code', id);
+        await Promise.allSettled([
+          supabase.from('transactions').delete().eq('agent_code', id),
+          supabase.from('deposit_requests').delete().eq('agent_code', id),
+          supabase.from('withdrawal_requests').delete().eq('agent_code', id),
+          supabase.from('kyc_documents').delete().eq('agent_code', id),
+          supabase.from('agents').delete().eq('agent_code', id)
+        ]);
       }
 
       showToast('info', 'Agent Deleted 🗑️', `Agent account ${id} and associated records removed.`);

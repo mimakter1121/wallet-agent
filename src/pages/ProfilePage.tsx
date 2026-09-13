@@ -24,7 +24,7 @@ import {
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { CollectionAccountsModal } from '../components/modals/CollectionAccountsModal';
-import { getCollectionAccounts } from '../config/collectionAccounts';
+import { collectionAccountService } from '../services/collectionAccountService';
 import { storageService } from '../services/storageService';
 
 export const ProfilePage: React.FC = () => {
@@ -33,7 +33,7 @@ export const ProfilePage: React.FC = () => {
     updateAgentProfile,
     sessions, 
     terminateSession, 
-    terminateAllOtherSessions, 
+    terminateAllOtherSessions,
     showToast,
     triggerPwaInstall,
     isInstallPromptAvailable
@@ -41,7 +41,16 @@ export const ProfilePage: React.FC = () => {
 
   const [activeTab, setActiveTab] = useState<'profile' | 'security' | 'preferences'>('profile');
   const [isCollectionModalOpen, setIsCollectionModalOpen] = useState(false);
-  const [accountsCount, setAccountsCount] = useState(() => getCollectionAccounts().filter(a => a.status === 'active').length);
+  const [accountsCount, setAccountsCount] = useState<number>(0);
+
+  useEffect(() => {
+    const agentCode = agent.id || (agent as any).agentCode;
+    if (agentCode) {
+      collectionAccountService.fetchAllAccounts(agentCode).then(accs => {
+        setAccountsCount(accs.filter(a => a.status === 'active').length);
+      });
+    }
+  }, [agent.id, (agent as any).agentCode]);
   const [avatarUrl, setAvatarUrl] = useState(agent.avatar);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   
@@ -668,7 +677,14 @@ export const ProfilePage: React.FC = () => {
       <CollectionAccountsModal
         isOpen={isCollectionModalOpen}
         onClose={() => setIsCollectionModalOpen(false)}
-        onUpdate={() => setAccountsCount(getCollectionAccounts().filter(a => a.status === 'active').length)}
+        onUpdate={() => {
+          const agentCode = agent.id || (agent as any).agentCode;
+          if (agentCode) {
+            collectionAccountService.fetchAllAccounts(agentCode).then(accs => {
+              setAccountsCount(accs.filter(a => a.status === 'active').length);
+            });
+          }
+        }}
       />
     </div>
   );

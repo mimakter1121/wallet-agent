@@ -54,7 +54,11 @@ export const CustomerPortalPage: React.FC = () => {
     setSelectedAgentNumber(accountNum);
     const matched = activeCollectionAccounts.find(a => a.account_number === accountNum);
     if (matched && matched.agent_code) {
-      setTargetAgentCode(matched.agent_code);
+      const foundAg = agents.find(
+        ag => ag.id.toLowerCase() === matched.agent_code.toLowerCase() || 
+              (ag as any).dbId === matched.agent_code
+      );
+      setTargetAgentCode(foundAg ? foundAg.id : matched.agent_code);
     }
   };
 
@@ -65,9 +69,14 @@ export const CustomerPortalPage: React.FC = () => {
       (newMethod.includes('USDT') && acc.provider.includes('USDT'))
     );
     if (filtered.length > 0) {
-      setSelectedAgentNumber(filtered[0].account_number);
+      const firstNum = filtered[0].account_number;
+      setSelectedAgentNumber(firstNum);
       if (filtered[0].agent_code) {
-        setTargetAgentCode(filtered[0].agent_code);
+        const foundAg = agents.find(
+          ag => ag.id.toLowerCase() === filtered[0].agent_code.toLowerCase() || 
+                (ag as any).dbId === filtered[0].agent_code
+        );
+        setTargetAgentCode(foundAg ? foundAg.id : filtered[0].agent_code);
       }
     }
   };

@@ -97,14 +97,14 @@ export const DepositPage: React.FC = () => {
     <div className="space-y-6 animate-fadeIn pb-10 text-white">
       
       {/* Top Banner */}
-      <div className="bg-[#121e3d] border border-[#233763] rounded-3xl p-6 shadow-card flex items-center justify-between">
-        <div className="flex items-center gap-3.5">
-          <div className="w-11 h-11 rounded-2xl bg-[#00c853]/20 text-[#00c853] border border-[#00c853]/40 flex items-center justify-center font-black">
-            <ArrowDownLeft className="w-6 h-6" />
+      <div className="bg-[#121e3d] border border-[#233763] rounded-3xl p-4 sm:p-6 shadow-card flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex items-center gap-3 sm:gap-3.5 min-w-0 flex-1">
+          <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-[#00c853]/20 text-[#00c853] border border-[#00c853]/40 flex items-center justify-center font-black shrink-0">
+            <ArrowDownLeft className="w-5 h-5 sm:w-6 sm:h-6" />
           </div>
-          <div>
-            <h2 className="text-lg font-black text-white">Customer Deposit Requests Queue</h2>
-            <p className="text-xs text-slate-300 font-medium">
+          <div className="min-w-0">
+            <h2 className="text-base sm:text-lg font-black text-white">Customer Deposit Requests Queue</h2>
+            <p className="text-[11px] sm:text-xs text-slate-300 font-medium">
               Live clearance stream of incoming customer cash-in requests
             </p>
           </div>
@@ -112,7 +112,7 @@ export const DepositPage: React.FC = () => {
 
         <button
           onClick={fetchLiveDepositRequests}
-          className="px-3.5 py-2 rounded-xl bg-[#1a294e] hover:bg-[#233763] border border-[#233763] text-slate-200 text-xs font-bold flex items-center gap-2 transition-all"
+          className="self-start sm:self-auto px-3.5 py-2 rounded-xl bg-[#1a294e] hover:bg-[#233763] border border-[#233763] text-slate-200 text-xs font-bold flex items-center gap-2 transition-all shrink-0"
         >
           <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
           <span>Refresh Queue</span>
@@ -120,13 +120,13 @@ export const DepositPage: React.FC = () => {
       </div>
 
       {/* Main Clearance Table */}
-      <div className="bg-[#121e3d] border border-[#233763] rounded-3xl p-6 shadow-card space-y-4">
-        <div className="flex items-center justify-between pb-3 border-b border-[#233763]">
-          <h3 className="text-sm font-black text-white flex items-center gap-2">
-            <ArrowDownLeft className="w-4 h-4 text-[#00c853]" />
+      <div className="bg-[#121e3d] border border-[#233763] rounded-3xl p-4 sm:p-6 shadow-card space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-[#233763]">
+          <h3 className="text-xs sm:text-sm font-black text-white flex items-center gap-2">
+            <ArrowDownLeft className="w-4 h-4 text-[#00c853] shrink-0" />
             <span>Incoming Customer Deposit Queue ({liveDepositRequests.length})</span>
           </h3>
-          <span className="text-[10px] font-black bg-[#00c853]/20 text-[#00c853] border border-[#00c853]/40 px-2.5 py-1 rounded-full uppercase">
+          <span className="text-[9px] sm:text-[10px] font-black bg-[#00c853]/20 text-[#00c853] border border-[#00c853]/40 px-2.5 py-1 rounded-full uppercase shrink-0">
             LIVE AGENT CLEARANCE DESK
           </span>
         </div>
