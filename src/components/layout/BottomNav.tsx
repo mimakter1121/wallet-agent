@@ -8,6 +8,9 @@ import {
   Plus, 
   ArrowDownLeft, 
   ArrowUpRight,
+  Award,
+  Network,
+  ShieldCheck,
   X
 } from 'lucide-react';
 import { useApp, PageId } from '../../context/AppContext';
@@ -36,8 +39,16 @@ export const BottomNav: React.FC = () => {
             onClick={(e) => e.stopPropagation()}
             className="bg-[#121e3d] border border-[#233763] rounded-3xl p-4 shadow-2xl space-y-2 animate-slideUp text-white"
           >
-            <div className="text-xs font-black text-slate-300 uppercase tracking-wider px-2 pb-1">
-              Quick Agent Operations
+            <div className="flex items-center justify-between px-2 pb-1">
+              <span className="text-xs font-black text-slate-300 uppercase tracking-wider">
+                Quick Operations & Services
+              </span>
+              <button
+                onClick={() => setShowFabMenu(false)}
+                className="p-1 rounded-lg text-slate-400 hover:text-white"
+              >
+                <X className="w-4 h-4" />
+              </button>
             </div>
             
             <button
@@ -45,14 +56,14 @@ export const BottomNav: React.FC = () => {
                 setShowFabMenu(false);
                 setCurrentPage('deposits');
               }}
-              className="w-full flex items-center gap-3 p-3 rounded-2xl bg-[#00c853]/20 border border-[#00c853]/40 text-[#00c853] font-black text-xs transition-all active:scale-98"
+              className="w-full flex items-center gap-3 p-2.5 rounded-2xl bg-[#00c853]/20 border border-[#00c853]/40 text-[#00c853] font-black text-xs transition-all active:scale-98"
             >
-              <div className="w-8 h-8 rounded-xl bg-[#00c853] text-white flex items-center justify-center font-bold">
+              <div className="w-8 h-8 rounded-xl bg-[#00c853] text-white flex items-center justify-center font-bold flex-shrink-0">
                 <ArrowDownLeft className="w-4 h-4" />
               </div>
               <div className="text-left">
-                <div className="font-black text-sm text-white">New Deposit Request</div>
-                <div className="text-[11px] text-[#00c853]">Collect & credit customer funds</div>
+                <div className="font-black text-xs text-white">New Deposit Request</div>
+                <div className="text-[10px] text-[#00c853]">Collect & credit customer funds</div>
               </div>
             </button>
 
@@ -61,14 +72,69 @@ export const BottomNav: React.FC = () => {
                 setShowFabMenu(false);
                 setCurrentPage('withdrawals');
               }}
-              className="w-full flex items-center gap-3 p-3 rounded-2xl bg-[#1a294e] border border-[#233763] text-white font-bold text-xs transition-all active:scale-98"
+              className="w-full flex items-center gap-3 p-2.5 rounded-2xl bg-[#1a294e] border border-[#233763] text-white font-bold text-xs transition-all active:scale-98"
             >
-              <div className="w-8 h-8 rounded-xl bg-[#00b0ff]/20 border border-[#00b0ff]/40 text-[#00b0ff] flex items-center justify-center font-bold">
+              <div className="w-8 h-8 rounded-xl bg-[#00b0ff]/20 border border-[#00b0ff]/40 text-[#00b0ff] flex items-center justify-center font-bold flex-shrink-0">
                 <ArrowUpRight className="w-4 h-4" />
               </div>
               <div className="text-left">
-                <div className="font-bold text-sm text-white">Process Withdrawal</div>
-                <div className="text-[11px] text-slate-300">Disburse customer cashout request</div>
+                <div className="font-bold text-xs text-white">Process Withdrawal</div>
+                <div className="text-[10px] text-slate-300">Disburse customer cashout request</div>
+              </div>
+            </button>
+
+            {/* Direct Mobile Links to Commission & Network */}
+            <button
+              onClick={() => {
+                setShowFabMenu(false);
+                setCurrentPage('commission');
+              }}
+              className="w-full flex items-center gap-3 p-2.5 rounded-2xl bg-[#1a294e] border border-[#233763] hover:border-amber-500/50 text-white font-bold text-xs transition-all active:scale-98"
+            >
+              <div className="w-8 h-8 rounded-xl bg-amber-500/20 border border-amber-500/40 text-amber-400 flex items-center justify-center font-bold flex-shrink-0">
+                <Award className="w-4 h-4" />
+              </div>
+              <div className="text-left flex-1">
+                <div className="font-bold text-xs text-white flex items-center justify-between">
+                  <span>Commission Center</span>
+                  <span className="text-[9px] font-black px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-400">Earn</span>
+                </div>
+                <div className="text-[10px] text-slate-300">Accrued yields, settlements & claim ledger</div>
+              </div>
+            </button>
+
+            <button
+              onClick={() => {
+                setShowFabMenu(false);
+                setCurrentPage('network');
+              }}
+              className="w-full flex items-center gap-3 p-2.5 rounded-2xl bg-[#1a294e] border border-[#233763] hover:border-[#00b0ff]/50 text-white font-bold text-xs transition-all active:scale-98"
+            >
+              <div className="w-8 h-8 rounded-xl bg-[#00b0ff]/20 border border-[#00b0ff]/40 text-[#00b0ff] flex items-center justify-center font-bold flex-shrink-0">
+                <Network className="w-4 h-4" />
+              </div>
+              <div className="text-left flex-1">
+                <div className="font-bold text-xs text-white flex items-center justify-between">
+                  <span>Sub-Agent Network</span>
+                  <span className="text-[9px] font-black px-1.5 py-0.2 rounded bg-[#00b0ff]/20 text-[#00b0ff]">Team</span>
+                </div>
+                <div className="text-[10px] text-slate-300">Partner hierarchy tree & sub-agent referrals</div>
+              </div>
+            </button>
+
+            <button
+              onClick={() => {
+                setShowFabMenu(false);
+                setCurrentPage('kyc');
+              }}
+              className="w-full flex items-center gap-3 p-2 rounded-2xl bg-[#1a294e]/60 border border-[#233763] text-slate-300 font-bold text-xs transition-all active:scale-98"
+            >
+              <div className="w-7 h-7 rounded-xl bg-slate-700/50 text-slate-300 flex items-center justify-center font-bold flex-shrink-0">
+                <ShieldCheck className="w-3.5 h-3.5" />
+              </div>
+              <div className="text-left">
+                <div className="font-bold text-xs text-slate-200">KYC & Regulatory Verification</div>
+                <div className="text-[10px] text-slate-400">Verification tiers & clearance limits</div>
               </div>
             </button>
           </div>

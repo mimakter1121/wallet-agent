@@ -13,7 +13,19 @@ import {
   Download,
   Building2,
   CheckCircle2,
-  FileCheck
+  FileCheck,
+  Menu,
+  X,
+  LayoutDashboard,
+  Wallet,
+  ArrowDownLeft,
+  ArrowUpRight,
+  Users,
+  ReceiptText,
+  Award,
+  Network,
+  HelpCircle,
+  Settings
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 
@@ -35,6 +47,7 @@ export const Header: React.FC = () => {
 
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showNotifDropdown, setShowNotifDropdown] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const getPageTitle = () => {
     switch (currentPage) {
@@ -58,8 +71,17 @@ export const Header: React.FC = () => {
     <header className="sticky top-0 z-30 bg-[#121e3d] border-b border-[#233763] shadow-md">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
         
-        {/* Left: Brand/Logo & Title */}
-        <div className="flex items-center gap-3">
+        {/* Left: Hamburger (mobile), Brand/Logo & Title */}
+        <div className="flex items-center gap-2.5 sm:gap-3">
+          <button
+            type="button"
+            onClick={() => setIsMobileMenuOpen(true)}
+            className="lg:hidden p-2 rounded-xl bg-[#1a294e] border border-[#233763] text-white hover:border-[#00c853] transition-colors active:scale-95 flex items-center justify-center"
+            aria-label="Open Navigation Menu"
+          >
+            <Menu className="w-5 h-5" />
+          </button>
+
           <div 
             onClick={() => setCurrentPage('dashboard')}
             className="flex items-center gap-2.5 cursor-pointer select-none"
@@ -287,6 +309,194 @@ export const Header: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Mobile Navigation Drawer */}
+      {isMobileMenuOpen && (
+        <div 
+          onClick={() => setIsMobileMenuOpen(false)}
+          className="lg:hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex animate-fadeIn select-none"
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            className="w-72 max-w-[85vw] bg-[#121e3d] border-r border-[#233763] h-full flex flex-col justify-between shadow-2xl animate-slideRight text-white"
+          >
+            {/* Drawer Header */}
+            <div className="p-4 border-b border-[#233763]">
+              <div className="flex items-center justify-between mb-3.5">
+                <div className="flex items-center gap-2">
+                  <img src="/logo.png" alt="Baji Agent" className="h-8 object-contain" />
+                  <span className="text-[10px] uppercase font-black bg-[#00c853]/20 text-[#00c853] px-2 py-0.5 rounded border border-[#00c853]/40">
+                    PORTAL
+                  </span>
+                </div>
+                <button
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="p-1.5 rounded-xl bg-[#1a294e] border border-[#233763] text-slate-300 hover:text-white"
+                  aria-label="Close Navigation Menu"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Agent info mini badge */}
+              <div className="flex items-center gap-3 p-2.5 rounded-2xl bg-[#1a294e] border border-[#233763]">
+                <img
+                  src={agent.avatar || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80'}
+                  alt={agent.name}
+                  className="w-10 h-10 rounded-xl object-cover border border-[#00c853]"
+                />
+                <div className="min-w-0 flex-1">
+                  <div className="text-xs font-black text-white truncate">{agent.name}</div>
+                  <div className="text-[10px] text-[#00c853] font-mono font-bold flex items-center gap-1">
+                    <ShieldCheck className="w-3 h-3 flex-shrink-0" />
+                    <span>{agent.id}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Navigation Links Scrollable Area */}
+            <div className="flex-1 overflow-y-auto p-3 space-y-4">
+              <div>
+                <div className="text-[10px] font-black uppercase text-[#00c853] tracking-wider px-3 pb-1">
+                  Financial Operations
+                </div>
+                <div className="space-y-1">
+                  {[
+                    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+                    { id: 'wallet', label: 'Wallet & Liquidity', icon: Wallet },
+                    { id: 'deposits', label: 'Deposit Requests', icon: ArrowDownLeft },
+                    { id: 'withdrawals', label: 'Withdrawal Requests', icon: ArrowUpRight },
+                    { id: 'customers', label: 'Customer Directory', icon: Users },
+                    { id: 'transactions', label: 'Transactions & Ledger', icon: ReceiptText },
+                  ].map((item) => {
+                    const Icon = item.icon;
+                    const isActive = currentPage === item.id;
+                    return (
+                      <button
+                        key={item.id}
+                        onClick={() => {
+                          setCurrentPage(item.id as any);
+                          setIsMobileMenuOpen(false);
+                        }}
+                        className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all ${
+                          isActive
+                            ? 'bg-[#00c853] text-white shadow-md'
+                            : 'text-slate-200 hover:bg-[#1a294e] hover:text-white'
+                        }`}
+                      >
+                        <Icon className="w-4 h-4 flex-shrink-0" />
+                        <span>{item.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div>
+                <div className="text-[10px] font-black uppercase text-[#00b0ff] tracking-wider px-3 pb-1">
+                  Revenue & Partner Growth
+                </div>
+                <div className="space-y-1">
+                  {[
+                    { id: 'commission', label: 'Commission Center', icon: Award, highlight: true },
+                    { id: 'network', label: 'Sub-Agent Network', icon: Network, highlight: true },
+                    { id: 'kyc', label: 'Verification & KYC', icon: ShieldCheck },
+                  ].map((item) => {
+                    const Icon = item.icon;
+                    const isActive = currentPage === item.id;
+                    return (
+                      <button
+                        key={item.id}
+                        onClick={() => {
+                          setCurrentPage(item.id as any);
+                          setIsMobileMenuOpen(false);
+                        }}
+                        className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all ${
+                          isActive
+                            ? 'bg-[#00c853] text-white shadow-md'
+                            : item.highlight
+                            ? 'text-white bg-[#1a294e]/70 border border-[#233763] hover:border-[#00c853]'
+                            : 'text-slate-200 hover:bg-[#1a294e] hover:text-white'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <Icon className={`w-4 h-4 flex-shrink-0 ${item.id === 'commission' ? 'text-amber-400' : item.id === 'network' ? 'text-[#00b0ff]' : ''}`} />
+                          <span>{item.label}</span>
+                        </div>
+                        {item.id === 'commission' && (
+                          <span className="text-[9px] font-black px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400 border border-amber-500/40">
+                            Earn
+                          </span>
+                        )}
+                        {item.id === 'network' && (
+                          <span className="text-[9px] font-black px-1.5 py-0.5 rounded bg-[#00b0ff]/20 text-[#00b0ff] border border-[#00b0ff]/40">
+                            Team
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div>
+                <div className="text-[10px] font-black uppercase text-slate-400 tracking-wider px-3 pb-1">
+                  Account & Support
+                </div>
+                <div className="space-y-1">
+                  {[
+                    { id: 'profile', label: 'Profile & Security', icon: Settings },
+                    { id: 'support', label: 'Support & Help Desk', icon: HelpCircle },
+                    { id: 'notifications', label: 'Notifications', icon: Bell, badge: unreadCount > 0 ? unreadCount : undefined },
+                  ].map((item) => {
+                    const Icon = item.icon;
+                    const isActive = currentPage === item.id;
+                    return (
+                      <button
+                        key={item.id}
+                        onClick={() => {
+                          setCurrentPage(item.id as any);
+                          setIsMobileMenuOpen(false);
+                        }}
+                        className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all ${
+                          isActive
+                            ? 'bg-[#00c853] text-white shadow-md'
+                            : 'text-slate-200 hover:bg-[#1a294e] hover:text-white'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <Icon className="w-4 h-4 flex-shrink-0" />
+                          <span>{item.label}</span>
+                        </div>
+                        {item.badge && (
+                          <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-rose-500 text-white">
+                            {item.badge}
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            {/* Drawer Footer: Logout */}
+            <div className="p-4 border-t border-[#233763]">
+              <button
+                onClick={() => {
+                  setIsMobileMenuOpen(false);
+                  logout();
+                }}
+                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 font-bold text-xs transition-colors"
+              >
+                <LogOut className="w-4 h-4" />
+                <span>Sign Out Account</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </header>
   );
 };
