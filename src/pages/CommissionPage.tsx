@@ -6,49 +6,23 @@ import {
   ArrowUpRight, 
   Sparkles, 
   ShieldCheck,
-  RefreshCw
+  Crown,
+  CheckCircle2,
+  Lock
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { CommissionChart } from '../components/charts/CommissionChart';
 import { StatCard } from '../components/common/StatCard';
 import { TypeBadge } from '../components/common/StatusBadge';
 import { ClaimCommissionModal } from '../components/modals/ClaimCommissionModal';
-import { supabase } from '../lib/supabase/client';
 
 export const CommissionPage: React.FC = () => {
-  const { agent, transactions } = useApp();
+  const { agent, transactions, commissionRates, allTierRates, agentTierNum } = useApp();
   const [isClaimOpen, setIsClaimOpen] = useState(false);
   const [filterType, setFilterType] = useState('all');
 
-  // Fetch live system settings commission rates
-  const [depRate, setDepRate] = useState(0.015);
-  const [wthRate, setWthRate] = useState(0.012);
-  const [loadingRates, setLoadingRates] = useState(true);
-
-  useEffect(() => {
-    const fetchRates = async () => {
-      try {
-        const { data } = await supabase
-          .from('system_settings')
-          .select('key, value')
-          .in('key', ['deposit_commission_rate', 'withdrawal_commission_rate']);
-
-        if (data && data.length > 0) {
-          data.forEach((row: { key: string; value: string }) => {
-            const val = parseFloat(row.value) / 100;
-            if (row.key === 'deposit_commission_rate' && !isNaN(val)) setDepRate(val);
-            if (row.key === 'withdrawal_commission_rate' && !isNaN(val)) setWthRate(val);
-          });
-        }
-      } catch (err) {
-        console.error('Error fetching commission rates in CommissionPage:', err);
-      } finally {
-        setLoadingRates(false);
-      }
-    };
-
-    fetchRates();
-  }, []);
+  const depRate = commissionRates.deposit;
+  const wthRate = commissionRates.withdrawal;
 
   // Build commission ledger from live approved transactions with dynamic rates
   const commissionLedger = transactions
@@ -75,8 +49,8 @@ export const CommissionPage: React.FC = () => {
   const totalDepComm = commissionLedger.filter(c => c.type === 'deposit').reduce((acc, c) => acc + c.commissionAmount, 0);
   const totalWthComm = commissionLedger.filter(c => c.type === 'withdrawal').reduce((acc, c) => acc + c.commissionAmount, 0);
 
-  const depRatePercentText = (depRate * 100).toFixed(1) + '% per cash-in';
-  const wthRatePercentText = (wthRate * 100).toFixed(1) + '% per cash-out';
+  const depRatePercentText = `${(depRate * 100).toFixed(1)}% per cash-in`;
+  const wthRatePercentText = `${(wthRate * 100).toFixed(1)}% per cash-out`;
 
   return (
     <div className="space-y-6 animate-fadeIn pb-10 text-white">
@@ -90,7 +64,9 @@ export const CommissionPage: React.FC = () => {
           <div>
             <h2 className="text-lg font-black text-white flex items-center gap-2">
               <span>Commission & Revenue Center</span>
-              {loadingRates && <RefreshCw className="w-3.5 h-3.5 animate-spin text-slate-400" />}
+              <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[10px] font-black uppercase">
+                Tier {agentTierNum} Active
+              </span>
             </h2>
             <p className="text-xs text-slate-300 font-medium">
               Real-time settlement revenue earned from customer transaction clearance
@@ -122,7 +98,7 @@ export const CommissionPage: React.FC = () => {
         <StatCard
           title="Deposit Commission"
           value={`+$${totalDepComm.toFixed(2)}`}
-          subtitle={depRatePercentText}
+          subtitle={`${depRatePercentText} (Tier ${agentTierNum})`}
           icon={ArrowDownLeft}
           iconBgColor="bg-[#00c853]/15 border-[#00c853]/30"
           iconColor="text-[#00c853]"
@@ -131,20 +107,155 @@ export const CommissionPage: React.FC = () => {
         <StatCard
           title="Withdrawal Commission"
           value={`+$${totalWthComm.toFixed(2)}`}
-          subtitle={wthRatePercentText}
+          subtitle={`${wthRatePercentText} (Tier ${agentTierNum})`}
           icon={ArrowUpRight}
           iconBgColor="bg-[#00b0ff]/15 border-[#00b0ff]/30"
           iconColor="text-[#00b0ff]"
         />
 
         <StatCard
-          title="Clearance Tier"
-          value={agent.kycLevel}
-          subtitle="Commission Tier"
-          icon={ShieldCheck}
-          iconBgColor="bg-purple-500/15 border-purple-500/30"
-          iconColor="text-purple-400"
+          title="Active Tier Status"
+          value={`Tier ${agentTierNum} • ${agentTierNum === 3 ? 'Master' : agentTierNum === 2 ? 'Business' : 'Basic'}`}
+          subtitle={agentTierNum === 3 ? 'Max 6.0% + Referrals Active' : 'Upgrade for Higher Rates'}
+          icon={agentTierNum === 3 ? Crown : ShieldCheck}
+          iconBgColor={agentTierNum === 3 ? "bg-amber-500/15 border-amber-500/30" : "bg-purple-500/15 border-purple-500/30"}
+          iconColor={agentTierNum === 3 ? "text-amber-400" : "text-purple-400"}
         />
+      </div>
+
+      {/* Tier Commission Matrix */}
+      <div className="bg-[#121e3d] border border-[#233763] rounded-3xl p-5 sm:p-6 shadow-card">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4 pb-3 border-b border-[#233763]">
+          <div>
+            <h3 className="text-sm font-black text-white flex items-center gap-2">
+              <Crown className="w-4 h-4 text-amber-400" />
+              <span>Platform Tier Commission Structure</span>
+            </h3>
+            <p className="text-xs text-slate-300 font-medium mt-0.5">
+              Your current earning rates are determined dynamically by your account tier level
+            </p>
+          </div>
+          <span className="text-xs font-bold text-slate-400">
+            Network Override: <strong className="text-amber-400 font-mono">+{(allTierRates.clearance * 100).toFixed(1)}%</strong>
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* Tier 1 Card */}
+          <div className={`p-4 rounded-2xl border transition-all relative ${
+            agentTierNum === 1
+              ? 'bg-gradient-to-b from-[#00c853]/15 to-[#121e3d] border-[#00c853] ring-1 ring-[#00c853]'
+              : 'bg-[#1a294e]/50 border-[#233763] opacity-80'
+          }`}>
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <span className="w-6 h-6 rounded-lg bg-slate-700/60 text-slate-200 text-xs font-black flex items-center justify-center">1</span>
+                <span className="font-bold text-white text-sm">Tier 1 • Basic</span>
+              </div>
+              {agentTierNum === 1 && (
+                <span className="px-2 py-0.5 rounded-full bg-[#00c853] text-white text-[10px] font-black uppercase flex items-center gap-1">
+                  <CheckCircle2 className="w-3 h-3" /> Current
+                </span>
+              )}
+            </div>
+            <div className="space-y-2 text-xs">
+              <div className="flex justify-between items-center py-1 border-b border-white/5">
+                <span className="text-slate-300">Deposit Commission:</span>
+                <span className="font-mono font-black text-emerald-400 text-sm">{(allTierRates.tier1.deposit * 100).toFixed(1)}%</span>
+              </div>
+              <div className="flex justify-between items-center py-1 border-b border-white/5">
+                <span className="text-slate-300">Withdrawal Commission:</span>
+                <span className="font-mono font-black text-sky-400 text-sm">{(allTierRates.tier1.withdrawal * 100).toFixed(1)}%</span>
+              </div>
+              <div className="flex justify-between items-center py-1 border-b border-white/5">
+                <span className="text-slate-300">Daily Volume Limit:</span>
+                <span className="font-mono font-bold text-slate-300">$200 / day</span>
+              </div>
+              <div className="flex justify-between items-center pt-1 text-slate-400">
+                <span>Sub-Agent Referrals:</span>
+                <span className="flex items-center gap-1 text-slate-500 font-bold text-[11px]"><Lock className="w-3 h-3" /> Locked</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Tier 2 Card */}
+          <div className={`p-4 rounded-2xl border transition-all relative ${
+            agentTierNum === 2
+              ? 'bg-gradient-to-b from-[#00c853]/15 to-[#121e3d] border-[#00c853] ring-1 ring-[#00c853]'
+              : 'bg-[#1a294e]/50 border-[#233763] opacity-80'
+          }`}>
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <span className="w-6 h-6 rounded-lg bg-sky-500/20 text-sky-400 border border-sky-500/30 text-xs font-black flex items-center justify-center">2</span>
+                <span className="font-bold text-white text-sm">Tier 2 • Business</span>
+              </div>
+              {agentTierNum === 2 && (
+                <span className="px-2 py-0.5 rounded-full bg-[#00c853] text-white text-[10px] font-black uppercase flex items-center gap-1">
+                  <CheckCircle2 className="w-3 h-3" /> Current
+                </span>
+              )}
+            </div>
+            <div className="space-y-2 text-xs">
+              <div className="flex justify-between items-center py-1 border-b border-white/5">
+                <span className="text-slate-300">Deposit Commission:</span>
+                <span className="font-mono font-black text-emerald-400 text-sm">{(allTierRates.tier2.deposit * 100).toFixed(1)}%</span>
+              </div>
+              <div className="flex justify-between items-center py-1 border-b border-white/5">
+                <span className="text-slate-300">Withdrawal Commission:</span>
+                <span className="font-mono font-black text-sky-400 text-sm">{(allTierRates.tier2.withdrawal * 100).toFixed(1)}%</span>
+              </div>
+              <div className="flex justify-between items-center py-1 border-b border-white/5">
+                <span className="text-slate-300">Daily Volume Limit:</span>
+                <span className="font-mono font-bold text-slate-300">$1,000 / day</span>
+              </div>
+              <div className="flex justify-between items-center pt-1 text-slate-400">
+                <span>Sub-Agent Referrals:</span>
+                <span className="flex items-center gap-1 text-slate-500 font-bold text-[11px]"><Lock className="w-3 h-3" /> Locked</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Tier 3 Card */}
+          <div className={`p-4 rounded-2xl border transition-all relative ${
+            agentTierNum === 3
+              ? 'bg-gradient-to-b from-amber-500/20 via-[#121e3d] to-[#121e3d] border-amber-500/60 ring-2 ring-amber-500/40 shadow-lg shadow-amber-950/40'
+              : 'bg-[#1a294e]/50 border-[#233763] opacity-80'
+          }`}>
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <span className="w-6 h-6 rounded-lg bg-amber-500/20 text-amber-400 border border-amber-500/40 text-xs font-black flex items-center justify-center">
+                  <Crown className="w-3.5 h-3.5" />
+                </span>
+                <span className="font-bold text-white text-sm">Tier 3 • Master Agent</span>
+              </div>
+              {agentTierNum === 3 && (
+                <span className="px-2 py-0.5 rounded-full bg-amber-500 text-slate-950 text-[10px] font-black uppercase flex items-center gap-1 shadow">
+                  <CheckCircle2 className="w-3 h-3" /> Active
+                </span>
+              )}
+            </div>
+            <div className="space-y-2 text-xs">
+              <div className="flex justify-between items-center py-1 border-b border-white/5">
+                <span className="text-slate-300">Deposit Commission:</span>
+                <span className="font-mono font-black text-amber-400 text-sm">{(allTierRates.tier3.deposit * 100).toFixed(1)}% (Max)</span>
+              </div>
+              <div className="flex justify-between items-center py-1 border-b border-white/5">
+                <span className="text-slate-300">Withdrawal Commission:</span>
+                <span className="font-mono font-black text-sky-400 text-sm">{(allTierRates.tier3.withdrawal * 100).toFixed(1)}% (Max)</span>
+              </div>
+              <div className="flex justify-between items-center py-1 border-b border-white/5">
+                <span className="text-slate-300">Daily Volume Limit:</span>
+                <span className="font-mono font-bold text-emerald-400">Unlimited Liquidity</span>
+              </div>
+              <div className="flex justify-between items-center pt-1 text-slate-300">
+                <span>Sub-Agent Network:</span>
+                <span className="font-bold text-amber-400 text-[11px] flex items-center gap-1">
+                  ✨ +{(allTierRates.clearance * 100).toFixed(1)}% Override
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Chart Breakdown */}

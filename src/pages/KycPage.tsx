@@ -220,6 +220,11 @@ export const KycPage: React.FC = () => {
               Daily Limit: $200.00 USD ({tierInfo.bdt200})
             </div>
 
+            <div className="mt-2 py-1.5 px-2.5 rounded-lg bg-[#121e3d] border border-[#233763] text-[11px] font-mono flex justify-between items-center">
+              <span className="text-slate-300">Commission:</span>
+              <span className="text-emerald-400 font-bold">4.0% Dep | 2.5% Wth</span>
+            </div>
+
             <ul className="mt-3 pt-2.5 border-t border-[#233763] space-y-1.5 text-xs text-slate-300 font-medium">
               <li className="flex items-center gap-2">
                 <Check className="w-3.5 h-3.5 text-[#00c853]" />
@@ -228,6 +233,10 @@ export const KycPage: React.FC = () => {
               <li className="flex items-center gap-2">
                 <Check className="w-3.5 h-3.5 text-[#00c853]" />
                 <span>Standard Cash-in & Cash-out</span>
+              </li>
+              <li className="flex items-center gap-2 text-slate-400">
+                <span className="text-slate-500 font-bold">🔒</span>
+                <span>Referrals: Locked (Requires Tier 3)</span>
               </li>
             </ul>
           </div>
@@ -264,6 +273,11 @@ export const KycPage: React.FC = () => {
               Daily Limit: $1,000.00 USD ({tierInfo.bdt1000})
             </div>
 
+            <div className="mt-2 py-1.5 px-2.5 rounded-lg bg-[#121e3d] border border-[#233763] text-[11px] font-mono flex justify-between items-center">
+              <span className="text-slate-300">Commission:</span>
+              <span className="text-emerald-400 font-bold">5.0% Dep | 3.0% Wth</span>
+            </div>
+
             <ul className="mt-3 pt-2.5 border-t border-[#233763] space-y-1.5 text-xs text-slate-300 font-medium">
               <li className="flex items-center gap-2">
                 <Check className="w-3.5 h-3.5 text-[#00c853]" />
@@ -272,6 +286,10 @@ export const KycPage: React.FC = () => {
               <li className="flex items-center gap-2">
                 <Check className="w-3.5 h-3.5 text-[#00c853]" />
                 <span>NID / Passport clearance</span>
+              </li>
+              <li className="flex items-center gap-2 text-slate-400">
+                <span className="text-slate-500 font-bold">🔒</span>
+                <span>Referrals: Locked (Requires Tier 3)</span>
               </li>
             </ul>
           </div>
@@ -308,6 +326,11 @@ export const KycPage: React.FC = () => {
               Daily Limit: Unlimited USD Liquidity
             </div>
 
+            <div className="mt-2 py-1.5 px-2.5 rounded-lg bg-[#121e3d] border border-[#233763] text-[11px] font-mono flex justify-between items-center">
+              <span className="text-slate-300">Commission:</span>
+              <span className="text-amber-400 font-black">6.0% Dep | 3.5% Wth</span>
+            </div>
+
             <ul className="mt-3 pt-2.5 border-t border-[#233763] space-y-1.5 text-xs text-slate-300 font-medium">
               <li className="flex items-center gap-2">
                 <Check className="w-3.5 h-3.5 text-[#00c853]" />
@@ -316,6 +339,10 @@ export const KycPage: React.FC = () => {
               <li className="flex items-center gap-2">
                 <Check className="w-3.5 h-3.5 text-[#00c853]" />
                 <span>Full MSB Trade License</span>
+              </li>
+              <li className="flex items-center gap-2 text-amber-400 font-bold">
+                <Check className="w-3.5 h-3.5 text-amber-400" />
+                <span>✨ Exclusive Sub-Agent Referrals (+0.5% Override)</span>
               </li>
             </ul>
           </div>

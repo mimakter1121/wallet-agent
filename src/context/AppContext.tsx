@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef, useMemo } from 'react';
 import { 
   AgentProfile, 
   Customer, 
@@ -154,6 +154,13 @@ interface AppContextType {
     withdrawal: number;
     clearance: number;
   };
+  allTierRates: {
+    tier1: { deposit: number; withdrawal: number };
+    tier2: { deposit: number; withdrawal: number };
+    tier3: { deposit: number; withdrawal: number };
+    clearance: number;
+  };
+  agentTierNum: 1 | 2 | 3;
 
   // PWA & Backend Status
   isInstallPromptAvailable: boolean;
@@ -246,15 +253,48 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     ? telegramUsername
     : `https://t.me/${telegramUsername.replace('@', '')}`;
 
-  const [commissionRates, setCommissionRates] = useState<{ deposit: number; withdrawal: number; clearance: number }>(() => {
-    const cached = localStorage.getItem('wa_commission_rates');
+  // Tier-based Commission Rates (Tier 1: 4%/2.5%, Tier 2: 5%/3%, Tier 3: 6%/3.5%)
+  const [allTierRates, setAllTierRates] = useState<{
+    tier1: { deposit: number; withdrawal: number };
+    tier2: { deposit: number; withdrawal: number };
+    tier3: { deposit: number; withdrawal: number };
+    clearance: number;
+  }>(() => {
+    const cached = localStorage.getItem('wa_tier_commission_rates');
     if (cached) {
       try {
         return JSON.parse(cached);
       } catch (_) {}
     }
-    return { deposit: 0.05, withdrawal: 0.03, clearance: 0.005 };
+    return {
+      tier1: { deposit: 0.04, withdrawal: 0.025 },
+      tier2: { deposit: 0.05, withdrawal: 0.030 },
+      tier3: { deposit: 0.06, withdrawal: 0.035 },
+      clearance: 0.005
+    };
   });
+  const allTierRatesRef = useRef(allTierRates);
+  useEffect(() => {
+    allTierRatesRef.current = allTierRates;
+  }, [allTierRates]);
+
+  const agentTierNum: 1 | 2 | 3 = useMemo(() => {
+    const level = (agent.kycLevel || '').toLowerCase();
+    if (level.includes('tier 3') || level.includes('master') || agent.balance >= 1000) return 3;
+    if (level.includes('tier 2') || level.includes('business') || agent.balance >= 200) return 2;
+    return 1;
+  }, [agent.kycLevel, agent.balance]);
+
+  // Dynamic commission rates for current agent based on active Tier
+  const commissionRates = useMemo(() => {
+    const t = agentTierNum === 3 ? allTierRates.tier3 : agentTierNum === 2 ? allTierRates.tier2 : allTierRates.tier1;
+    return {
+      deposit: t.deposit,
+      withdrawal: t.withdrawal,
+      clearance: allTierRates.clearance
+    };
+  }, [agentTierNum, allTierRates]);
+
   const commissionRatesRef = useRef(commissionRates);
   useEffect(() => {
     commissionRatesRef.current = commissionRates;
@@ -412,10 +452,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         if (sysSettingsRes && sysSettingsRes.length > 0) {
           const currentRates = getExchangeRates();
           const rateMap: Record<string, number> = {};
-          let newDep = commissionRatesRef.current.deposit;
-          let newWth = commissionRatesRef.current.withdrawal;
-          let newClr = commissionRatesRef.current.clearance;
-          let commUpdated = false;
+          let t1Dep = allTierRatesRef.current.tier1.deposit;
+          let t1Wth = allTierRatesRef.current.tier1.withdrawal;
+          let t2Dep = allTierRatesRef.current.tier2.deposit;
+          let t2Wth = allTierRatesRef.current.tier2.withdrawal;
+          let t3Dep = allTierRatesRef.current.tier3.deposit;
+          let t3Wth = allTierRatesRef.current.tier3.withdrawal;
+          let clr = allTierRatesRef.current.clearance;
+          let tierUpdated = false;
 
           sysSettingsRes.forEach((row: any) => {
             if (row.key === 'telegram_username') {
@@ -425,25 +469,47 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             if (row.key === 'usd_bdt_rate') rateMap['BDT'] = parseFloat(row.value);
             if (row.key === 'usd_inr_rate') rateMap['INR'] = parseFloat(row.value);
             if (row.key === 'usd_pkr_rate') rateMap['PKR'] = parseFloat(row.value);
-            if (row.key === 'deposit_commission_rate') {
+
+            if (row.key === 'tier1_deposit_rate') {
               const val = parseFloat(row.value) / 100;
-              if (!isNaN(val)) { newDep = val; commUpdated = true; }
+              if (!isNaN(val)) { t1Dep = val; tierUpdated = true; }
             }
-            if (row.key === 'withdrawal_commission_rate') {
+            if (row.key === 'tier1_withdrawal_rate') {
               const val = parseFloat(row.value) / 100;
-              if (!isNaN(val)) { newWth = val; commUpdated = true; }
+              if (!isNaN(val)) { t1Wth = val; tierUpdated = true; }
+            }
+            if (row.key === 'tier2_deposit_rate') {
+              const val = parseFloat(row.value) / 100;
+              if (!isNaN(val)) { t2Dep = val; tierUpdated = true; }
+            }
+            if (row.key === 'tier2_withdrawal_rate') {
+              const val = parseFloat(row.value) / 100;
+              if (!isNaN(val)) { t2Wth = val; tierUpdated = true; }
+            }
+            if (row.key === 'tier3_deposit_rate') {
+              const val = parseFloat(row.value) / 100;
+              if (!isNaN(val)) { t3Dep = val; tierUpdated = true; }
+            }
+            if (row.key === 'tier3_withdrawal_rate') {
+              const val = parseFloat(row.value) / 100;
+              if (!isNaN(val)) { t3Wth = val; tierUpdated = true; }
             }
             if (row.key === 'clearance_fee_rate') {
               const val = parseFloat(row.value) / 100;
-              if (!isNaN(val)) { newClr = val; commUpdated = true; }
+              if (!isNaN(val)) { clr = val; tierUpdated = true; }
             }
           });
 
-          if (commUpdated) {
-            const updatedComm = { deposit: newDep, withdrawal: newWth, clearance: newClr };
-            commissionRatesRef.current = updatedComm;
-            setCommissionRates(updatedComm);
-            localStorage.setItem('wa_commission_rates', JSON.stringify(updatedComm));
+          if (tierUpdated) {
+            const updated = {
+              tier1: { deposit: t1Dep, withdrawal: t1Wth },
+              tier2: { deposit: t2Dep, withdrawal: t2Wth },
+              tier3: { deposit: t3Dep, withdrawal: t3Wth },
+              clearance: clr
+            };
+            allTierRatesRef.current = updated;
+            setAllTierRates(updated);
+            localStorage.setItem('wa_tier_commission_rates', JSON.stringify(updated));
           }
 
           const updatedRates = currentRates.map(r => 
@@ -1598,6 +1664,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         telegramSupportUrl,
         bdtExchangeRate,
         commissionRates,
+        allTierRates,
+        agentTierNum,
         isInstallPromptAvailable,
         triggerPwaInstall,
         isOnline,

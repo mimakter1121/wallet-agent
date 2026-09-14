@@ -13,8 +13,14 @@ export const SettingsPage: React.FC = () => {
   const { showToast } = useAdmin();
 
   const [settings, setSettings] = useState<Record<string, string>>({
-    deposit_commission_rate: '1.5',
-    withdrawal_commission_rate: '1.2',
+    tier1_deposit_rate: '4.0',
+    tier1_withdrawal_rate: '2.5',
+    tier2_deposit_rate: '5.0',
+    tier2_withdrawal_rate: '3.0',
+    tier3_deposit_rate: '6.0',
+    tier3_withdrawal_rate: '3.5',
+    deposit_commission_rate: '6.0',
+    withdrawal_commission_rate: '3.5',
     clearance_fee_rate: '0.5',
     min_deposit_amount: '10',
     max_deposit_amount: '10000',
@@ -62,9 +68,15 @@ export const SettingsPage: React.FC = () => {
     setIsSaving(true);
     try {
       const updates = [
-        { key: 'deposit_commission_rate', value: settings.deposit_commission_rate, label: 'Agent Deposit Commission (%)' },
-        { key: 'withdrawal_commission_rate', value: settings.withdrawal_commission_rate, label: 'Agent Withdrawal Commission (%)' },
-        { key: 'clearance_fee_rate', value: settings.clearance_fee_rate, label: 'Network Clearance Fee (%)' },
+        { key: 'tier1_deposit_rate', value: settings.tier1_deposit_rate || '4.0', label: 'Tier 1 Deposit Commission (%)' },
+        { key: 'tier1_withdrawal_rate', value: settings.tier1_withdrawal_rate || '2.5', label: 'Tier 1 Withdrawal Commission (%)' },
+        { key: 'tier2_deposit_rate', value: settings.tier2_deposit_rate || '5.0', label: 'Tier 2 Deposit Commission (%)' },
+        { key: 'tier2_withdrawal_rate', value: settings.tier2_withdrawal_rate || '3.0', label: 'Tier 2 Withdrawal Commission (%)' },
+        { key: 'tier3_deposit_rate', value: settings.tier3_deposit_rate || '6.0', label: 'Tier 3 Deposit Commission (%)' },
+        { key: 'tier3_withdrawal_rate', value: settings.tier3_withdrawal_rate || '3.5', label: 'Tier 3 Withdrawal Commission (%)' },
+        { key: 'deposit_commission_rate', value: settings.tier3_deposit_rate || '6.0', label: 'Platform Master Deposit Commission (%)' },
+        { key: 'withdrawal_commission_rate', value: settings.tier3_withdrawal_rate || '3.5', label: 'Platform Master Withdrawal Commission (%)' },
+        { key: 'clearance_fee_rate', value: settings.clearance_fee_rate || '0.5', label: 'Network Clearance Fee (%)' },
       ];
 
       for (const update of updates) {
@@ -74,7 +86,7 @@ export const SettingsPage: React.FC = () => {
       }
 
       setLastSaved(new Date().toLocaleTimeString());
-      showToast('success', '✅ Settings Saved', `Commission rates updated in database. Deposit: ${settings.deposit_commission_rate}% | Withdrawal: ${settings.withdrawal_commission_rate}%`);
+      showToast('success', '✅ Settings Saved', `Tier commission rates updated in database. T1: 4%/2.5% | T2: 5%/3% | T3: 6%/3.5%`);
     } catch (err) {
       showToast('error', 'Save Failed', 'Could not save commission settings to database.');
     } finally {
@@ -175,60 +187,169 @@ export const SettingsPage: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         
         {/* Commission Rules Form */}
-        <form onSubmit={handleSaveCommission} className="bg-[#121e3d] border border-[#233763] rounded-3xl p-6 shadow-card space-y-4">
-          <div className="flex items-center gap-2 pb-3 border-b border-[#233763]">
-            <Percent className="w-4 h-4 text-[#00c853]" />
-            <h3 className="text-sm font-bold text-white">
-              Platform Commission Rates
-            </h3>
+        <form onSubmit={handleSaveCommission} className="bg-[#121e3d] border border-[#233763] rounded-3xl p-6 shadow-card space-y-5">
+          <div className="flex items-center justify-between pb-3 border-b border-[#233763]">
+            <div className="flex items-center gap-2">
+              <Percent className="w-4 h-4 text-[#00c853]" />
+              <h3 className="text-sm font-bold text-white">
+                Platform Tier Commission Rates
+              </h3>
+            </div>
+            <span className="text-[11px] font-bold px-2 py-0.5 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30">
+              3 Tiers Configured
+            </span>
           </div>
 
           <div className="p-3 rounded-xl bg-emerald-900/20 border border-[#00c853]/40 text-xs text-[#00c853] font-medium flex items-center gap-2">
             <AlertCircle className="w-4 h-4 shrink-0" />
-            <span>These rates apply to all agent transactions processed on the platform.</span>
+            <span>Tier commission rates are automatically applied when agents process deposit and withdrawal transactions.</span>
           </div>
 
-          <div>
-            <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-              Agent Deposit Commission (%)
-            </label>
-            <div className="relative">
-              <input
-                type="number"
-                step="0.1"
-                min="0"
-                max="10"
-                value={settings.deposit_commission_rate}
-                onChange={e => handleChange('deposit_commission_rate', e.target.value)}
-                className="w-full px-3.5 py-2.5 rounded-xl bg-[#1a294e] border border-[#233763] text-white text-sm font-bold focus:outline-none focus:border-[#00c853]"
-              />
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-[#00c853]">%</span>
+          {/* Tier 1 Box */}
+          <div className="p-4 rounded-2xl bg-[#1a294e]/70 border border-[#233763] space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-black text-white flex items-center gap-1.5">
+                <span className="w-5 h-5 rounded-md bg-slate-700 text-slate-200 text-[11px] flex items-center justify-center font-bold">1</span>
+                Tier 1 (Basic)
+              </span>
+              <span className="text-[10px] text-slate-400 font-mono">Limit: $200/day</span>
             </div>
-            <p className="text-[11px] text-slate-400 mt-1">Current: {settings.deposit_commission_rate}% per approved cash-in</p>
-          </div>
-
-          <div>
-            <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-              Agent Withdrawal Commission (%)
-            </label>
-            <div className="relative">
-              <input
-                type="number"
-                step="0.1"
-                min="0"
-                max="10"
-                value={settings.withdrawal_commission_rate}
-                onChange={e => handleChange('withdrawal_commission_rate', e.target.value)}
-                className="w-full px-3.5 py-2.5 rounded-xl bg-[#1a294e] border border-[#233763] text-white text-sm font-bold focus:outline-none focus:border-[#00c853]"
-              />
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-[#00c853]">%</span>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-300 mb-1">
+                  Deposit Comm (%)
+                </label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    step="0.1"
+                    min="0"
+                    max="20"
+                    value={settings.tier1_deposit_rate || '4.0'}
+                    onChange={e => handleChange('tier1_deposit_rate', e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl bg-[#121e3d] border border-[#233763] text-white text-xs font-bold focus:outline-none focus:border-[#00c853]"
+                  />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-emerald-400">%</span>
+                </div>
+              </div>
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-300 mb-1">
+                  Withdraw Comm (%)
+                </label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    step="0.1"
+                    min="0"
+                    max="20"
+                    value={settings.tier1_withdrawal_rate || '2.5'}
+                    onChange={e => handleChange('tier1_withdrawal_rate', e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl bg-[#121e3d] border border-[#233763] text-white text-xs font-bold focus:outline-none focus:border-[#00c853]"
+                  />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-sky-400">%</span>
+                </div>
+              </div>
             </div>
-            <p className="text-[11px] text-slate-400 mt-1">Current: {settings.withdrawal_commission_rate}% per approved cash-out</p>
           </div>
 
-          <div>
+          {/* Tier 2 Box */}
+          <div className="p-4 rounded-2xl bg-[#1a294e]/70 border border-[#233763] space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-black text-white flex items-center gap-1.5">
+                <span className="w-5 h-5 rounded-md bg-sky-500/20 text-sky-400 border border-sky-500/30 text-[11px] flex items-center justify-center font-bold">2</span>
+                Tier 2 (Business)
+              </span>
+              <span className="text-[10px] text-slate-400 font-mono">Limit: $1,000/day</span>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-300 mb-1">
+                  Deposit Comm (%)
+                </label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    step="0.1"
+                    min="0"
+                    max="20"
+                    value={settings.tier2_deposit_rate || '5.0'}
+                    onChange={e => handleChange('tier2_deposit_rate', e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl bg-[#121e3d] border border-[#233763] text-white text-xs font-bold focus:outline-none focus:border-[#00c853]"
+                  />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-emerald-400">%</span>
+                </div>
+              </div>
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-300 mb-1">
+                  Withdraw Comm (%)
+                </label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    step="0.1"
+                    min="0"
+                    max="20"
+                    value={settings.tier2_withdrawal_rate || '3.0'}
+                    onChange={e => handleChange('tier2_withdrawal_rate', e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl bg-[#121e3d] border border-[#233763] text-white text-xs font-bold focus:outline-none focus:border-[#00c853]"
+                  />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-sky-400">%</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Tier 3 Box */}
+          <div className="p-4 rounded-2xl bg-gradient-to-r from-amber-500/10 to-[#1a294e]/70 border border-amber-500/40 space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-black text-amber-400 flex items-center gap-1.5">
+                <span className="w-5 h-5 rounded-md bg-amber-500/20 text-amber-400 border border-amber-500/40 text-[11px] flex items-center justify-center font-bold">3</span>
+                Tier 3 (Master Agent)
+              </span>
+              <span className="text-[10px] text-amber-300 font-mono font-bold">Unlimited Liquidity</span>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-300 mb-1">
+                  Deposit Comm (%)
+                </label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    step="0.1"
+                    min="0"
+                    max="20"
+                    value={settings.tier3_deposit_rate || '6.0'}
+                    onChange={e => handleChange('tier3_deposit_rate', e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl bg-[#121e3d] border border-amber-500/40 text-amber-300 text-xs font-bold focus:outline-none focus:border-amber-400"
+                  />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-amber-400">%</span>
+                </div>
+              </div>
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-300 mb-1">
+                  Withdraw Comm (%)
+                </label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    step="0.1"
+                    min="0"
+                    max="20"
+                    value={settings.tier3_withdrawal_rate || '3.5'}
+                    onChange={e => handleChange('tier3_withdrawal_rate', e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl bg-[#121e3d] border border-amber-500/40 text-amber-300 text-xs font-bold focus:outline-none focus:border-amber-400"
+                  />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-sky-400">%</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Network Clearance Override */}
+          <div className="pt-2 border-t border-[#233763]">
             <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-              Network Clearance Fee (%)
+              Network Clearance Fee / Referral Override (%)
             </label>
             <div className="relative">
               <input
@@ -236,21 +357,22 @@ export const SettingsPage: React.FC = () => {
                 step="0.1"
                 min="0"
                 max="10"
-                value={settings.clearance_fee_rate}
+                value={settings.clearance_fee_rate || '0.5'}
                 onChange={e => handleChange('clearance_fee_rate', e.target.value)}
                 className="w-full px-3.5 py-2.5 rounded-xl bg-[#1a294e] border border-[#233763] text-white text-sm font-bold focus:outline-none focus:border-[#00c853]"
               />
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-[#00c853]">%</span>
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-amber-400">%</span>
             </div>
+            <p className="text-[11px] text-slate-400 mt-1">Paid to Tier 3 Master Agents on their sub-agent clearing volume</p>
           </div>
 
           <button
             type="submit"
             disabled={isSaving}
-            className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl bg-[#00c853] hover:bg-[#00e676] disabled:opacity-60 text-white text-sm font-bold shadow-md transition-all"
+            className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl bg-[#00c853] hover:bg-[#00e676] disabled:opacity-60 text-white text-sm font-bold shadow-md transition-all cursor-pointer"
           >
             {isSaving ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
-            <span>{isSaving ? 'Saving to Database...' : 'Save Commission Rules'}</span>
+            <span>{isSaving ? 'Saving to Database...' : 'Save Tier Commission Rules'}</span>
           </button>
         </form>
 
