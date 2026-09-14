@@ -12,10 +12,13 @@ import {
   Send,
   Building2,
   Copy,
-  Check
+  Check,
+  Zap
 } from 'lucide-react';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { useAdmin } from '../context/AdminContext';
+import { AutoRequestBotModal } from '../components/AutoRequestBotModal';
+import { autoRequestBotService, AutoBotState } from '../services/autoRequestBotService';
 
 interface CustomerRequestItem {
   id: string;
@@ -37,6 +40,16 @@ export const CustomerPortalPage: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all');
   const [requests, setRequests] = useState<CustomerRequestItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isBotModalOpen, setIsBotModalOpen] = useState(false);
+  const [botRunningState, setBotRunningState] = useState<AutoBotState>(autoRequestBotService.getState());
+
+  // Listen to auto bot state changes
+  useEffect(() => {
+    const unsub = autoRequestBotService.subscribe((newState) => {
+      setBotRunningState(newState);
+    });
+    return () => unsub();
+  }, []);
 
   // New Request Form State
   const [requestType, setRequestType] = useState<'deposit' | 'withdrawal'>('deposit');
@@ -329,6 +342,27 @@ export const CustomerPortalPage: React.FC = () => {
           >
             <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
             <span>Refresh</span>
+          </button>
+
+          {/* Auto Bot Trigger Button */}
+          <button
+            onClick={() => setIsBotModalOpen(true)}
+            className={`px-4 py-2 rounded-xl text-xs font-black flex items-center gap-2 transition-all shadow-md ${
+              botRunningState.status === 'running'
+                ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 shadow-emerald-950/50 animate-pulse'
+                : botRunningState.status === 'paused'
+                ? 'bg-amber-500 text-slate-950 shadow-amber-950/50'
+                : 'bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white shadow-purple-950/40'
+            }`}
+          >
+            <Zap className={`w-4 h-4 ${botRunningState.status === 'running' ? 'animate-bounce' : ''}`} />
+            <span>
+              {botRunningState.status === 'running' 
+                ? `🤖 Auto Bot (${botRunningState.sentCount}/${botRunningState.config.totalRequests})` 
+                : botRunningState.status === 'paused'
+                ? `⏸️ Auto Bot (Paused)`
+                : '⚡ Auto Request Bot'}
+            </span>
           </button>
 
           <button
@@ -723,6 +757,14 @@ export const CustomerPortalPage: React.FC = () => {
         </div>
 
       )}
+
+      {/* AUTO REQUEST BOT MODAL */}
+      <AutoRequestBotModal
+        isOpen={isBotModalOpen}
+        onClose={() => setIsBotModalOpen(false)}
+        agents={agents}
+        onRequestDispatched={fetchLiveRequests}
+      />
 
     </div>
   );
