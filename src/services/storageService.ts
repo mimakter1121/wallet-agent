@@ -65,8 +65,18 @@ export const storageService = {
     });
   },
 
-  // 3. Upload User Profile Avatar ('avatars')
+  // 3. Upload User Profile Avatar ('avatars') - Max 100 KB Limit
   async uploadAvatar(file: File, userId: string): Promise<{ path: string | null; publicUrl: string | null; error: string | null }> {
+    const MAX_AVATAR_SIZE = 100 * 1024; // 100 KB = 102,400 bytes
+    if (file.size > MAX_AVATAR_SIZE) {
+      const sizeInKb = (file.size / 1024).toFixed(1);
+      return {
+        path: null,
+        publicUrl: null,
+        error: `File size is ${sizeInKb} KB. Profile picture cannot exceed 100 KB.`
+      };
+    }
+
     const cleanId = (userId || 'agent').replace(/[^a-zA-Z0-9_-]/g, '_');
     const fileExt = (file.name.split('.').pop() || 'jpg').toLowerCase();
     const fileName = `${cleanId}_${Date.now()}.${fileExt}`;

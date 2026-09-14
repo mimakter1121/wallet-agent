@@ -117,6 +117,19 @@ export const ProfilePage: React.FC = () => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
       
+      // Strict 100 KB file size validation
+      const MAX_SIZE_BYTES = 100 * 1024; // 100 KB = 102,400 bytes
+      if (file.size > MAX_SIZE_BYTES) {
+        const sizeInKb = (file.size / 1024).toFixed(1);
+        showToast(
+          'error',
+          'File Too Large (Max 100 KB) ⚠️',
+          `Selected file is ${sizeInKb} KB. Profile photo must be 100 KB or smaller.`
+        );
+        e.target.value = ''; // Reset input
+        return;
+      }
+
       // Instant local preview for immediate visual feedback
       const localPreview = URL.createObjectURL(file);
       setAvatarUrl(localPreview);
@@ -234,10 +247,14 @@ export const ProfilePage: React.FC = () => {
                 <span className="text-slate-400">Registered {agent.registrationDate}</span>
               </div>
 
-              <div className="pt-1 flex items-center gap-2">
+              <div className="pt-1 flex items-center gap-2 flex-wrap">
                 <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-[#00c853]/15 text-[#00c853] border border-[#00c853]/30 text-[11px] font-bold">
                   <span className="w-2 h-2 rounded-full bg-[#00c853] animate-pulse" />
                   Verified Merchant Float Agent
+                </span>
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md bg-[#1a294e] border border-[#233763] text-[10px] text-slate-300 font-mono">
+                  <Camera className="w-3 h-3 text-[#00c853]" />
+                  Photo limit: &le; 100 KB
                 </span>
               </div>
             </div>
