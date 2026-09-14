@@ -10,6 +10,7 @@ import { ReceiptModal } from './components/common/ReceiptModal';
 import { TransactionDetailModal } from './components/common/TransactionDetailModal';
 import { CustomerDetailDrawer } from './components/common/CustomerDetailDrawer';
 import { TelegramFloatingButton } from './components/common/TelegramFloatingButton';
+import { IncomingRequestAlertModal } from './components/common/IncomingRequestAlertModal';
 
 // Code-split pages for instant initial load times
 const LoginPage = lazy(() => import('./pages/LoginPage').then(m => ({ default: m.LoginPage })));
@@ -98,6 +99,7 @@ export const App: React.FC = () => {
       <BottomNav />
 
       {/* Global Overlays & Modals */}
+      <IncomingRequestAlertModal />
       <SecurityPinModal />
       <ReceiptModal />
       <TransactionDetailModal />

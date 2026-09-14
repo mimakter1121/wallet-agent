@@ -22,16 +22,37 @@ interface NavItem {
   label: string;
   icon: React.ComponentType<{ className?: string }>;
   badge?: string | number;
+  badgeColor?: string;
 }
 
 export const Sidebar: React.FC = () => {
-  const { currentPage, setCurrentPage, logout, agent, unreadCount } = useApp();
+  const { 
+    currentPage, 
+    setCurrentPage, 
+    logout, 
+    agent, 
+    unreadCount,
+    pendingDepositsCount,
+    pendingWithdrawalsCount
+  } = useApp();
 
   const navItems: NavItem[] = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'wallet', label: 'Wallet & Liquidity', icon: Wallet },
-    { id: 'deposits', label: 'Deposit Requests', icon: ArrowDownLeft },
-    { id: 'withdrawals', label: 'Withdrawal Requests', icon: ArrowUpRight },
+    { 
+      id: 'deposits', 
+      label: 'Deposit Requests', 
+      icon: ArrowDownLeft, 
+      badge: pendingDepositsCount > 0 ? `${pendingDepositsCount} New` : undefined,
+      badgeColor: 'bg-emerald-500 text-slate-950 shadow-emerald-950/50'
+    },
+    { 
+      id: 'withdrawals', 
+      label: 'Withdrawal Requests', 
+      icon: ArrowUpRight, 
+      badge: pendingWithdrawalsCount > 0 ? `${pendingWithdrawalsCount} New` : undefined,
+      badgeColor: 'bg-sky-500 text-slate-950 shadow-sky-950/50'
+    },
     { id: 'customers', label: 'Customer Directory', icon: Users },
     { id: 'transactions', label: 'Transactions & Ledger', icon: ReceiptText },
     { id: 'commission', label: 'Commission Center', icon: Award },
@@ -69,7 +90,7 @@ export const Sidebar: React.FC = () => {
                 <span>{item.label}</span>
               </div>
               {item.badge && (
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-500 text-white animate-pulse">
+                <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold animate-pulse ${item.badgeColor || 'bg-amber-500 text-white'}`}>
                   {item.badge}
                 </span>
               )}

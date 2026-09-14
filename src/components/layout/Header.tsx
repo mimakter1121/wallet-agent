@@ -42,7 +42,10 @@ export const Header: React.FC = () => {
     markAllNotificationsAsRead,
     isInstallPromptAvailable,
     triggerPwaInstall,
-    isOnline
+    isOnline,
+    pendingDepositsCount,
+    pendingWithdrawalsCount,
+    pendingTotalCount
   } = useApp();
 
   const [showProfileMenu, setShowProfileMenu] = useState(false);
@@ -134,6 +137,18 @@ export const Header: React.FC = () => {
               </>
             )}
           </div>
+
+          {/* Urgent Orders Alert Button */}
+          {pendingTotalCount > 0 && (
+            <button
+              onClick={() => setCurrentPage(pendingDepositsCount > 0 ? 'deposits' : 'withdrawals')}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-rose-500/20 to-amber-500/20 border border-rose-500/50 text-rose-300 hover:text-white text-xs font-black shadow-lg shadow-rose-950/50 animate-pulse transition-all active:scale-95"
+              title="Click to clear pending customer requests"
+            >
+              <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping" />
+              <span>🚨 {pendingTotalCount} {pendingTotalCount === 1 ? 'Order' : 'Orders'} Pending</span>
+            </button>
+          )}
 
           {/* Notifications Trigger */}
           <div className="relative">
@@ -365,11 +380,11 @@ export const Header: React.FC = () => {
                   {[
                     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
                     { id: 'wallet', label: 'Wallet & Liquidity', icon: Wallet },
-                    { id: 'deposits', label: 'Deposit Requests', icon: ArrowDownLeft },
-                    { id: 'withdrawals', label: 'Withdrawal Requests', icon: ArrowUpRight },
+                    { id: 'deposits', label: 'Deposit Requests', icon: ArrowDownLeft, badge: pendingDepositsCount },
+                    { id: 'withdrawals', label: 'Withdrawal Requests', icon: ArrowUpRight, badge: pendingWithdrawalsCount },
                     { id: 'customers', label: 'Customer Directory', icon: Users },
                     { id: 'transactions', label: 'Transactions & Ledger', icon: ReceiptText },
-                  ].map((item) => {
+                  ].map((item: any) => {
                     const Icon = item.icon;
                     const isActive = currentPage === item.id;
                     return (
@@ -379,14 +394,25 @@ export const Header: React.FC = () => {
                           setCurrentPage(item.id as any);
                           setIsMobileMenuOpen(false);
                         }}
-                        className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all ${
+                        className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all ${
                           isActive
                             ? 'bg-[#00c853] text-white shadow-md'
                             : 'text-slate-200 hover:bg-[#1a294e] hover:text-white'
                         }`}
                       >
-                        <Icon className="w-4 h-4 flex-shrink-0" />
-                        <span>{item.label}</span>
+                        <div className="flex items-center gap-3">
+                          <Icon className="w-4 h-4 flex-shrink-0" />
+                          <span>{item.label}</span>
+                        </div>
+                        {item.badge > 0 && (
+                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase shadow-sm ${
+                            item.id === 'deposits' 
+                              ? 'bg-emerald-500 text-slate-950 animate-pulse' 
+                              : 'bg-sky-500 text-slate-950 animate-pulse'
+                          }`}>
+                            {item.badge} New
+                          </span>
+                        )}
                       </button>
                     );
                   })}

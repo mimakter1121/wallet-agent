@@ -35,6 +35,7 @@ import { supportService } from '../services/supportService';
 import { storageService } from '../services/storageService';
 import { subAgentService } from '../services/subAgentService';
 import { CurrencyRate, getExchangeRates, saveExchangeRates } from '../config/currencyRates';
+import { soundAlert } from '../utils/audioAlert';
 
 export type PageId = 
   | 'dashboard' 
@@ -56,6 +57,18 @@ export interface ToastMessage {
   type: 'success' | 'error' | 'info' | 'warning';
   title: string;
   message: string;
+}
+
+export interface IncomingRequestAlert {
+  id: string;
+  type: 'deposit' | 'withdrawal';
+  requestCode: string;
+  customerName: string;
+  customerPhone: string;
+  amount: number;
+  paymentMethod: string;
+  trxId?: string;
+  createdAt: string;
 }
 
 interface AppContextType {
@@ -167,6 +180,14 @@ interface AppContextType {
   triggerPwaInstall: () => void;
   isOnline: boolean;
   isSupabaseBackendActive: boolean;
+
+  // Live Pending Orders & Realtime Audio Alerts
+  pendingDepositsCount: number;
+  pendingWithdrawalsCount: number;
+  pendingTotalCount: number;
+  activeUrgentRequest: IncomingRequestAlert | null;
+  dismissUrgentRequest: () => void;
+  refreshPendingRequestsCount: () => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -767,6 +788,131 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     return () => {
       if (channel) supabase.removeChannel(channel);
+      clearInterval(interval);
+    };
+  }, [isAuthenticated, agent.id, agent.dbId]);
+
+  // Live Pending Requests & Realtime Audio Alert System
+  const [pendingDepositsCount, setPendingDepositsCount] = useState<number>(0);
+  const [pendingWithdrawalsCount, setPendingWithdrawalsCount] = useState<number>(0);
+  const [activeUrgentRequest, setActiveUrgentRequest] = useState<IncomingRequestAlert | null>(null);
+
+  const seenDepositIdsRef = useRef<Set<string>>(new Set());
+  const seenWithdrawalIdsRef = useRef<Set<string>>(new Set());
+  const isInitialFetchRef = useRef<boolean>(true);
+
+  const pendingTotalCount = pendingDepositsCount + pendingWithdrawalsCount;
+
+  const dismissUrgentRequest = () => {
+    setActiveUrgentRequest(null);
+  };
+
+  const refreshPendingRequestsCount = async () => {
+    if (!isAuthenticated) return;
+    try {
+      const conds: string[] = [];
+      if (agent.dbId) conds.push(`agent_id.eq.${agent.dbId}`);
+      if (agent.id) conds.push(`agent_code.eq.${agent.id}`);
+
+      if (conds.length === 0) return;
+
+      const [depRes, wthRes] = await Promise.all([
+        supabase
+          .from('deposit_requests')
+          .select('id, request_code, amount, payment_method, transaction_ref, customer_name, customer_phone, status, created_at')
+          .eq('status', 'pending')
+          .or(conds.join(','))
+          .order('created_at', { ascending: false }),
+        supabase
+          .from('withdrawal_requests')
+          .select('id, request_code, amount, payment_method, account_number, recipient_account, reference, customer_name, customer_phone, status, created_at')
+          .eq('status', 'pending')
+          .or(conds.join(','))
+          .order('created_at', { ascending: false })
+      ]);
+
+      const pendingDeps = depRes.data || [];
+      const pendingWths = wthRes.data || [];
+
+      setPendingDepositsCount(pendingDeps.length);
+      setPendingWithdrawalsCount(pendingWths.length);
+
+      // Check for brand new requests to play sound & show urgent alert
+      if (isInitialFetchRef.current) {
+        pendingDeps.forEach((d: any) => seenDepositIdsRef.current.add(d.id));
+        pendingWths.forEach((w: any) => seenWithdrawalIdsRef.current.add(w.id));
+        isInitialFetchRef.current = false;
+      } else {
+        // Find new deposit
+        const newDep = pendingDeps.find((d: any) => !seenDepositIdsRef.current.has(d.id));
+        if (newDep) {
+          seenDepositIdsRef.current.add(newDep.id);
+          soundAlert.playOrderChime(
+            '🚨 New Cash-In Order!',
+            `Customer ${newDep.customer_name || 'Player'} sent ৳${parseFloat(newDep.amount).toLocaleString()} via ${newDep.payment_method}`
+          );
+          setActiveUrgentRequest({
+            id: newDep.id,
+            type: 'deposit',
+            requestCode: newDep.request_code,
+            customerName: newDep.customer_name || 'Customer',
+            customerPhone: newDep.customer_phone || '-',
+            amount: parseFloat(newDep.amount) || 0,
+            paymentMethod: newDep.payment_method || 'bKash',
+            trxId: newDep.transaction_ref || '-',
+            createdAt: newDep.created_at
+          });
+          showToast('warning', '🚨 New Cash-In Order!', `Customer deposit #${newDep.request_code} (৳${parseFloat(newDep.amount).toLocaleString()}) received for clearance.`);
+        }
+
+        // Find new withdrawal
+        const newWth = pendingWths.find((w: any) => !seenWithdrawalIdsRef.current.has(w.id));
+        if (newWth) {
+          seenWithdrawalIdsRef.current.add(newWth.id);
+          soundAlert.playOrderChime(
+            '💸 New Cash-Out Order!',
+            `Customer ${newWth.customer_name || 'Player'} requested payout of ৳${parseFloat(newWth.amount).toLocaleString()} via ${newWth.payment_method}`
+          );
+          setActiveUrgentRequest({
+            id: newWth.id,
+            type: 'withdrawal',
+            requestCode: newWth.request_code,
+            customerName: newWth.customer_name || 'Customer',
+            customerPhone: newWth.customer_phone || '-',
+            amount: parseFloat(newWth.amount) || 0,
+            paymentMethod: newWth.payment_method || 'Rocket',
+            trxId: newWth.recipient_account || newWth.reference || '-',
+            createdAt: newWth.created_at
+          });
+          showToast('warning', '💸 New Cash-Out Order!', `Customer payout #${newWth.request_code} (৳${parseFloat(newWth.amount).toLocaleString()}) requested for clearance.`);
+        }
+      }
+    } catch (err) {
+      console.error('Failed to sync live pending orders count:', err);
+    }
+  };
+
+  useEffect(() => {
+    if (!isAuthenticated) return undefined;
+    soundAlert.requestNotificationPermission();
+    refreshPendingRequestsCount();
+
+    if (!isSupabaseConfigured()) return undefined;
+
+    const channel = supabase
+      .channel(`agent_pending_orders_${agent.id || agent.dbId || 'global'}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'deposit_requests' }, () => {
+        refreshPendingRequestsCount();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'withdrawal_requests' }, () => {
+        refreshPendingRequestsCount();
+      })
+      .subscribe();
+
+    const interval = setInterval(refreshPendingRequestsCount, 8000);
+
+    return () => {
+      supabase.removeChannel(channel);
       clearInterval(interval);
     };
   }, [isAuthenticated, agent.id, agent.dbId]);
@@ -1671,7 +1817,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         isInstallPromptAvailable,
         triggerPwaInstall,
         isOnline,
-        isSupabaseBackendActive
+        isSupabaseBackendActive,
+        pendingDepositsCount,
+        pendingWithdrawalsCount,
+        pendingTotalCount,
+        activeUrgentRequest,
+        dismissUrgentRequest,
+        refreshPendingRequestsCount
       }}
     >
       {children}

@@ -16,7 +16,13 @@ import {
 import { useApp, PageId } from '../../context/AppContext';
 
 export const BottomNav: React.FC = () => {
-  const { currentPage, setCurrentPage } = useApp();
+  const { 
+    currentPage, 
+    setCurrentPage, 
+    pendingDepositsCount, 
+    pendingWithdrawalsCount, 
+    pendingTotalCount 
+  } = useApp();
   const [showFabMenu, setShowFabMenu] = useState(false);
 
   const navItems = [
@@ -56,15 +62,22 @@ export const BottomNav: React.FC = () => {
                 setShowFabMenu(false);
                 setCurrentPage('deposits');
               }}
-              className="w-full flex items-center gap-3 p-2.5 rounded-2xl bg-[#00c853]/20 border border-[#00c853]/40 text-[#00c853] font-black text-xs transition-all active:scale-98"
+              className="w-full flex items-center justify-between p-2.5 rounded-2xl bg-[#00c853]/20 border border-[#00c853]/40 text-[#00c853] font-black text-xs transition-all active:scale-98"
             >
-              <div className="w-8 h-8 rounded-xl bg-[#00c853] text-white flex items-center justify-center font-bold flex-shrink-0">
-                <ArrowDownLeft className="w-4 h-4" />
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-xl bg-[#00c853] text-white flex items-center justify-center font-bold flex-shrink-0">
+                  <ArrowDownLeft className="w-4 h-4" />
+                </div>
+                <div className="text-left">
+                  <div className="font-black text-xs text-white">Deposit Requests</div>
+                  <div className="text-[10px] text-[#00c853]">Collect & credit customer funds</div>
+                </div>
               </div>
-              <div className="text-left">
-                <div className="font-black text-xs text-white">New Deposit Request</div>
-                <div className="text-[10px] text-[#00c853]">Collect & credit customer funds</div>
-              </div>
+              {pendingDepositsCount > 0 && (
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-rose-500 text-white animate-pulse shadow">
+                  {pendingDepositsCount} New
+                </span>
+              )}
             </button>
 
             <button
@@ -72,15 +85,22 @@ export const BottomNav: React.FC = () => {
                 setShowFabMenu(false);
                 setCurrentPage('withdrawals');
               }}
-              className="w-full flex items-center gap-3 p-2.5 rounded-2xl bg-[#1a294e] border border-[#233763] text-white font-bold text-xs transition-all active:scale-98"
+              className="w-full flex items-center justify-between p-2.5 rounded-2xl bg-[#1a294e] border border-[#233763] text-white font-bold text-xs transition-all active:scale-98"
             >
-              <div className="w-8 h-8 rounded-xl bg-[#00b0ff]/20 border border-[#00b0ff]/40 text-[#00b0ff] flex items-center justify-center font-bold flex-shrink-0">
-                <ArrowUpRight className="w-4 h-4" />
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-xl bg-[#00b0ff]/20 border border-[#00b0ff]/40 text-[#00b0ff] flex items-center justify-center font-bold flex-shrink-0">
+                  <ArrowUpRight className="w-4 h-4" />
+                </div>
+                <div className="text-left">
+                  <div className="font-bold text-xs text-white">Process Withdrawal</div>
+                  <div className="text-[10px] text-slate-300">Disburse customer cashout request</div>
+                </div>
               </div>
-              <div className="text-left">
-                <div className="font-bold text-xs text-white">Process Withdrawal</div>
-                <div className="text-[10px] text-slate-300">Disburse customer cashout request</div>
-              </div>
+              {pendingWithdrawalsCount > 0 && (
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-rose-500 text-white animate-pulse shadow">
+                  {pendingWithdrawalsCount} New
+                </span>
+              )}
             </button>
 
             {/* Direct Mobile Links to Commission & Network */}
@@ -167,13 +187,18 @@ export const BottomNav: React.FC = () => {
           <div className="relative -top-5">
             <button
               onClick={() => setShowFabMenu(!showFabMenu)}
-              className={`w-12 h-12 rounded-full flex items-center justify-center shadow-lg transition-transform active:scale-90 ${
+              className={`w-12 h-12 rounded-full flex items-center justify-center shadow-lg transition-transform active:scale-90 relative ${
                 showFabMenu
                   ? 'bg-[#1a294e] text-white rotate-45 border border-[#233763]'
                   : 'bg-[#00c853] text-white shadow-emerald-950/50 ring-4 ring-[#121e3d]'
               }`}
             >
               <Plus className="w-6 h-6" />
+              {pendingTotalCount > 0 && !showFabMenu && (
+                <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-rose-500 text-white text-[10px] font-black flex items-center justify-center shadow-md animate-bounce ring-2 ring-[#121e3d]">
+                  {pendingTotalCount}
+                </span>
+              )}
             </button>
           </div>
 
