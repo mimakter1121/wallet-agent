@@ -30,11 +30,13 @@ const AdminContent: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
     return sessionStorage.getItem('wa_admin_auth') === 'true';
   });
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { toast } = useAdmin();
 
   const handleTabChange = (tab: AdminTab) => {
     setCurrentTab(tab);
     sessionStorage.setItem('wa_admin_tab', tab);
+    setIsMobileMenuOpen(false);
   };
 
   if (!isAuthenticated) {
@@ -71,12 +73,22 @@ const AdminContent: React.FC = () => {
 
   return (
     <div className="flex h-screen bg-[#080e1e] text-slate-100 overflow-hidden">
-      {/* Standalone Sidebar */}
-      <AdminSidebar currentTab={currentTab} onTabChange={handleTabChange} />
+      {/* Sidebar (Desktop Static + Mobile Drawer) */}
+      <AdminSidebar 
+        currentTab={currentTab} 
+        onTabChange={handleTabChange}
+        isOpenMobile={isMobileMenuOpen}
+        onCloseMobile={() => setIsMobileMenuOpen(false)}
+      />
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0 overflow-y-auto">
-        <AdminHeader title={title} subtitle={subtitle} onLogout={handleLogout} />
+        <AdminHeader 
+          title={title} 
+          subtitle={subtitle} 
+          onLogout={handleLogout}
+          onOpenMobileMenu={() => setIsMobileMenuOpen(true)}
+        />
 
         <main className="flex-1 pb-12">
           <Suspense fallback={<AdminLoader />}>

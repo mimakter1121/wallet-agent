@@ -317,16 +317,16 @@ export const CustomerPortalPage: React.FC = () => {
   const pendingWithdrawalsCount = requests.filter(r => r.type === 'withdrawal' && r.status === 'pending').length;
 
   return (
-    <div className="p-6 space-y-6 animate-fadeIn select-none text-white">
+    <div className="p-3 sm:p-6 space-y-4 sm:space-y-6 animate-fadeIn select-none text-white">
       
       {/* Header Banner */}
-      <div className="bg-[#121e3d] border border-[#233763] rounded-3xl p-6 shadow-card flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-3.5">
-          <div className="w-12 h-12 rounded-2xl bg-[#00c853]/20 border border-[#00c853]/40 text-[#00c853] flex items-center justify-center font-black">
-            <Building2 className="w-6 h-6" />
+      <div className="bg-[#121e3d] border border-[#233763] rounded-3xl p-4 sm:p-6 shadow-card flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="flex items-center gap-3 sm:gap-3.5">
+          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-[#00c853]/20 border border-[#00c853]/40 text-[#00c853] flex items-center justify-center font-black shrink-0">
+            <Building2 className="w-5 h-5 sm:w-6 sm:h-6" />
           </div>
           <div>
-            <h2 className="text-lg font-black text-white">
+            <h2 className="text-base sm:text-lg font-black text-white">
               Customer Payment Desk & Request Clearance
             </h2>
             <p className="text-xs text-slate-300 font-medium mt-0.5">
@@ -335,10 +335,10 @@ export const CustomerPortalPage: React.FC = () => {
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
           <button
             onClick={fetchLiveRequests}
-            className="px-3.5 py-2 rounded-xl bg-[#1a294e] hover:bg-[#233763] border border-[#233763] text-slate-200 text-xs font-bold flex items-center gap-1.5 transition-all"
+            className="flex-1 sm:flex-initial px-3 py-2 rounded-xl bg-[#1a294e] hover:bg-[#233763] border border-[#233763] text-slate-200 text-xs font-bold flex items-center justify-center gap-1.5 transition-all"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
             <span>Refresh</span>
@@ -347,7 +347,7 @@ export const CustomerPortalPage: React.FC = () => {
           {/* Auto Bot Trigger Button */}
           <button
             onClick={() => setIsBotModalOpen(true)}
-            className={`px-4 py-2 rounded-xl text-xs font-black flex items-center gap-2 transition-all shadow-md ${
+            className={`flex-1 sm:flex-initial px-3.5 py-2 rounded-xl text-xs font-black flex items-center justify-center gap-1.5 transition-all shadow-md ${
               botRunningState.status === 'running'
                 ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 shadow-emerald-950/50 animate-pulse'
                 : botRunningState.status === 'paused'
@@ -356,7 +356,7 @@ export const CustomerPortalPage: React.FC = () => {
             }`}
           >
             <Zap className={`w-4 h-4 ${botRunningState.status === 'running' ? 'animate-bounce' : ''}`} />
-            <span>
+            <span className="truncate">
               {botRunningState.status === 'running' 
                 ? `🤖 Auto Bot (${botRunningState.sentCount}/${botRunningState.config.totalRequests})` 
                 : botRunningState.status === 'paused'
@@ -367,7 +367,7 @@ export const CustomerPortalPage: React.FC = () => {
 
           <button
             onClick={() => setActiveSubTab('create_request')}
-            className="px-4 py-2 rounded-xl bg-[#00c853] hover:bg-[#00e676] text-white font-black text-xs shadow-md shadow-emerald-950/40 flex items-center gap-1.5 transition-all"
+            className="w-full sm:w-auto px-4 py-2 rounded-xl bg-[#00c853] hover:bg-[#00e676] text-white font-black text-xs shadow-md shadow-emerald-950/40 flex items-center justify-center gap-1.5 transition-all"
           >
             <PlusCircle className="w-4 h-4" />
             <span>+ Create New Request</span>
@@ -376,12 +376,12 @@ export const CustomerPortalPage: React.FC = () => {
       </div>
 
       {/* Sub Tabs Navigation */}
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div className="flex items-center gap-2 bg-[#121e3d] border border-[#233763] p-1.5 rounded-2xl text-xs font-bold">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex items-center gap-1.5 bg-[#121e3d] border border-[#233763] p-1.5 rounded-2xl text-xs font-bold overflow-x-auto max-w-full">
           
           <button
             onClick={() => setActiveSubTab('deposits')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all ${
+            className={`flex items-center gap-2 px-3 sm:px-4 py-2 rounded-xl whitespace-nowrap transition-all ${
               activeSubTab === 'deposits'
                 ? 'bg-[#00c853] text-white font-black shadow-md'
                 : 'text-slate-300 hover:text-white'
@@ -398,7 +398,7 @@ export const CustomerPortalPage: React.FC = () => {
 
           <button
             onClick={() => setActiveSubTab('withdrawals')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all ${
+            className={`flex items-center gap-2 px-3 sm:px-4 py-2 rounded-xl whitespace-nowrap transition-all ${
               activeSubTab === 'withdrawals'
                 ? 'bg-[#00b0ff] text-white font-black shadow-md'
                 : 'text-slate-300 hover:text-white'
@@ -415,7 +415,7 @@ export const CustomerPortalPage: React.FC = () => {
 
           <button
             onClick={() => setActiveSubTab('create_request')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all ${
+            className={`flex items-center gap-2 px-3 sm:px-4 py-2 rounded-xl whitespace-nowrap transition-all ${
               activeSubTab === 'create_request'
                 ? 'bg-[#1a294e] text-white font-black border border-[#233763]'
                 : 'text-slate-300 hover:text-white'
@@ -429,13 +429,13 @@ export const CustomerPortalPage: React.FC = () => {
 
         {/* Status Filter (Only when in table tabs) */}
         {activeSubTab !== 'create_request' && (
-          <div className="flex items-center gap-1.5 bg-[#121e3d] border border-[#233763] p-1 rounded-xl text-xs font-bold">
-            <Filter className="w-3.5 h-3.5 text-slate-400 ml-2" />
+          <div className="flex items-center gap-1 bg-[#121e3d] border border-[#233763] p-1 rounded-xl text-xs font-bold overflow-x-auto self-start sm:self-auto max-w-full">
+            <Filter className="w-3.5 h-3.5 text-slate-400 ml-1.5 shrink-0" />
             {(['all', 'pending', 'approved', 'rejected'] as const).map(st => (
               <button
                 key={st}
                 onClick={() => setStatusFilter(st)}
-                className={`px-3 py-1 rounded-lg uppercase text-[10px] font-black transition-all ${
+                className={`px-2.5 py-1 rounded-lg uppercase text-[10px] font-black whitespace-nowrap transition-all ${
                   statusFilter === st
                     ? 'bg-[#1a294e] text-white border border-[#233763]'
                     : 'text-slate-400 hover:text-white'
@@ -643,7 +643,7 @@ export const CustomerPortalPage: React.FC = () => {
       ) : (
 
         /* Native Requests Clearance Table */
-        <div className="bg-[#121e3d] border border-[#233763] rounded-3xl p-6 shadow-card space-y-4">
+        <div className="bg-[#121e3d] border border-[#233763] rounded-3xl p-4 sm:p-6 shadow-card space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-black text-white">
               {activeSubTab === 'deposits' ? 'Customer Deposit Requests' : 'Customer Cashout / Withdrawal Requests'} ({filteredRequests.length})
@@ -658,101 +658,174 @@ export const CustomerPortalPage: React.FC = () => {
               No {activeSubTab} requests found for selected status filter.
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs border-collapse">
-                <thead>
-                  <tr className="border-b border-[#233763] text-slate-400 text-[10px] font-black uppercase tracking-wider">
-                    <th className="py-3 px-3">Req Code</th>
-                    <th className="py-3 px-3">Type</th>
-                    <th className="py-3 px-3">Player Details</th>
-                    <th className="py-3 px-3">Gateway</th>
-                    <th className="py-3 px-3">{activeSubTab === 'deposits' ? 'TrxID / Sender' : 'Recipient A/C'}</th>
-                    {activeSubTab === 'withdrawals' && <th className="py-3 px-3">Target Agent</th>}
-                    <th className="py-3 px-3">Amount</th>
-                    <th className="py-3 px-3">Status</th>
-                    <th className="py-3 px-3 text-right">Clearance Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-[#233763]/60 font-medium">
-                  {filteredRequests.map(req => (
-                    <tr key={req.id} className="hover:bg-[#1a294e]/50 transition-colors">
-                      
-                      <td className="py-3.5 px-3 font-mono font-black text-white">
-                        {req.requestCode}
-                        <div className="text-[10px] text-slate-400 font-mono">{req.createdAt}</div>
-                      </td>
+            <>
+              {/* Mobile Responsive Cards (md:hidden) */}
+              <div className="md:hidden space-y-3">
+                {filteredRequests.map(req => (
+                  <div 
+                    key={req.id} 
+                    className="bg-[#1a294e]/70 border border-[#233763] rounded-2xl p-3.5 space-y-2.5 transition-colors"
+                  >
+                    <div className="flex items-center justify-between gap-2 border-b border-[#233763]/60 pb-2">
+                      <div>
+                        <div className="font-mono font-black text-white text-xs flex items-center gap-1.5">
+                          <span>{req.requestCode}</span>
+                          {req.type === 'deposit' ? (
+                            <span className="px-1.5 py-0.2 rounded text-[9px] font-black bg-[#00c853]/20 text-[#00c853] border border-[#00c853]/40">
+                              DEPOSIT
+                            </span>
+                          ) : (
+                            <span className="px-1.5 py-0.2 rounded text-[9px] font-black bg-[#00b0ff]/20 text-[#00b0ff] border border-[#00b0ff]/40">
+                              CASHOUT
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-[10px] text-slate-400 font-mono mt-0.5">{req.createdAt}</div>
+                      </div>
+                      <div className="text-right">
+                        <div className="font-mono font-black text-sm text-[#00c853]">
+                          ৳{req.amount.toLocaleString()}
+                        </div>
+                      </div>
+                    </div>
 
-                      <td className="py-3.5 px-3">
-                        {req.type === 'deposit' ? (
-                          <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-[#00c853]/20 text-[#00c853] border border-[#00c853]/40 flex items-center gap-1 w-fit">
-                            <ArrowDownLeft className="w-3 h-3" />
-                            <span>DEPOSIT</span>
-                          </span>
-                        ) : (
-                          <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-[#00b0ff]/20 text-[#00b0ff] border border-[#00b0ff]/40 flex items-center gap-1 w-fit">
-                            <ArrowUpRight className="w-3 h-3" />
-                            <span>CASHOUT</span>
-                          </span>
-                        )}
-                      </td>
-
-                      <td className="py-3.5 px-3">
-                        <div className="font-bold text-white">{req.customerName}</div>
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      <div>
+                        <div className="text-[10px] text-slate-400 font-medium">Customer:</div>
+                        <div className="font-bold text-white truncate">{req.customerName}</div>
                         <div className="text-[10px] text-slate-400 font-mono">{req.customerPhone}</div>
-                      </td>
+                      </div>
+                      <div>
+                        <div className="text-[10px] text-slate-400 font-medium">Gateway & Details:</div>
+                        <div className="font-bold text-white">{req.paymentMethod}</div>
+                        <div className="text-[10px] text-slate-300 font-mono truncate">{req.refOrAccount}</div>
+                      </div>
+                    </div>
 
-                      <td className="py-3.5 px-3 font-bold text-white">
-                        {req.paymentMethod}
-                      </td>
-
-                      <td className="py-3.5 px-3 font-mono font-bold text-slate-200">
-                        {req.refOrAccount}
-                      </td>
-
-                      {activeSubTab === 'withdrawals' && (
-                        <td className="py-3.5 px-3 font-mono text-xs font-bold text-[#00b0ff]">
-                          {req.agentCode || '-'}
-                        </td>
-                      )}
-
-                      <td className="py-3.5 px-3 font-mono font-black text-sm text-[#00c853]">
-                        ৳{req.amount.toLocaleString()}
-                      </td>
-
-                      <td className="py-3.5 px-3">
+                    <div className="flex items-center justify-between gap-2 pt-1 border-t border-[#233763]/60">
+                      <div>
                         {req.status === 'approved' || req.status === 'completed' ? (
-                          <span className="px-2.5 py-1 rounded-full text-[10px] font-black bg-[#00c853]/20 text-[#00c853] border border-[#00c853]/40 flex items-center gap-1 w-fit">
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-[#00c853]/20 text-[#00c853] border border-[#00c853]/40 flex items-center gap-1">
                             <CheckCircle2 className="w-3 h-3" />
-                            <span>APPROVED BY AGENT</span>
+                            <span>Approved</span>
                           </span>
                         ) : req.status === 'rejected' ? (
-                          <span className="px-2.5 py-1 rounded-full text-[10px] font-black bg-rose-500/20 text-rose-400 border border-rose-500/40 flex items-center gap-1 w-fit">
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-rose-500/20 text-rose-400 border border-rose-500/40 flex items-center gap-1">
                             <XCircle className="w-3 h-3" />
-                            <span>REJECTED BY AGENT</span>
+                            <span>Rejected</span>
                           </span>
                         ) : (
-                          <span className="px-2.5 py-1 rounded-full text-[10px] font-black bg-amber-500/20 text-amber-400 border border-amber-500/40 flex items-center gap-1 w-fit animate-pulse">
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-500/20 text-amber-400 border border-amber-500/40 flex items-center gap-1 animate-pulse">
                             <Clock className="w-3 h-3" />
-                            <span>PENDING AGENT CLEARANCE</span>
+                            <span>Pending</span>
                           </span>
                         )}
-                      </td>
+                      </div>
+                      <div className="text-[10px] font-mono text-slate-400">
+                        Agent: <span className="text-amber-400 font-bold">{req.agentCode || 'General'}</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
 
-                      <td className="py-3.5 px-3 text-right">
-                        {req.status === 'pending' ? (
-                          <span className="px-2.5 py-1 rounded-xl bg-[#1a294e] border border-[#233763] text-amber-400 font-bold text-[11px]">
-                            Sent to Agent {req.agentCode || 'General'}
-                          </span>
-                        ) : (
-                          <span className="text-[10px] font-bold text-slate-400 italic">Settled by Agent</span>
-                        )}
-                      </td>
-
+              {/* Desktop Table View (hidden md:block) */}
+              <div className="hidden md:block overflow-x-auto">
+                <table className="w-full text-left text-xs border-collapse">
+                  <thead>
+                    <tr className="border-b border-[#233763] text-slate-400 text-[10px] font-black uppercase tracking-wider">
+                      <th className="py-3 px-3">Req Code</th>
+                      <th className="py-3 px-3">Type</th>
+                      <th className="py-3 px-3">Player Details</th>
+                      <th className="py-3 px-3">Gateway</th>
+                      <th className="py-3 px-3">{activeSubTab === 'deposits' ? 'TrxID / Sender' : 'Recipient A/C'}</th>
+                      {activeSubTab === 'withdrawals' && <th className="py-3 px-3">Target Agent</th>}
+                      <th className="py-3 px-3">Amount</th>
+                      <th className="py-3 px-3">Status</th>
+                      <th className="py-3 px-3 text-right">Clearance Actions</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody className="divide-y divide-[#233763]/60 font-medium">
+                    {filteredRequests.map(req => (
+                      <tr key={req.id} className="hover:bg-[#1a294e]/50 transition-colors">
+                        
+                        <td className="py-3.5 px-3 font-mono font-black text-white">
+                          {req.requestCode}
+                          <div className="text-[10px] text-slate-400 font-mono">{req.createdAt}</div>
+                        </td>
+
+                        <td className="py-3.5 px-3">
+                          {req.type === 'deposit' ? (
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-[#00c853]/20 text-[#00c853] border border-[#00c853]/40 flex items-center gap-1 w-fit">
+                              <ArrowDownLeft className="w-3 h-3" />
+                              <span>DEPOSIT</span>
+                            </span>
+                          ) : (
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-[#00b0ff]/20 text-[#00b0ff] border border-[#00b0ff]/40 flex items-center gap-1 w-fit">
+                              <ArrowUpRight className="w-3 h-3" />
+                              <span>CASHOUT</span>
+                            </span>
+                          )}
+                        </td>
+
+                        <td className="py-3.5 px-3">
+                          <div className="font-bold text-white">{req.customerName}</div>
+                          <div className="text-[10px] text-slate-400 font-mono">{req.customerPhone}</div>
+                        </td>
+
+                        <td className="py-3.5 px-3 font-bold text-white">
+                          {req.paymentMethod}
+                        </td>
+
+                        <td className="py-3.5 px-3 font-mono font-bold text-slate-200">
+                          {req.refOrAccount}
+                        </td>
+
+                        {activeSubTab === 'withdrawals' && (
+                          <td className="py-3.5 px-3 font-mono text-xs font-bold text-[#00b0ff]">
+                            {req.agentCode || '-'}
+                          </td>
+                        )}
+
+                        <td className="py-3.5 px-3 font-mono font-black text-sm text-[#00c853]">
+                          ৳{req.amount.toLocaleString()}
+                        </td>
+
+                        <td className="py-3.5 px-3">
+                          {req.status === 'approved' || req.status === 'completed' ? (
+                            <span className="px-2.5 py-1 rounded-full text-[10px] font-black bg-[#00c853]/20 text-[#00c853] border border-[#00c853]/40 flex items-center gap-1 w-fit">
+                              <CheckCircle2 className="w-3 h-3" />
+                              <span>APPROVED BY AGENT</span>
+                            </span>
+                          ) : req.status === 'rejected' ? (
+                            <span className="px-2.5 py-1 rounded-full text-[10px] font-black bg-rose-500/20 text-rose-400 border border-rose-500/40 flex items-center gap-1 w-fit">
+                              <XCircle className="w-3 h-3" />
+                              <span>REJECTED BY AGENT</span>
+                            </span>
+                          ) : (
+                            <span className="px-2.5 py-1 rounded-full text-[10px] font-black bg-amber-500/20 text-amber-400 border border-amber-500/40 flex items-center gap-1 w-fit animate-pulse">
+                              <Clock className="w-3 h-3" />
+                              <span>PENDING AGENT CLEARANCE</span>
+                            </span>
+                          )}
+                        </td>
+
+                        <td className="py-3.5 px-3 text-right">
+                          {req.status === 'pending' ? (
+                            <span className="px-2.5 py-1 rounded-xl bg-[#1a294e] border border-[#233763] text-amber-400 font-bold text-[11px]">
+                              Sent to Agent {req.agentCode || 'General'}
+                            </span>
+                          ) : (
+                            <span className="text-[10px] font-bold text-slate-400 italic">Settled by Agent</span>
+                          )}
+                        </td>
+
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
           )}
         </div>
 

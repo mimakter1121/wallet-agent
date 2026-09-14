@@ -157,17 +157,17 @@ export const SettingsPage: React.FC = () => {
   }
 
   return (
-    <div className="p-6 space-y-6 animate-fadeIn">
+    <div className="p-3 sm:p-6 space-y-4 sm:space-y-6 animate-fadeIn">
       
       {/* Top Banner */}
-      <div className="bg-[#121e3d] border border-[#233763] rounded-3xl p-6 shadow-card">
-        <div className="flex items-center justify-between gap-4">
+      <div className="bg-[#121e3d] border border-[#233763] rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-card">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-emerald-500/20 text-[#00c853] border border-[#00c853]/40 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-2xl bg-[#00c853]/20 text-[#00c853] border border-[#00c853]/40 flex items-center justify-center shrink-0">
               <Settings className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-lg font-bold text-white">
+              <h2 className="text-base sm:text-lg font-black text-white">
                 System Settings & Commission Controls
               </h2>
               <p className="text-xs text-slate-400">
@@ -176,7 +176,7 @@ export const SettingsPage: React.FC = () => {
             </div>
           </div>
           {lastSaved && (
-            <div className="flex items-center gap-2 text-xs font-bold text-[#00c853]">
+            <div className="flex items-center gap-2 text-xs font-bold text-[#00c853] bg-[#00c853]/10 px-3 py-1.5 rounded-xl border border-[#00c853]/30 w-fit">
               <CheckCircle2 className="w-4 h-4" />
               <span>Saved at {lastSaved}</span>
             </div>
@@ -184,10 +184,10 @@ export const SettingsPage: React.FC = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
         
         {/* Commission Rules Form */}
-        <form onSubmit={handleSaveCommission} className="bg-[#121e3d] border border-[#233763] rounded-3xl p-6 shadow-card space-y-5">
+        <form onSubmit={handleSaveCommission} className="bg-[#121e3d] border border-[#233763] rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-card space-y-4 sm:space-y-5">
           <div className="flex items-center justify-between pb-3 border-b border-[#233763]">
             <div className="flex items-center gap-2">
               <Percent className="w-4 h-4 text-[#00c853]" />
@@ -377,7 +377,7 @@ export const SettingsPage: React.FC = () => {
         </form>
 
         {/* Transaction Limits Form */}
-        <form onSubmit={handleSaveLimits} className="bg-[#121e3d] border border-[#233763] rounded-3xl p-6 shadow-card space-y-4">
+        <form onSubmit={handleSaveLimits} className="bg-[#121e3d] border border-[#233763] rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-card space-y-4">
           <div className="flex items-center gap-2 pb-3 border-b border-[#233763]">
             <DollarSign className="w-4 h-4 text-[#00b0ff]" />
             <h3 className="text-sm font-bold text-white">
@@ -431,7 +431,7 @@ export const SettingsPage: React.FC = () => {
           <button
             type="submit"
             disabled={isSaving}
-            className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl bg-[#00b0ff] hover:bg-[#40c4ff] disabled:opacity-60 text-white text-sm font-bold shadow-md transition-all"
+            className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl bg-[#00b0ff] hover:bg-[#40c4ff] disabled:opacity-60 text-white text-sm font-bold shadow-md transition-all cursor-pointer"
           >
             {isSaving ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
             <span>{isSaving ? 'Saving to Database...' : 'Save Transaction Limits'}</span>
@@ -439,7 +439,7 @@ export const SettingsPage: React.FC = () => {
         </form>
 
         {/* Telegram Support Channel Form */}
-        <form onSubmit={handleSaveTelegram} className="md:col-span-2 bg-[#121e3d] border border-[#233763] rounded-3xl p-6 shadow-card space-y-4">
+        <form onSubmit={handleSaveTelegram} className="md:col-span-2 bg-[#121e3d] border border-[#233763] rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-card space-y-4">
           <div className="flex items-center gap-2 pb-3 border-b border-[#233763]">
             <Send className="w-4 h-4 text-[#229ED9]" />
             <h3 className="text-sm font-bold text-white">

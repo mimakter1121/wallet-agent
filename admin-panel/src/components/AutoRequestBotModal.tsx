@@ -212,43 +212,43 @@ export const AutoRequestBotModal: React.FC<AutoRequestBotModalProps> = ({
   );
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-3 sm:p-4 overflow-y-auto animate-fadeIn">
-      <div className="relative w-full max-w-4xl bg-[#0f172e] border border-[#233763] rounded-3xl shadow-2xl overflow-hidden my-auto max-h-[92vh] flex flex-col text-white">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-2 sm:p-4 overflow-y-auto animate-fadeIn">
+      <div className="relative w-full max-w-4xl bg-[#0f172e] border border-[#233763] rounded-3xl shadow-2xl overflow-hidden my-auto max-h-[96vh] sm:max-h-[92vh] flex flex-col text-white">
         
         {/* Modal Header */}
-        <div className="px-6 py-4 bg-[#121e3d] border-b border-[#233763] flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-400 text-white flex items-center justify-center font-black shadow-lg shadow-emerald-950/40">
+        <div className="px-4 py-3 sm:px-6 sm:py-4 bg-[#121e3d] border-b border-[#233763] flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-400 text-white flex items-center justify-center font-black shadow-lg shadow-emerald-950/40 shrink-0">
               <Zap className="w-5 h-5" />
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h3 className="text-base font-black text-white">
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                <h3 className="text-sm sm:text-base font-black text-white truncate">
                   Automated Customer Request Bot
                 </h3>
                 {botState.status === 'running' && (
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center gap-1.5 animate-pulse">
+                  <span className="px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-black uppercase bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center gap-1.5 animate-pulse">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
                     LIVE DISPATCHING
                   </span>
                 )}
                 {botState.status === 'paused' && (
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                  <span className="px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-black uppercase bg-amber-500/20 text-amber-400 border border-amber-500/30">
                     PAUSED
                   </span>
                 )}
                 {botState.status === 'completed' && (
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-sky-500/20 text-sky-400 border border-sky-500/30">
+                  <span className="px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-black uppercase bg-sky-500/20 text-sky-400 border border-sky-500/30">
                     QUOTA COMPLETED
                   </span>
                 )}
                 {botState.status === 'idle' && (
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-slate-500/20 text-slate-400 border border-slate-500/30">
+                  <span className="px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-black uppercase bg-slate-500/20 text-slate-400 border border-slate-500/30">
                     IDLE
                   </span>
                 )}
               </div>
-              <p className="text-xs text-slate-300 mt-0.5 font-medium">
+              <p className="hidden sm:block text-xs text-slate-300 mt-0.5 font-medium truncate">
                 Simulates organic player deposit & cashout requests with realistic profiles & TrxIDs
               </p>
             </div>
@@ -256,14 +256,15 @@ export const AutoRequestBotModal: React.FC<AutoRequestBotModalProps> = ({
 
           <button
             onClick={onClose}
-            className="w-8 h-8 rounded-xl bg-[#1a294e] hover:bg-[#233763] text-slate-400 hover:text-white flex items-center justify-center transition-colors"
+            className="w-8 h-8 rounded-xl bg-[#1a294e] hover:bg-[#233763] text-slate-400 hover:text-white flex items-center justify-center transition-colors shrink-0"
+            title="Close"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* Modal Body */}
-        <div className="p-6 overflow-y-auto space-y-6 flex-1 custom-scrollbar">
+        <div className="p-3.5 sm:p-6 overflow-y-auto space-y-4 sm:space-y-6 flex-1 custom-scrollbar">
           
           {/* Live Progress Banner */}
           <div className="bg-[#14234b] border border-[#233763] rounded-2xl p-4 space-y-3">
@@ -680,13 +681,13 @@ export const AutoRequestBotModal: React.FC<AutoRequestBotModalProps> = ({
           </div>
 
           {/* Action Buttons */}
-          <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
-            <div className="flex items-center gap-2">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2">
+            <div className="flex flex-wrap items-center gap-2">
               {botState.status === 'running' ? (
                 <button
                   type="button"
                   onClick={handlePause}
-                  className="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs shadow-lg shadow-amber-950/40 flex items-center gap-2 transition-all"
+                  className="flex-1 sm:flex-initial px-4 sm:px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs shadow-lg shadow-amber-950/40 flex items-center justify-center gap-2 transition-all"
                 >
                   <Pause className="w-4 h-4" />
                   <span>Pause Bot</span>
@@ -695,7 +696,7 @@ export const AutoRequestBotModal: React.FC<AutoRequestBotModalProps> = ({
                 <button
                   type="button"
                   onClick={handleResume}
-                  className="px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs shadow-lg shadow-emerald-950/40 flex items-center gap-2 transition-all"
+                  className="flex-1 sm:flex-initial px-4 sm:px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs shadow-lg shadow-emerald-950/40 flex items-center justify-center gap-2 transition-all"
                 >
                   <Play className="w-4 h-4" />
                   <span>Resume Bot</span>
@@ -704,10 +705,10 @@ export const AutoRequestBotModal: React.FC<AutoRequestBotModalProps> = ({
                 <button
                   type="button"
                   onClick={handleStart}
-                  className="px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs shadow-lg shadow-emerald-950/40 flex items-center gap-2 transition-all"
+                  className="flex-1 sm:flex-initial px-4 sm:px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs shadow-lg shadow-emerald-950/40 flex items-center justify-center gap-2 transition-all"
                 >
                   <Play className="w-4 h-4" />
-                  <span>Start Auto Bot ({totalRequests} Requests)</span>
+                  <span>Start Auto Bot ({totalRequests})</span>
                 </button>
               )}
 
@@ -715,7 +716,7 @@ export const AutoRequestBotModal: React.FC<AutoRequestBotModalProps> = ({
                 <button
                   type="button"
                   onClick={handleStop}
-                  className="px-4 py-2.5 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/30 font-bold text-xs flex items-center gap-1.5 transition-all"
+                  className="px-3.5 py-2.5 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/30 font-bold text-xs flex items-center justify-center gap-1.5 transition-all"
                 >
                   <Square className="w-3.5 h-3.5" />
                   <span>Stop</span>
@@ -725,11 +726,11 @@ export const AutoRequestBotModal: React.FC<AutoRequestBotModalProps> = ({
               <button
                 type="button"
                 onClick={handleReset}
-                className="px-3.5 py-2.5 rounded-xl bg-[#1a294e] hover:bg-[#233763] text-slate-300 text-xs font-bold flex items-center gap-1.5 transition-all"
+                className="px-3 py-2.5 rounded-xl bg-[#1a294e] hover:bg-[#233763] text-slate-300 text-xs font-bold flex items-center justify-center gap-1.5 transition-all"
                 title="Reset sent counter and logs"
               >
                 <RotateCcw className="w-3.5 h-3.5" />
-                <span>Reset Count</span>
+                <span>Reset</span>
               </button>
             </div>
 
@@ -738,7 +739,7 @@ export const AutoRequestBotModal: React.FC<AutoRequestBotModalProps> = ({
               type="button"
               disabled={isInstantSending}
               onClick={handleInstantDispatch}
-              className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-400 hover:to-indigo-500 text-white font-black text-xs shadow-lg shadow-sky-950/40 flex items-center gap-2 transition-all disabled:opacity-60"
+              className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-400 hover:to-indigo-500 text-white font-black text-xs shadow-lg shadow-sky-950/40 flex items-center justify-center gap-2 transition-all disabled:opacity-60"
             >
               <Zap className={`w-4 h-4 ${isInstantSending ? 'animate-bounce' : ''}`} />
               <span>{isInstantSending ? 'Dispatching...' : '⚡ Dispatch 1 Request Now'}</span>
@@ -773,7 +774,7 @@ export const AutoRequestBotModal: React.FC<AutoRequestBotModalProps> = ({
                     className="p-3 rounded-xl bg-[#121e3d] border border-[#233763] flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs hover:border-[#35508a] transition-all"
                   >
                     <div className="flex items-center gap-3">
-                      <div className={`w-8 h-8 rounded-xl flex items-center justify-center font-black ${
+                      <div className={`w-8 h-8 rounded-xl flex items-center justify-center font-black shrink-0 ${
                         log.type === 'deposit'
                           ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
                           : 'bg-sky-500/20 text-sky-400 border border-sky-500/30'
@@ -781,8 +782,8 @@ export const AutoRequestBotModal: React.FC<AutoRequestBotModalProps> = ({
                         {log.type === 'deposit' ? <ArrowDownLeft className="w-4 h-4" /> : <ArrowUpRight className="w-4 h-4" />}
                       </div>
 
-                      <div>
-                        <div className="flex items-center gap-2">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
                           <span className="font-mono font-black text-white">{log.requestCode}</span>
                           <span className={`px-1.5 py-0.2 rounded text-[10px] font-black uppercase ${
                             log.type === 'deposit' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-sky-500/20 text-sky-400'
@@ -802,7 +803,7 @@ export const AutoRequestBotModal: React.FC<AutoRequestBotModalProps> = ({
                       </div>
                     </div>
 
-                    <div className="text-right shrink-0">
+                    <div className="text-left sm:text-right shrink-0 pt-1 sm:pt-0 border-t sm:border-t-0 border-[#233763]/60">
                       <div className="font-mono font-black text-emerald-400 text-sm">
                         ৳{log.amount.toLocaleString()} BDT
                       </div>
@@ -819,14 +820,14 @@ export const AutoRequestBotModal: React.FC<AutoRequestBotModalProps> = ({
         </div>
 
         {/* Modal Footer */}
-        <div className="px-6 py-3 bg-[#121e3d] border-t border-[#233763] flex items-center justify-between text-xs text-slate-400">
+        <div className="px-4 sm:px-6 py-3 bg-[#121e3d] border-t border-[#233763] flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-slate-400">
           <div className="flex items-center gap-2">
-            <ShieldCheck className="w-4 h-4 text-emerald-400" />
-            <span>Runs in background • Direct Supabase sync • Triggers Agent Realtime alerts</span>
+            <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
+            <span className="text-[11px] truncate">Runs in background • Direct Supabase sync • Triggers Agent Realtime alerts</span>
           </div>
           <button
             onClick={onClose}
-            className="px-4 py-1.5 rounded-xl bg-[#1a294e] hover:bg-[#233763] text-white font-bold transition-colors"
+            className="w-full sm:w-auto px-4 py-1.5 rounded-xl bg-[#1a294e] hover:bg-[#233763] text-white font-bold transition-colors text-center"
           >
             Close / Minimize
           </button>
