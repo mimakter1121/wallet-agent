@@ -47,7 +47,7 @@ export const AutoRequestBotModal: React.FC<AutoRequestBotModalProps> = ({
   const [minAmount, setMinAmount] = useState<number>(500);
   const [maxAmount, setMaxAmount] = useState<number>(25000);
   const [requestType, setRequestType] = useState<'random' | 'deposit' | 'withdrawal'>('random');
-  const [selectedMethods, setSelectedMethods] = useState<string[]>(['bKash', 'Nagad', 'Rocket', 'Upay']);
+  const [selectedGateway, setSelectedGateway] = useState<'bKash' | 'Nagad' | 'Rocket' | 'Upay' | 'random'>('bKash');
   const [isInstantSending, setIsInstantSending] = useState(false);
 
   // Sync with service
@@ -67,7 +67,7 @@ export const AutoRequestBotModal: React.FC<AutoRequestBotModalProps> = ({
     setMinAmount(currentCfg.minAmount);
     setMaxAmount(currentCfg.maxAmount);
     setRequestType(currentCfg.requestType);
-    setSelectedMethods(currentCfg.allowedMethods || ['bKash', 'Nagad', 'Rocket', 'Upay']);
+    setSelectedGateway(currentCfg.selectedGateway || 'bKash');
     setMinIntervalSec(currentCfg.minIntervalSec);
     setMaxIntervalSec(currentCfg.maxIntervalSec);
 
@@ -95,15 +95,6 @@ export const AutoRequestBotModal: React.FC<AutoRequestBotModalProps> = ({
     }
   };
 
-  const handleMethodToggle = (method: string) => {
-    if (selectedMethods.includes(method)) {
-      if (selectedMethods.length > 1) {
-        setSelectedMethods(selectedMethods.filter(m => m !== method));
-      }
-    } else {
-      setSelectedMethods([...selectedMethods, method]);
-    }
-  };
 
   const handleStart = () => {
     const config: Partial<AutoBotConfig> = {
@@ -114,7 +105,7 @@ export const AutoRequestBotModal: React.FC<AutoRequestBotModalProps> = ({
       minAmount,
       maxAmount,
       requestType,
-      allowedMethods: selectedMethods
+      selectedGateway
     };
     autoRequestBotService.startBot(config);
   };
@@ -143,7 +134,7 @@ export const AutoRequestBotModal: React.FC<AutoRequestBotModalProps> = ({
         minAmount,
         maxAmount,
         requestType,
-        allowedMethods: selectedMethods
+        selectedGateway
       });
       if (onRequestDispatched) onRequestDispatched();
     } finally {
@@ -462,30 +453,57 @@ export const AutoRequestBotModal: React.FC<AutoRequestBotModalProps> = ({
               </div>
             </div>
 
-            {/* Allowed Channels */}
-            <div className="bg-[#121e3d] border border-[#233763] rounded-2xl p-4 space-y-2">
-              <label className="text-xs font-bold text-slate-300">Payment Gateways</label>
-              <div className="flex flex-wrap gap-2">
-                {['bKash', 'Nagad', 'Rocket', 'Upay'].map((method) => {
-                  const isSelected = selectedMethods.includes(method);
+            {/* Dedicated Gateway Selector */}
+            <div className="bg-[#121e3d] border border-[#233763] rounded-2xl p-4 space-y-2.5">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold text-slate-300">Payment Gateway (Channel)</label>
+                <span className="text-[10px] text-amber-400 font-mono">
+                  {selectedGateway === 'Rocket' ? '🔢 Rocket: Strictly Numbers Only TrxID' : 'Select Target Gateway'}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                {[
+                  { key: 'bKash', label: 'bKash', color: 'border-pink-500 bg-pink-500/15 text-pink-300', dot: 'bg-pink-500' },
+                  { key: 'Nagad', label: 'Nagad', color: 'border-orange-500 bg-orange-500/15 text-orange-300', dot: 'bg-orange-500' },
+                  { key: 'Rocket', label: 'Rocket (DBBL)', color: 'border-purple-500 bg-purple-500/15 text-purple-300', dot: 'bg-purple-500', note: '100% Numbers Only' },
+                  { key: 'Upay', label: 'Upay', color: 'border-cyan-500 bg-cyan-500/15 text-cyan-300', dot: 'bg-cyan-500' },
+                  { key: 'random', label: '🎲 Mix All', color: 'border-emerald-500 bg-emerald-500/15 text-emerald-300', dot: 'bg-emerald-500' }
+                ].map((g) => {
+                  const isSelected = selectedGateway === g.key;
                   return (
                     <button
-                      key={method}
+                      key={g.key}
                       type="button"
                       disabled={botState.status === 'running'}
-                      onClick={() => handleMethodToggle(method)}
-                      className={`px-3 py-1 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+                      onClick={() => setSelectedGateway(g.key as any)}
+                      className={`px-2.5 py-2 rounded-xl text-xs font-bold transition-all flex flex-col items-center justify-center gap-1 border ${
                         isSelected
-                          ? 'bg-[#1a294e] border-2 border-emerald-400 text-white'
-                          : 'bg-[#1a294e]/50 border border-[#233763] text-slate-400 opacity-60'
+                          ? `${g.color} shadow-lg ring-1 ring-white/30 font-black scale-[1.02]`
+                          : 'bg-[#1a294e] border-[#233763] text-slate-400 hover:text-white'
                       }`}
                     >
-                      <span className={`w-2 h-2 rounded-full ${isSelected ? 'bg-emerald-400' : 'bg-slate-500'}`} />
-                      <span>{method}</span>
+                      <div className="flex items-center gap-1.5">
+                        <span className={`w-2 h-2 rounded-full ${isSelected ? g.dot : 'bg-slate-500'}`} />
+                        <span>{g.label}</span>
+                      </div>
+                      {g.note && (
+                        <span className="text-[9px] text-purple-300 font-mono font-medium">
+                          {g.note}
+                        </span>
+                      )}
                     </button>
                   );
                 })}
               </div>
+
+              <p className="text-[11px] text-slate-400">
+                {selectedGateway === 'Rocket'
+                  ? 'Selected: Rocket. Transaction IDs will be 100% numeric (10 digits, e.g. 4819204812) without any letters.'
+                  : selectedGateway === 'random'
+                  ? 'Selected: Random Gateway Mix across bKash, Nagad, Rocket, and Upay.'
+                  : `Selected: ${selectedGateway}. All generated requests will be exclusively processed through ${selectedGateway}.`}
+              </p>
             </div>
 
           </div>

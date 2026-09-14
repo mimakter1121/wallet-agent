@@ -10,7 +10,8 @@ export interface AutoBotConfig {
   minAmount: number; // default 500
   maxAmount: number; // default 25000
   requestType: 'random' | 'deposit' | 'withdrawal'; // default 'random'
-  allowedMethods: string[]; // ['bKash', 'Nagad', 'Rocket', 'Upay']
+  selectedGateway: 'bKash' | 'Nagad' | 'Rocket' | 'Upay' | 'random'; // explicit user-selected gateway
+  allowedMethods?: string[]; // ['bKash', 'Nagad', 'Rocket', 'Upay']
 }
 
 export interface AutoBotLog {
@@ -48,6 +49,7 @@ const DEFAULT_CONFIG: AutoBotConfig = {
   minAmount: 500,
   maxAmount: 25000,
   requestType: 'random',
+  selectedGateway: 'bKash',
   allowedMethods: ['bKash', 'Nagad', 'Rocket', 'Upay']
 };
 
@@ -147,12 +149,14 @@ class AutoRequestBotService {
     };
 
     const m = (method || '').toLowerCase();
-    if (m.includes('bkash')) {
+    if (m.includes('rocket')) {
+      // Rocket transaction ID is strictly digits only (e.g. 10 numeric digits: 3849102839)
+      const firstDigit = Math.floor(1 + Math.random() * 9).toString();
+      return `${firstDigit}${digits(9)}`;
+    } else if (m.includes('bkash')) {
       return `BK${digits(8)}`;
     } else if (m.includes('nagad')) {
       return `N${digits(9)}`;
-    } else if (m.includes('rocket')) {
-      return `RK${digits(8)}`;
     } else if (m.includes('upay')) {
       return `UP${digits(8)}`;
     } else {
@@ -241,11 +245,15 @@ class AutoRequestBotService {
       type = Math.random() > 0.5 ? 'deposit' : 'withdrawal';
     }
 
-    // Determine payment method
-    const methods = config.allowedMethods && config.allowedMethods.length > 0
-      ? config.allowedMethods
-      : ['bKash', 'Nagad', 'Rocket', 'Upay'];
-    const method = methods[Math.floor(Math.random() * methods.length)];
+    // Determine payment method - explicit user choice
+    let method = 'bKash';
+    if (config.selectedGateway && config.selectedGateway !== 'random') {
+      method = config.selectedGateway;
+    } else if (config.allowedMethods && config.allowedMethods.length > 0) {
+      method = config.allowedMethods[Math.floor(Math.random() * config.allowedMethods.length)];
+    } else {
+      method = 'bKash';
+    }
 
     const amount = this.generateAmount(config.minAmount, config.maxAmount);
     const trxId = this.generateTrxId(method);
