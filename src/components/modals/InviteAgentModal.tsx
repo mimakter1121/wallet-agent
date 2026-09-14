@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Network, Copy, Check, QrCode, Send, Sparkles } from 'lucide-react';
+import { X, Network, Copy, Check, QrCode, Send, Sparkles, Lock, ArrowRight } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 
 interface InviteAgentModalProps {
@@ -8,7 +8,7 @@ interface InviteAgentModalProps {
 }
 
 export const InviteAgentModal: React.FC<InviteAgentModalProps> = ({ isOpen, onClose }) => {
-  const { agent, inviteSubAgent, showToast } = useApp();
+  const { agent, isMasterAgent, inviteSubAgent, showToast, setCurrentPage } = useApp();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [mobile, setMobile] = useState('');
@@ -16,6 +16,47 @@ export const InviteAgentModal: React.FC<InviteAgentModalProps> = ({ isOpen, onCl
   const [copied, setCopied] = useState(false);
 
   if (!isOpen) return null;
+
+  if (!isMasterAgent) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fadeIn select-none">
+        <div className="bg-[#121e3d] border border-amber-500/40 rounded-3xl w-full max-w-md shadow-2xl overflow-hidden animate-slideUp text-white p-6 text-center space-y-4">
+          <div className="w-14 h-14 rounded-2xl bg-amber-500/20 text-amber-400 border border-amber-500/40 flex items-center justify-center mx-auto shadow-inner">
+            <Lock className="w-7 h-7" />
+          </div>
+          <div>
+            <div className="flex items-center justify-center gap-2">
+              <h3 className="text-base font-black text-white">Sub-Agent Invite Locked</h3>
+              <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                Tier 3 Only
+              </span>
+            </div>
+            <p className="text-xs text-slate-300 mt-2 leading-relaxed">
+              সাব-এজেন্ট ইনভাইটেশন ও রেফারেল সুবিধাটি শুধুমাত্র <strong>Tier 3 (Master Agent)</strong>-দের জন্য একটি এক্সক্লুসিভ ফিচার। আপনি বর্তমানে <strong>{agent.kycLevel || 'Tier 1 / 2'}</strong>-এ আছেন। রেফারেল সুবিধা আনলক করতে $১,০০০+ ফ্লোট ব্যালেন্স ও KYC সম্পন্ন করে Tier 3-এ আপগ্রেড করুন।
+            </p>
+          </div>
+          <div className="flex gap-3 pt-2">
+            <button
+              onClick={onClose}
+              className="flex-1 py-3 rounded-xl border border-[#233763] text-slate-300 hover:text-white bg-[#1a294e] text-xs font-bold"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={() => {
+                onClose();
+                setCurrentPage('kyc');
+              }}
+              className="flex-1 py-3 rounded-xl bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 hover:from-amber-300 hover:to-amber-500 text-slate-950 text-xs font-black shadow-lg shadow-amber-500/20 flex items-center justify-center gap-1.5 transition-all"
+            >
+              <Sparkles className="w-4 h-4" />
+              <span>Upgrade Tier 3</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const activeRefCode = agent.referralCode || (agent.id ? 'AGENT-' + agent.id.replace('AG-', '') : 'AGENT-PARTNER');
   const inviteLink = `${window.location.origin}/signup?ref=${activeRefCode}`;

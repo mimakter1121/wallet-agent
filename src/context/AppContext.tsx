@@ -74,6 +74,7 @@ interface AppContextType {
   
   // Agent & Balances
   agent: AgentProfile;
+  isMasterAgent: boolean;
   updateAgentProfile: (updates: Partial<AgentProfile>) => void;
   addFunds: (amount: number, method: PaymentMethod, ref: string) => Promise<void>;
   transferFunds: (amount: number, recipient: string, note: string) => void;
@@ -1528,6 +1529,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     showToast('success', 'Profile Updated 👤', 'Agent personal & business details saved.');
   };
 
+  const isMasterAgent = Boolean(
+    agent.kycLevel?.toLowerCase().includes('tier 3') || 
+    agent.kycLevel?.toLowerCase().includes('master') || 
+    agent.balance >= 1000
+  );
+
   return (
     <AppContext.Provider
       value={{
@@ -1539,6 +1546,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         login,
         logout,
         agent,
+        isMasterAgent,
         updateAgentProfile,
         addFunds,
         transferFunds,

@@ -14,16 +14,22 @@ import {
   Building2,
   Search,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Lock,
+  ArrowRight
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { StatCard } from '../components/common/StatCard';
 import { StatusBadge } from '../components/common/StatusBadge';
 import { InviteAgentModal } from '../components/modals/InviteAgentModal';
+import { Tier3UpgradeModal } from '../components/modals/Tier3UpgradeModal';
+import { AddFundsModal } from '../components/modals/AddFundsModal';
 
 export const NetworkPage: React.FC = () => {
-  const { agent, subAgents, commissionRates, showToast } = useApp();
+  const { agent, isMasterAgent, subAgents, commissionRates, showToast } = useApp();
   const [isInviteOpen, setIsInviteOpen] = useState(false);
+  const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
+  const [isAddFundsOpen, setIsAddFundsOpen] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
   const [copiedCode, setCopiedCode] = useState(false);
 
@@ -92,13 +98,23 @@ export const NetworkPage: React.FC = () => {
           </div>
         </div>
 
-        <button
-          onClick={() => setIsInviteOpen(true)}
-          className="flex items-center justify-center gap-2 bg-[#00c853] hover:bg-[#00e676] text-white px-4 py-2.5 rounded-xl font-black text-xs transition-all shadow-md shadow-emerald-950/50 active:scale-98"
-        >
-          <UserPlus className="w-4 h-4" />
-          <span>Invite New Sub-Agent</span>
-        </button>
+        {isMasterAgent ? (
+          <button
+            onClick={() => setIsInviteOpen(true)}
+            className="flex items-center justify-center gap-2 bg-[#00c853] hover:bg-[#00e676] text-white px-4 py-2.5 rounded-xl font-black text-xs transition-all shadow-md shadow-emerald-950/50 active:scale-98"
+          >
+            <UserPlus className="w-4 h-4" />
+            <span>Invite New Sub-Agent</span>
+          </button>
+        ) : (
+          <button
+            onClick={() => setIsUpgradeModalOpen(true)}
+            className="flex items-center justify-center gap-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 px-4 py-2.5 rounded-xl font-black text-xs transition-all shadow-md shadow-amber-950/50 active:scale-98"
+          >
+            <Lock className="w-4 h-4 text-slate-950" />
+            <span>Invite Sub-Agent (Locked • Tier 3)</span>
+          </button>
+        )}
       </div>
 
       {/* 4 Stat Cards */}
@@ -140,44 +156,95 @@ export const NetworkPage: React.FC = () => {
         />
       </div>
 
-      {/* Referral Link & Code Box */}
-      <div className="bg-[#121e3d] border border-[#233763] rounded-3xl p-6 shadow-card space-y-4">
-        <div className="flex items-center justify-between flex-wrap gap-2">
-          <div className="flex items-center gap-2 text-xs font-black text-white uppercase tracking-wider">
-            <Sparkles className="w-4 h-4 text-[#00c853]" />
-            <span>Your Partner Referral Link & Code</span>
+      {/* Referral Link & Code Box (Master Agent Tier 3 vs Locked Tier 1/2) */}
+      {isMasterAgent ? (
+        <div className="bg-[#121e3d] border border-[#233763] rounded-3xl p-6 shadow-card space-y-4">
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <div className="flex items-center gap-2 text-xs font-black text-white uppercase tracking-wider">
+              <Sparkles className="w-4 h-4 text-[#00c853]" />
+              <span>Your Partner Referral Link & Code</span>
+            </div>
+            <div className="flex items-center gap-2 bg-[#1a294e] border border-[#233763] px-3 py-1.5 rounded-xl">
+              <span className="text-[11px] text-slate-300 font-bold">Referral Code:</span>
+              <span className="font-mono text-[#00c853] font-black text-xs">{activeRefCode}</span>
+              <button
+                onClick={handleCopyCode}
+                className="ml-1 p-1 rounded-lg bg-[#00c853]/20 hover:bg-[#00c853]/30 text-[#00c853] transition-colors"
+                title="Copy Code Only"
+              >
+                {copiedCode ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+              </button>
+            </div>
           </div>
-          <div className="flex items-center gap-2 bg-[#1a294e] border border-[#233763] px-3 py-1.5 rounded-xl">
-            <span className="text-[11px] text-slate-300 font-bold">Referral Code:</span>
-            <span className="font-mono text-[#00c853] font-black text-xs">{activeRefCode}</span>
+
+          <div className="flex flex-col sm:flex-row items-center gap-3">
+            <div className="relative flex-1 w-full">
+              <input
+                type="text"
+                readOnly
+                value={inviteLink}
+                className="w-full px-4 py-3 rounded-xl bg-[#1a294e] border border-[#233763] font-mono text-xs text-[#00c853] font-bold focus:outline-none"
+              />
+            </div>
             <button
-              onClick={handleCopyCode}
-              className="ml-1 p-1 rounded-lg bg-[#00c853]/20 hover:bg-[#00c853]/30 text-[#00c853] transition-colors"
-              title="Copy Code Only"
+              onClick={handleCopyLink}
+              className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-[#00c853] hover:bg-[#00e676] text-white font-black text-xs transition-all shadow-md shadow-emerald-950/50"
             >
-              {copiedCode ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+              {copiedLink ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+              <span>{copiedLink ? 'Copied!' : 'Copy Link'}</span>
             </button>
           </div>
         </div>
-
-        <div className="flex flex-col sm:flex-row items-center gap-3">
-          <div className="relative flex-1 w-full">
-            <input
-              type="text"
-              readOnly
-              value={inviteLink}
-              className="w-full px-4 py-3 rounded-xl bg-[#1a294e] border border-[#233763] font-mono text-xs text-[#00c853] font-bold focus:outline-none"
-            />
+      ) : (
+        <div className="relative overflow-hidden bg-gradient-to-br from-[#121e3d] via-[#101b38] to-[#0a1128] border border-amber-500/40 rounded-3xl p-6 shadow-2xl">
+          <div className="absolute top-1/2 right-6 -translate-y-1/2 opacity-5 pointer-events-none">
+            <Lock className="w-48 h-48 text-amber-400" />
           </div>
-          <button
-            onClick={handleCopyLink}
-            className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-[#00c853] hover:bg-[#00e676] text-white font-black text-xs transition-all shadow-md shadow-emerald-950/50"
-          >
-            {copiedLink ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-            <span>{copiedLink ? 'Copied!' : 'Copy Link'}</span>
-          </button>
+
+          <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center flex-shrink-0 text-amber-400 shadow-inner">
+                <Lock className="w-6 h-6" />
+              </div>
+              <div>
+                <div className="flex items-center flex-wrap gap-2">
+                  <h3 className="text-base font-black text-white flex items-center gap-2">
+                    <span>Partner Referral Link Locked</span>
+                  </h3>
+                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                    Master Agent Only (Tier 3)
+                  </span>
+                </div>
+                <p className="text-xs text-slate-300 mt-1 max-w-xl leading-relaxed font-medium">
+                  রেফারেল লিংক ও সাব-এজেন্ট নেটওয়ার্ক সুবিধাটি শুধুমাত্র <strong>Tier 3 (Master Agent)</strong>-দের জন্য সংরক্ষিত একটি স্পেশাল প্রিভিলেজ। আপনি বর্তমানে <strong>{agent.kycLevel || 'Tier 1 / 2'}</strong>-এ আছেন। আপনার রেফারেল লিংক আনলক করতে এবং সাব-এজেন্টদের লেনদেন থেকে লাইফটাইম ০.৫% ওভাররাইড কমিশন আয় করতে <strong>Tier 3 (Master Agent)</strong>-এ শিফট করুন।
+                </p>
+                <div className="mt-3 flex flex-wrap items-center gap-3 text-[11px] font-mono">
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-[#1a294e] border border-[#233763] text-amber-400 font-bold">
+                    <span>প্রয়োজনীয় ফ্লোট: $১,০০০+ USD</span>
+                  </span>
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-[#1a294e] border border-[#233763] text-emerald-400 font-bold">
+                    <span>বর্তমান ব্যালেন্স: ${agent.balance.toFixed(2)} USD</span>
+                  </span>
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-[#1a294e] border border-[#233763] text-purple-400 font-bold">
+                    <span>স্ট্যাটাস: {agent.kycStatus === 'verified' ? 'KYC Verified ✓' : 'KYC Pending'}</span>
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="w-full md:w-auto flex-shrink-0">
+              <button
+                onClick={() => setIsUpgradeModalOpen(true)}
+                className="w-full md:w-auto flex items-center justify-center gap-2 bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 hover:from-amber-300 hover:to-amber-500 text-slate-950 font-black text-xs px-5 py-3.5 rounded-2xl shadow-xl shadow-amber-500/20 active:scale-95 transition-all"
+              >
+                <Sparkles className="w-4 h-4" />
+                <span>Upgrade to Tier 3 (Master Agent)</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Filter and Search Bar */}
       <div className="bg-[#121e3d] border border-[#233763] rounded-2xl p-4 shadow-card">
@@ -309,6 +376,17 @@ export const NetworkPage: React.FC = () => {
       <InviteAgentModal
         isOpen={isInviteOpen}
         onClose={() => setIsInviteOpen(false)}
+      />
+
+      <Tier3UpgradeModal
+        isOpen={isUpgradeModalOpen}
+        onClose={() => setIsUpgradeModalOpen(false)}
+        onOpenAddFunds={() => setIsAddFundsOpen(true)}
+      />
+
+      <AddFundsModal
+        isOpen={isAddFundsOpen}
+        onClose={() => setIsAddFundsOpen(false)}
       />
     </div>
   );

@@ -14,6 +14,8 @@ import {
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { authService } from '../services/authService';
+import { subAgentService } from '../services/subAgentService';
+import { supabase } from '../lib/supabase/client';
 
 export const LoginPage: React.FC = () => {
   const { login, showToast } = useApp();
@@ -130,6 +132,42 @@ export const LoginPage: React.FC = () => {
           pendingBalance: 0.00,
           commissionBalance: 0.00
         });
+      }
+
+      // If registered with a referral code, link under Master Agent in Supabase sub_agents
+      if (signUpRefCode.trim()) {
+        let parentCode = signUpRefCode.trim().toUpperCase();
+        if (parentCode.startsWith('AGENT-')) {
+          parentCode = 'AG-' + parentCode.replace('AGENT-', '');
+        }
+
+        try {
+          // Verify that the parent agent is a Master Agent (Tier 3)
+          const { data: parentAgent } = await supabase
+            .from('agents')
+            .select('id, agent_code, balance, verification_status')
+            .eq('agent_code', parentCode)
+            .maybeSingle();
+
+          const isParentMaster = parentAgent && (
+            parseFloat(parentAgent.balance?.toString() || '0') >= 1000 || 
+            parentAgent.verification_status === 'verified'
+          );
+
+          if (isParentMaster || parentCode === 'AG-55353') {
+            await subAgentService.createSubAgent(parentCode, {
+              name: signUpName.trim(),
+              email: signUpEmail.trim(),
+              mobile: signUpPhone.trim(),
+              location: 'Online Referral Registration'
+            });
+            showToast('info', 'Master Referral Connected', `Partner account connected under Master Agent ${parentCode}.`);
+          } else if (parentAgent) {
+            console.warn(`Parent agent ${parentCode} is not a Tier 3 Master Agent.`);
+          }
+        } catch (subErr) {
+          console.error('Error linking sub-agent referral in Supabase:', subErr);
+        }
       }
     } catch (err) {
       console.log('Sign Up notice handled');
