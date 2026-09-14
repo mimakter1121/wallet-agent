@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { 
   X, 
   Play, 
@@ -15,7 +15,10 @@ import {
   ArrowUpRight,
   Sliders,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  Search,
+  Check,
+  Filter
 } from 'lucide-react';
 import { 
   autoRequestBotService, 
@@ -38,63 +41,116 @@ export const AutoRequestBotModal: React.FC<AutoRequestBotModalProps> = ({
   agents,
   onRequestDispatched
 }) => {
-  const [botState, setBotState] = useState<AutoBotState>(autoRequestBotService.getState());
-  const [targetAgentId, setTargetAgentId] = useState<string>('all');
-  const [totalRequests, setTotalRequests] = useState<number>(10);
-  const [intervalPreset, setIntervalPreset] = useState<'realistic' | 'fast' | 'custom'>('realistic');
-  const [minIntervalSec, setMinIntervalSec] = useState<number>(60);
-  const [maxIntervalSec, setMaxIntervalSec] = useState<number>(120);
-  const [minAmount, setMinAmount] = useState<number>(500);
-  const [maxAmount, setMaxAmount] = useState<number>(25000);
-  const [requestType, setRequestType] = useState<'random' | 'deposit' | 'withdrawal'>('random');
-  const [selectedGateway, setSelectedGateway] = useState<'bKash' | 'Nagad' | 'Rocket' | 'Upay' | 'random'>('bKash');
+  const [botState, setBotState] = useState<AutoBotState>(() => autoRequestBotService.getState());
+  const initialCfg = autoRequestBotService.getState().config;
+
+  const [targetAgentId, setTargetAgentId] = useState<string>(initialCfg.targetAgentId);
+  const [agentSearchQuery, setAgentSearchQuery] = useState<string>('');
+  const [totalRequests, setTotalRequests] = useState<number>(initialCfg.totalRequests);
+  const [intervalPreset, setIntervalPreset] = useState<'realistic' | 'fast' | 'custom'>(() => {
+    if (initialCfg.minIntervalSec === 60 && initialCfg.maxIntervalSec === 120) return 'realistic';
+    if (initialCfg.minIntervalSec === 10 && initialCfg.maxIntervalSec === 20) return 'fast';
+    return 'custom';
+  });
+  const [minIntervalSec, setMinIntervalSec] = useState<number>(initialCfg.minIntervalSec);
+  const [maxIntervalSec, setMaxIntervalSec] = useState<number>(initialCfg.maxIntervalSec);
+  const [minAmount, setMinAmount] = useState<number>(initialCfg.minAmount);
+  const [maxAmount, setMaxAmount] = useState<number>(initialCfg.maxAmount);
+  const [requestType, setRequestType] = useState<'random' | 'deposit' | 'withdrawal'>(initialCfg.requestType);
+  const [selectedGateway, setSelectedGateway] = useState<'bKash' | 'Nagad' | 'Rocket' | 'Upay' | 'random'>(initialCfg.selectedGateway || 'bKash');
   const [isInstantSending, setIsInstantSending] = useState(false);
 
-  // Sync with service
+  // Sync known agents
   useEffect(() => {
     autoRequestBotService.setKnownAgents(agents);
+  }, [agents]);
+
+  // Keep callback reference updated without triggering re-subscriptions
+  const onDispatchedRef = useRef(onRequestDispatched);
+  useEffect(() => {
+    onDispatchedRef.current = onRequestDispatched;
+  }, [onRequestDispatched]);
+
+  // Subscribe to service state changes WITHOUT resetting user-selected values
+  useEffect(() => {
     const unsubscribe = autoRequestBotService.subscribe((newState) => {
       setBotState(newState);
-      if (newState.lastDispatched && onRequestDispatched) {
-        onRequestDispatched();
+      if (newState.lastDispatched && onDispatchedRef.current) {
+        onDispatchedRef.current();
       }
     });
-
-    // Initialize local controls from current bot config
-    const currentCfg = autoRequestBotService.getState().config;
-    setTargetAgentId(currentCfg.targetAgentId);
-    setTotalRequests(currentCfg.totalRequests);
-    setMinAmount(currentCfg.minAmount);
-    setMaxAmount(currentCfg.maxAmount);
-    setRequestType(currentCfg.requestType);
-    setSelectedGateway(currentCfg.selectedGateway || 'bKash');
-    setMinIntervalSec(currentCfg.minIntervalSec);
-    setMaxIntervalSec(currentCfg.maxIntervalSec);
-
-    if (currentCfg.minIntervalSec === 60 && currentCfg.maxIntervalSec === 120) {
-      setIntervalPreset('realistic');
-    } else if (currentCfg.minIntervalSec === 10 && currentCfg.maxIntervalSec === 20) {
-      setIntervalPreset('fast');
-    } else {
-      setIntervalPreset('custom');
-    }
-
     return () => unsubscribe();
-  }, [agents, onRequestDispatched]);
+  }, []);
+
+  // Filter agents by search query
+  const filteredAgents = useMemo(() => {
+    if (!agentSearchQuery.trim()) return agents;
+    const q = agentSearchQuery.toLowerCase().trim();
+    return agents.filter(ag =>
+      (ag.name && ag.name.toLowerCase().includes(q)) ||
+      (ag.id && ag.id.toLowerCase().includes(q)) ||
+      (ag.phone && ag.phone.toLowerCase().includes(q)) ||
+      (ag.email && ag.email.toLowerCase().includes(q))
+    );
+  }, [agents, agentSearchQuery]);
+
+  const selectedAgent = useMemo(() => {
+    if (targetAgentId === 'all') return null;
+    return agents.find(ag => ag.id === targetAgentId || (ag as any).dbId === targetAgentId);
+  }, [agents, targetAgentId]);
 
   if (!isOpen) return null;
+
+  // Handlers that update both local UI and service config instantly
+  const handleGatewaySelect = (gw: 'bKash' | 'Nagad' | 'Rocket' | 'Upay' | 'random') => {
+    setSelectedGateway(gw);
+    autoRequestBotService.updateConfig({ selectedGateway: gw });
+  };
+
+  const handleAgentSelect = (agentId: string) => {
+    setTargetAgentId(agentId);
+    autoRequestBotService.updateConfig({ targetAgentId: agentId });
+  };
+
+  const handleTotalRequestsChange = (count: number) => {
+    const valid = Math.max(1, count);
+    setTotalRequests(valid);
+    autoRequestBotService.updateConfig({ totalRequests: valid });
+  };
+
+  const handleTypeSelect = (type: 'random' | 'deposit' | 'withdrawal') => {
+    setRequestType(type);
+    autoRequestBotService.updateConfig({ requestType: type });
+  };
+
+  const handleMinAmountChange = (val: number) => {
+    setMinAmount(val);
+    autoRequestBotService.updateConfig({ minAmount: val });
+  };
+
+  const handleMaxAmountChange = (val: number) => {
+    setMaxAmount(val);
+    autoRequestBotService.updateConfig({ maxAmount: val });
+  };
 
   const handlePresetChange = (preset: 'realistic' | 'fast' | 'custom') => {
     setIntervalPreset(preset);
     if (preset === 'realistic') {
       setMinIntervalSec(60);
       setMaxIntervalSec(120);
+      autoRequestBotService.updateConfig({ minIntervalSec: 60, maxIntervalSec: 120 });
     } else if (preset === 'fast') {
       setMinIntervalSec(10);
       setMaxIntervalSec(20);
+      autoRequestBotService.updateConfig({ minIntervalSec: 10, maxIntervalSec: 20 });
     }
   };
 
+  const handleCustomIntervalChange = (min: number, max: number) => {
+    setMinIntervalSec(min);
+    setMaxIntervalSec(max);
+    autoRequestBotService.updateConfig({ minIntervalSec: min, maxIntervalSec: max });
+  };
 
   const handleStart = () => {
     const config: Partial<AutoBotConfig> = {
@@ -136,7 +192,7 @@ export const AutoRequestBotModal: React.FC<AutoRequestBotModalProps> = ({
         requestType,
         selectedGateway
       });
-      if (onRequestDispatched) onRequestDispatched();
+      if (onDispatchedRef.current) onDispatchedRef.current();
     } finally {
       setIsInstantSending(false);
     }
@@ -193,7 +249,7 @@ export const AutoRequestBotModal: React.FC<AutoRequestBotModalProps> = ({
                 )}
               </div>
               <p className="text-xs text-slate-300 mt-0.5 font-medium">
-                Simulates organic Bangladeshi player deposit & cashout traffic with authentic profiles & TrxIDs
+                Simulates organic player deposit & cashout requests with realistic profiles & TrxIDs
               </p>
             </div>
           </div>
@@ -248,30 +304,132 @@ export const AutoRequestBotModal: React.FC<AutoRequestBotModalProps> = ({
           {/* Configuration Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             
-            {/* Target Agent Card */}
-            <div className="bg-[#121e3d] border border-[#233763] rounded-2xl p-4 space-y-2">
-              <label className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
-                <Users className="w-3.5 h-3.5 text-emerald-400" />
-                <span>Target Agent (Destination)</span>
-              </label>
-              <select
-                value={targetAgentId}
-                disabled={botState.status === 'running'}
-                onChange={(e) => setTargetAgentId(e.target.value)}
-                className="w-full bg-[#1a294e] border border-[#233763] rounded-xl px-3 py-2 text-xs text-white font-bold focus:outline-none focus:border-emerald-500 disabled:opacity-60 transition-colors"
-              >
-                <option value="all">🌟 All Active Agents (Round-Robin / Random)</option>
-                {agents.map((ag) => (
-                  <option key={ag.id} value={ag.id}>
-                    👤 {ag.name} ({ag.id}) — {ag.phone}
-                  </option>
-                ))}
-              </select>
-              <p className="text-[11px] text-slate-400">
-                {targetAgentId === 'all' 
-                  ? 'Requests will be randomly assigned to all authorized agents.' 
-                  : 'Requests will be exclusively sent to this specific agent.'}
-              </p>
+            {/* Target Agent Selector with Search & Filter */}
+            <div className="bg-[#121e3d] border border-[#233763] rounded-2xl p-4 space-y-3 col-span-1 md:col-span-2">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <label className="text-xs font-bold text-slate-200 flex items-center gap-2">
+                  <Users className="w-4 h-4 text-emerald-400" />
+                  <span>Target Destination Agent</span>
+                  <span className="px-2 py-0.5 rounded-full bg-[#1a294e] border border-[#233763] text-[10px] text-slate-300 font-mono">
+                    {agents.length} Registered Agents
+                  </span>
+                </label>
+
+                {/* Currently selected indicator */}
+                <div className="flex items-center gap-2 text-xs">
+                  <span className="text-slate-400 font-medium">Active Target:</span>
+                  {targetAgentId === 'all' ? (
+                    <span className="px-2.5 py-0.5 rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-black text-[11px] flex items-center gap-1.5 shadow-sm">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                      All Active Agents (Random Round-Robin)
+                    </span>
+                  ) : (
+                    <div className="flex items-center gap-1.5">
+                      <span className="px-2.5 py-0.5 rounded-xl bg-amber-500/20 text-amber-300 border border-amber-500/40 font-black text-[11px] shadow-sm">
+                        🎯 {selectedAgent ? `${selectedAgent.name} (${selectedAgent.id})` : targetAgentId}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => handleAgentSelect('all')}
+                        className="px-2 py-0.5 rounded-lg bg-[#1a294e] hover:bg-[#233763] text-slate-300 hover:text-white text-[10px] font-bold border border-[#233763] transition-colors"
+                      >
+                        Reset to All
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Agent Search Filter Input */}
+              <div className="relative">
+                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                <input
+                  type="text"
+                  value={agentSearchQuery}
+                  onChange={(e) => setAgentSearchQuery(e.target.value)}
+                  placeholder="Search agent by name (e.g. Ridoy), ID (e.g. AG-57808), phone, or email..."
+                  className="w-full bg-[#1a294e] border border-[#233763] rounded-xl pl-9 pr-8 py-2 text-xs text-white placeholder-slate-400 focus:outline-none focus:border-emerald-500 transition-colors"
+                />
+                {agentSearchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setAgentSearchQuery('')}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+
+              {/* Agent Cards Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 max-h-48 overflow-y-auto pr-1 custom-scrollbar">
+                {/* Option: All Agents */}
+                <button
+                  type="button"
+                  disabled={botState.status === 'running'}
+                  onClick={() => handleAgentSelect('all')}
+                  className={`p-2.5 rounded-xl text-left border transition-all flex items-start justify-between gap-2 ${
+                    targetAgentId === 'all'
+                      ? 'bg-emerald-500/15 border-emerald-500 shadow-md ring-1 ring-emerald-500/40 text-white scale-[1.01]'
+                      : 'bg-[#1a294e]/60 border-[#233763] text-slate-300 hover:border-slate-500 hover:text-white'
+                  }`}
+                >
+                  <div>
+                    <div className="flex items-center gap-1.5 font-black text-xs text-white">
+                      <span>🌟 All Active Agents</span>
+                    </div>
+                    <div className="text-[10px] text-slate-400 mt-0.5">
+                      Random round-robin across all {agents.length} agents
+                    </div>
+                  </div>
+                  {targetAgentId === 'all' && (
+                    <span className="w-4 h-4 rounded-full bg-emerald-500 text-slate-950 flex items-center justify-center shrink-0">
+                      <Check className="w-3 h-3 stroke-[3]" />
+                    </span>
+                  )}
+                </button>
+
+                {/* Filtered Agents */}
+                {filteredAgents.map((ag) => {
+                  const isSelected = targetAgentId === ag.id || targetAgentId === (ag as any).dbId;
+                  return (
+                    <button
+                      key={ag.id}
+                      type="button"
+                      disabled={botState.status === 'running'}
+                      onClick={() => handleAgentSelect(ag.id)}
+                      className={`p-2.5 rounded-xl text-left border transition-all flex items-start justify-between gap-2 ${
+                        isSelected
+                          ? 'bg-emerald-500/15 border-emerald-500 shadow-md ring-1 ring-emerald-500/40 text-white scale-[1.01]'
+                          : 'bg-[#1a294e]/60 border-[#233763] text-slate-300 hover:border-slate-500 hover:text-white'
+                      }`}
+                    >
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-black text-xs text-white truncate">{ag.name}</span>
+                          <span className="font-mono text-[10px] text-amber-300 px-1 py-0.2 rounded bg-amber-500/10 shrink-0">
+                            {ag.id}
+                          </span>
+                        </div>
+                        <div className="text-[10px] text-slate-400 font-mono mt-0.5 truncate">
+                          📞 {ag.phone}
+                        </div>
+                      </div>
+                      {isSelected && (
+                        <span className="w-4 h-4 rounded-full bg-emerald-500 text-slate-950 flex items-center justify-center shrink-0 mt-0.5">
+                          <Check className="w-3 h-3 stroke-[3]" />
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+
+                {filteredAgents.length === 0 && (
+                  <div className="col-span-full py-4 text-center text-xs text-slate-400">
+                    No agents matched "{agentSearchQuery}".
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Total Requests Limit */}
@@ -287,7 +445,7 @@ export const AutoRequestBotModal: React.FC<AutoRequestBotModalProps> = ({
                   max="500"
                   value={totalRequests}
                   disabled={botState.status === 'running'}
-                  onChange={(e) => setTotalRequests(Math.max(1, parseInt(e.target.value) || 1))}
+                  onChange={(e) => handleTotalRequestsChange(parseInt(e.target.value) || 1)}
                   className="w-full bg-[#1a294e] border border-[#233763] rounded-xl px-3 py-2 text-xs text-white font-mono font-bold focus:outline-none focus:border-sky-500 disabled:opacity-60 transition-colors"
                 />
                 <span className="text-xs text-slate-400 font-bold whitespace-nowrap">Requests</span>
@@ -310,7 +468,7 @@ export const AutoRequestBotModal: React.FC<AutoRequestBotModalProps> = ({
                   onClick={() => handlePresetChange('realistic')}
                   className={`py-1.5 px-2 rounded-xl text-[11px] font-bold transition-all ${
                     intervalPreset === 'realistic'
-                      ? 'bg-emerald-500 text-slate-950 shadow'
+                      ? 'bg-emerald-500 text-slate-950 shadow font-black'
                       : 'bg-[#1a294e] text-slate-300 hover:text-white'
                   }`}
                 >
@@ -322,7 +480,7 @@ export const AutoRequestBotModal: React.FC<AutoRequestBotModalProps> = ({
                   onClick={() => handlePresetChange('fast')}
                   className={`py-1.5 px-2 rounded-xl text-[11px] font-bold transition-all ${
                     intervalPreset === 'fast'
-                      ? 'bg-amber-500 text-slate-950 shadow'
+                      ? 'bg-amber-500 text-slate-950 shadow font-black'
                       : 'bg-[#1a294e] text-slate-300 hover:text-white'
                   }`}
                 >
@@ -334,7 +492,7 @@ export const AutoRequestBotModal: React.FC<AutoRequestBotModalProps> = ({
                   onClick={() => handlePresetChange('custom')}
                   className={`py-1.5 px-2 rounded-xl text-[11px] font-bold transition-all ${
                     intervalPreset === 'custom'
-                      ? 'bg-sky-500 text-slate-950 shadow'
+                      ? 'bg-sky-500 text-slate-950 shadow font-black'
                       : 'bg-[#1a294e] text-slate-300 hover:text-white'
                   }`}
                 >
@@ -351,7 +509,7 @@ export const AutoRequestBotModal: React.FC<AutoRequestBotModalProps> = ({
                       min="5"
                       value={minIntervalSec}
                       disabled={botState.status === 'running'}
-                      onChange={(e) => setMinIntervalSec(Math.max(5, parseInt(e.target.value) || 5))}
+                      onChange={(e) => handleCustomIntervalChange(Math.max(5, parseInt(e.target.value) || 5), maxIntervalSec)}
                       className="w-full bg-[#1a294e] border border-[#233763] rounded-lg px-2 py-1 text-xs text-white font-mono"
                     />
                   </div>
@@ -362,7 +520,7 @@ export const AutoRequestBotModal: React.FC<AutoRequestBotModalProps> = ({
                       min={minIntervalSec}
                       value={maxIntervalSec}
                       disabled={botState.status === 'running'}
-                      onChange={(e) => setMaxIntervalSec(Math.max(minIntervalSec, parseInt(e.target.value) || minIntervalSec))}
+                      onChange={(e) => handleCustomIntervalChange(minIntervalSec, Math.max(minIntervalSec, parseInt(e.target.value) || minIntervalSec))}
                       className="w-full bg-[#1a294e] border border-[#233763] rounded-lg px-2 py-1 text-xs text-white font-mono"
                     />
                   </div>
@@ -388,7 +546,7 @@ export const AutoRequestBotModal: React.FC<AutoRequestBotModalProps> = ({
                     step="100"
                     value={minAmount}
                     disabled={botState.status === 'running'}
-                    onChange={(e) => setMinAmount(Math.max(100, parseInt(e.target.value) || 100))}
+                    onChange={(e) => handleMinAmountChange(Math.max(100, parseInt(e.target.value) || 100))}
                     className="w-full bg-[#1a294e] border border-[#233763] rounded-xl px-3 py-1.5 text-xs text-white font-mono font-bold focus:outline-none focus:border-emerald-500"
                   />
                 </div>
@@ -400,7 +558,7 @@ export const AutoRequestBotModal: React.FC<AutoRequestBotModalProps> = ({
                     step="500"
                     value={maxAmount}
                     disabled={botState.status === 'running'}
-                    onChange={(e) => setMaxAmount(Math.max(minAmount, parseInt(e.target.value) || minAmount))}
+                    onChange={(e) => handleMaxAmountChange(Math.max(minAmount, parseInt(e.target.value) || minAmount))}
                     className="w-full bg-[#1a294e] border border-[#233763] rounded-xl px-3 py-1.5 text-xs text-white font-mono font-bold focus:outline-none focus:border-emerald-500"
                   />
                 </div>
@@ -417,10 +575,10 @@ export const AutoRequestBotModal: React.FC<AutoRequestBotModalProps> = ({
                 <button
                   type="button"
                   disabled={botState.status === 'running'}
-                  onClick={() => setRequestType('random')}
+                  onClick={() => handleTypeSelect('random')}
                   className={`py-1.5 px-2 rounded-xl text-[11px] font-bold transition-all ${
                     requestType === 'random'
-                      ? 'bg-purple-500 text-white shadow'
+                      ? 'bg-purple-500 text-white shadow font-black'
                       : 'bg-[#1a294e] text-slate-300 hover:text-white'
                   }`}
                 >
@@ -429,10 +587,10 @@ export const AutoRequestBotModal: React.FC<AutoRequestBotModalProps> = ({
                 <button
                   type="button"
                   disabled={botState.status === 'running'}
-                  onClick={() => setRequestType('deposit')}
+                  onClick={() => handleTypeSelect('deposit')}
                   className={`py-1.5 px-2 rounded-xl text-[11px] font-bold transition-all ${
                     requestType === 'deposit'
-                      ? 'bg-emerald-500 text-slate-950 shadow'
+                      ? 'bg-emerald-500 text-slate-950 shadow font-black'
                       : 'bg-[#1a294e] text-slate-300 hover:text-white'
                   }`}
                 >
@@ -441,10 +599,10 @@ export const AutoRequestBotModal: React.FC<AutoRequestBotModalProps> = ({
                 <button
                   type="button"
                   disabled={botState.status === 'running'}
-                  onClick={() => setRequestType('withdrawal')}
+                  onClick={() => handleTypeSelect('withdrawal')}
                   className={`py-1.5 px-2 rounded-xl text-[11px] font-bold transition-all ${
                     requestType === 'withdrawal'
-                      ? 'bg-sky-500 text-slate-950 shadow'
+                      ? 'bg-sky-500 text-slate-950 shadow font-black'
                       : 'bg-[#1a294e] text-slate-300 hover:text-white'
                   }`}
                 >
@@ -454,7 +612,7 @@ export const AutoRequestBotModal: React.FC<AutoRequestBotModalProps> = ({
             </div>
 
             {/* Dedicated Gateway Selector */}
-            <div className="bg-[#121e3d] border border-[#233763] rounded-2xl p-4 space-y-2.5">
+            <div className="bg-[#121e3d] border border-[#233763] rounded-2xl p-4 space-y-2.5 col-span-1 md:col-span-2">
               <div className="flex items-center justify-between">
                 <label className="text-xs font-bold text-slate-300">Payment Gateway (Channel)</label>
                 <span className="text-[10px] text-amber-400 font-mono">
@@ -476,7 +634,7 @@ export const AutoRequestBotModal: React.FC<AutoRequestBotModalProps> = ({
                       key={g.key}
                       type="button"
                       disabled={botState.status === 'running'}
-                      onClick={() => setSelectedGateway(g.key as any)}
+                      onClick={() => handleGatewaySelect(g.key as any)}
                       className={`px-2.5 py-2 rounded-xl text-xs font-bold transition-all flex flex-col items-center justify-center gap-1 border ${
                         isSelected
                           ? `${g.color} shadow-lg ring-1 ring-white/30 font-black scale-[1.02]`

@@ -81,6 +81,14 @@ class AutoRequestBotService {
     return { ...this.state, config: { ...this.state.config }, logs: [...this.state.logs] };
   }
 
+  public updateConfig(partial: Partial<AutoBotConfig>) {
+    this.state.config = { ...this.state.config, ...partial };
+    if (partial.totalRequests !== undefined) {
+      this.state.remainingCount = Math.max(0, this.state.config.totalRequests - this.state.sentCount);
+    }
+    this.notify();
+  }
+
   public subscribe(listener: (state: AutoBotState) => void): () => void {
     this.listeners.push(listener);
     listener(this.getState());
