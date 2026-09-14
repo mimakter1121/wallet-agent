@@ -1,17 +1,25 @@
-import React, { useState } from 'react';
+import React, { useState, Suspense, lazy } from 'react';
 import { AdminProvider, useAdmin } from './context/AdminContext';
 import { AdminSidebar, AdminTab } from './components/AdminSidebar';
 import { AdminHeader } from './components/AdminHeader';
 import { AdminLoginGate } from './components/AdminLoginGate';
-import { AdminDashboard } from './pages/AdminDashboard';
-import { CustomerPortalPage } from './pages/CustomerPortalPage';
-import { ExchangeRatesPage } from './pages/ExchangeRatesPage';
-import { ChannelsPage } from './pages/ChannelsPage';
-import { AgentsPage } from './pages/AgentsPage';
-import { KycRequestsPage } from './pages/KycRequestsPage';
-import { TransactionsPage } from './pages/TransactionsPage';
-import { SettingsPage } from './pages/SettingsPage';
 import { CheckCircle2, AlertCircle, Info } from 'lucide-react';
+
+// Code-split admin pages for rapid initial load
+const AdminDashboard = lazy(() => import('./pages/AdminDashboard').then(m => ({ default: m.AdminDashboard })));
+const CustomerPortalPage = lazy(() => import('./pages/CustomerPortalPage').then(m => ({ default: m.CustomerPortalPage })));
+const ExchangeRatesPage = lazy(() => import('./pages/ExchangeRatesPage').then(m => ({ default: m.ExchangeRatesPage })));
+const ChannelsPage = lazy(() => import('./pages/ChannelsPage').then(m => ({ default: m.ChannelsPage })));
+const AgentsPage = lazy(() => import('./pages/AgentsPage').then(m => ({ default: m.AgentsPage })));
+const KycRequestsPage = lazy(() => import('./pages/KycRequestsPage').then(m => ({ default: m.KycRequestsPage })));
+const TransactionsPage = lazy(() => import('./pages/TransactionsPage').then(m => ({ default: m.TransactionsPage })));
+const SettingsPage = lazy(() => import('./pages/SettingsPage').then(m => ({ default: m.SettingsPage })));
+
+const AdminLoader: React.FC = () => (
+  <div className="flex items-center justify-center min-h-[50vh]">
+    <div className="w-8 h-8 border-3 border-[#00c853]/20 border-t-[#00c853] rounded-full animate-spin" />
+  </div>
+);
 
 const AdminContent: React.FC = () => {
   const [currentTab, setCurrentTab] = useState<AdminTab>(() => {
@@ -71,14 +79,16 @@ const AdminContent: React.FC = () => {
         <AdminHeader title={title} subtitle={subtitle} onLogout={handleLogout} />
 
         <main className="flex-1 pb-12">
-          {currentTab === 'dashboard' && <AdminDashboard onNavigate={handleTabChange} />}
-          {currentTab === 'customer_portal' && <CustomerPortalPage />}
-          {currentTab === 'exchange_rates' && <ExchangeRatesPage />}
-          {currentTab === 'channels' && <ChannelsPage />}
-          {currentTab === 'agents' && <AgentsPage />}
-          {currentTab === 'kyc_requests' && <KycRequestsPage />}
-          {currentTab === 'transactions' && <TransactionsPage />}
-          {currentTab === 'settings' && <SettingsPage />}
+          <Suspense fallback={<AdminLoader />}>
+            {currentTab === 'dashboard' && <AdminDashboard onNavigate={handleTabChange} />}
+            {currentTab === 'customer_portal' && <CustomerPortalPage />}
+            {currentTab === 'exchange_rates' && <ExchangeRatesPage />}
+            {currentTab === 'channels' && <ChannelsPage />}
+            {currentTab === 'agents' && <AgentsPage />}
+            {currentTab === 'kyc_requests' && <KycRequestsPage />}
+            {currentTab === 'transactions' && <TransactionsPage />}
+            {currentTab === 'settings' && <SettingsPage />}
+          </Suspense>
         </main>
       </div>
 

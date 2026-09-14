@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { Suspense, lazy } from 'react';
 import { useApp } from './context/AppContext';
 import { Header } from './components/layout/Header';
 import { Sidebar } from './components/layout/Sidebar';
@@ -11,20 +11,29 @@ import { TransactionDetailModal } from './components/common/TransactionDetailMod
 import { CustomerDetailDrawer } from './components/common/CustomerDetailDrawer';
 import { TelegramFloatingButton } from './components/common/TelegramFloatingButton';
 
-// Pages
-import { LoginPage } from './pages/LoginPage';
-import { DashboardPage } from './pages/DashboardPage';
-import { WalletPage } from './pages/WalletPage';
-import { DepositPage } from './pages/DepositPage';
-import { WithdrawalPage } from './pages/WithdrawalPage';
-import { CustomersPage } from './pages/CustomersPage';
-import { TransactionsPage } from './pages/TransactionsPage';
-import { CommissionPage } from './pages/CommissionPage';
-import { NetworkPage } from './pages/NetworkPage';
-import { NotificationsPage } from './pages/NotificationsPage';
-import { ProfilePage } from './pages/ProfilePage';
-import { KycPage } from './pages/KycPage';
-import { SupportPage } from './pages/SupportPage';
+// Code-split pages for instant initial load times
+const LoginPage = lazy(() => import('./pages/LoginPage').then(m => ({ default: m.LoginPage })));
+const DashboardPage = lazy(() => import('./pages/DashboardPage').then(m => ({ default: m.DashboardPage })));
+const WalletPage = lazy(() => import('./pages/WalletPage').then(m => ({ default: m.WalletPage })));
+const DepositPage = lazy(() => import('./pages/DepositPage').then(m => ({ default: m.DepositPage })));
+const WithdrawalPage = lazy(() => import('./pages/WithdrawalPage').then(m => ({ default: m.WithdrawalPage })));
+const CustomersPage = lazy(() => import('./pages/CustomersPage').then(m => ({ default: m.CustomersPage })));
+const TransactionsPage = lazy(() => import('./pages/TransactionsPage').then(m => ({ default: m.TransactionsPage })));
+const CommissionPage = lazy(() => import('./pages/CommissionPage').then(m => ({ default: m.CommissionPage })));
+const NetworkPage = lazy(() => import('./pages/NetworkPage').then(m => ({ default: m.NetworkPage })));
+const NotificationsPage = lazy(() => import('./pages/NotificationsPage').then(m => ({ default: m.NotificationsPage })));
+const ProfilePage = lazy(() => import('./pages/ProfilePage').then(m => ({ default: m.ProfilePage })));
+const KycPage = lazy(() => import('./pages/KycPage').then(m => ({ default: m.KycPage })));
+const SupportPage = lazy(() => import('./pages/SupportPage').then(m => ({ default: m.SupportPage })));
+
+const PageLoader: React.FC = () => (
+  <div className="flex items-center justify-center min-h-[50vh]">
+    <div className="flex flex-col items-center gap-3">
+      <div className="w-9 h-9 border-3 border-[#00c853]/20 border-t-[#00c853] rounded-full animate-spin" />
+      <span className="text-xs text-slate-400 font-bold tracking-wide">Loading workspace...</span>
+    </div>
+  </div>
+);
 
 export const App: React.FC = () => {
   const { isAuthenticated, currentPage } = useApp();
@@ -32,7 +41,9 @@ export const App: React.FC = () => {
   if (!isAuthenticated || currentPage === 'login') {
     return (
       <div className="min-h-full">
-        <LoginPage />
+        <Suspense fallback={<PageLoader />}>
+          <LoginPage />
+        </Suspense>
         <ToastContainer />
       </div>
     );
@@ -78,7 +89,9 @@ export const App: React.FC = () => {
         <Sidebar />
         
         <main className="flex-1 min-w-0 px-4 sm:px-6 lg:px-8 py-6 pb-24 lg:pb-12">
-          {renderCurrentPage()}
+          <Suspense fallback={<PageLoader />}>
+            {renderCurrentPage()}
+          </Suspense>
         </main>
       </div>
 
