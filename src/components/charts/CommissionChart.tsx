@@ -1,41 +1,14 @@
-import React, { useEffect, useState } from 'react';
-import { Award, ArrowDownLeft, ArrowUpRight, Users, RefreshCw } from 'lucide-react';
+import React from 'react';
+import { Award, ArrowDownLeft, ArrowUpRight, Users } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
-import { supabase } from '../../lib/supabase/client';
 
 export const CommissionChart: React.FC = () => {
-  const { transactions } = useApp();
+  const { transactions, commissionRates, agentTierNum } = useApp();
 
-  // Fetch commission rates from system_settings in Supabase
-  const [depRate, setDepRate] = useState(0.015);     // 1.5% default
-  const [wthRate, setWthRate] = useState(0.012);     // 1.2% default
-  const [clearanceRate, setClearanceRate] = useState(0.005); // 0.5% default
-  const [loadingRates, setLoadingRates] = useState(true);
+  const depRate = commissionRates.deposit;
+  const wthRate = commissionRates.withdrawal;
+  const clearanceRate = commissionRates.clearance;
 
-  useEffect(() => {
-    const fetchRates = async () => {
-      try {
-        const { data } = await supabase
-          .from('system_settings')
-          .select('key, value')
-          .in('key', ['deposit_commission_rate', 'withdrawal_commission_rate', 'clearance_fee_rate']);
-
-        if (data) {
-          data.forEach((row: { key: string; value: string }) => {
-            const val = parseFloat(row.value) / 100;
-            if (row.key === 'deposit_commission_rate') setDepRate(val);
-            if (row.key === 'withdrawal_commission_rate') setWthRate(val);
-            if (row.key === 'clearance_fee_rate') setClearanceRate(val);
-          });
-        }
-      } catch (err) {
-        console.error('Failed to load commission rates:', err);
-      } finally {
-        setLoadingRates(false);
-      }
-    };
-    fetchRates();
-  }, []);
 
   // Compute commission amounts from live approved transactions
   const approvedTxs = transactions.filter(t => t.status === 'success');
@@ -66,10 +39,12 @@ export const CommissionChart: React.FC = () => {
           <h3 className="text-sm font-black text-white flex items-center gap-2">
             <Award className="w-4 h-4 text-[#00c853]" />
             <span>Commission Breakdown</span>
-            {loadingRates && <RefreshCw className="w-3 h-3 animate-spin text-slate-400" />}
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+              Tier {agentTierNum}
+            </span>
           </h3>
           <p className="text-xs text-slate-300 mt-0.5 font-medium">
-            Earnings by channel operation — rates from system settings
+            Earnings by channel operation — synced in real-time from Supabase
           </p>
         </div>
 
