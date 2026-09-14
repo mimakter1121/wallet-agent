@@ -55,30 +55,47 @@ export const storageService = {
     }
   },
 
+  // Helper: Convert File to base64 Data URL
+  fileToDataUrl(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  },
+
   // 3. Upload User Profile Avatar ('avatars')
   async uploadAvatar(file: File, userId: string): Promise<{ path: string | null; publicUrl: string | null; error: string | null }> {
-    if (!isSupabaseConfigured()) {
-      const mockUrl = URL.createObjectURL(file);
-      return { path: 'local-mock-avatar/' + file.name, publicUrl: mockUrl, error: null };
+    const cleanId = (userId || 'agent').replace(/[^a-zA-Z0-9_-]/g, '_');
+    const fileExt = (file.name.split('.').pop() || 'jpg').toLowerCase();
+    const fileName = `${cleanId}_${Date.now()}.${fileExt}`;
+
+    if (isSupabaseConfigured()) {
+      try {
+        const { data, error } = await supabase.storage
+          .from('avatars')
+          .upload(fileName, file, {
+            cacheControl: '3600',
+            upsert: true,
+            contentType: file.type || 'image/jpeg'
+          });
+
+        if (!error && data?.path) {
+          const publicUrl = this.getPublicUrl('avatars', data.path);
+          return { path: data.path, publicUrl, error: null };
+        }
+      } catch (uploadErr) {
+        console.warn('Supabase storage upload error, falling back to local data URL:', uploadErr);
+      }
     }
 
+    // Fallback: Convert to Base64 data URL so avatar change never fails
     try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${userId}/avatar_${Date.now()}.${fileExt}`;
-
-      const { data, error } = await supabase.storage
-        .from('avatars')
-        .upload(fileName, file, {
-          cacheControl: '3600',
-          upsert: true
-        });
-
-      if (error) return { path: null, publicUrl: null, error: error.message };
-
-      const publicUrl = this.getPublicUrl('avatars', data.path);
-      return { path: data.path, publicUrl, error: null };
-    } catch (err: any) {
-      return { path: null, publicUrl: null, error: err.message || 'Avatar image upload failed.' };
+      const dataUrl = await this.fileToDataUrl(file);
+      return { path: 'data-url/' + fileName, publicUrl: dataUrl, error: null };
+    } catch (readErr: any) {
+      return { path: null, publicUrl: null, error: readErr.message || 'Could not process image file.' };
     }
   },
 

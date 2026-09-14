@@ -1579,20 +1579,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const activeDbId = agent.dbId;
     if (activeDbId) {
       try {
-        await supabase.from('agents').update({
-          business_name: updates.businessName,
-          address: updates.address,
-          city: updates.city,
-          district: updates.district,
-          nid_number: updates.nidNumber,
-          emergency_contact: updates.emergencyContact
-        }).eq('id', activeDbId);
+        const updatePayload: Record<string, any> = {};
+        if (updates.businessName !== undefined) updatePayload.business_name = updates.businessName;
+        if (updates.address !== undefined) updatePayload.address = updates.address;
+        if (updates.city !== undefined) updatePayload.city = updates.city;
+        if (updates.district !== undefined) updatePayload.district = updates.district;
+        if (updates.nidNumber !== undefined) updatePayload.nid_number = updates.nidNumber;
+        if (updates.emergencyContact !== undefined) updatePayload.emergency_contact = updates.emergencyContact;
+        if (updates.avatar !== undefined) updatePayload.avatar_url = updates.avatar;
+
+        if (Object.keys(updatePayload).length > 0) {
+          await supabase.from('agents').update(updatePayload).eq('id', activeDbId);
+        }
       } catch (err) {
         console.error('Failed to sync profile update to Supabase:', err);
       }
     }
-
-    showToast('success', 'Profile Updated 👤', 'Agent personal & business details saved.');
   };
 
   const isMasterAgent = Boolean(

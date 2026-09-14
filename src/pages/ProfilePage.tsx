@@ -20,7 +20,8 @@ import {
   Sparkles,
   Info,
   Shield,
-  Edit3
+  Edit3,
+  RefreshCw
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { CollectionAccountsModal } from '../components/modals/CollectionAccountsModal';
@@ -70,6 +71,13 @@ export const ProfilePage: React.FC = () => {
   const [avatarUrl, setAvatarUrl] = useState(agent.avatar);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   
+  // Keep avatarUrl in sync if agent.avatar changes
+  useEffect(() => {
+    if (agent.avatar) {
+      setAvatarUrl(agent.avatar);
+    }
+  }, [agent.avatar]);
+
   // Editable form state for Personal & Outlet Info
   const [formData, setFormData] = useState({
     name: agent.name || '',
@@ -108,16 +116,25 @@ export const ProfilePage: React.FC = () => {
   const handleAvatarFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
+      
+      // Instant local preview for immediate visual feedback
+      const localPreview = URL.createObjectURL(file);
+      setAvatarUrl(localPreview);
       setIsUploadingAvatar(true);
-      const { publicUrl, error } = await storageService.uploadAvatar(file, agent.id);
-      setIsUploadingAvatar(false);
 
-      if (error) {
-        showToast('error', 'Avatar Upload Failed', error);
-      } else if (publicUrl) {
-        setAvatarUrl(publicUrl);
-        updateAgentProfile({ avatar: publicUrl });
-        showToast('success', 'Avatar Uploaded', 'New profile picture saved successfully.');
+      try {
+        const { publicUrl, error } = await storageService.uploadAvatar(file, agent.id);
+        if (error) {
+          showToast('error', 'Avatar Upload Warning', error);
+        } else if (publicUrl) {
+          setAvatarUrl(publicUrl);
+          await updateAgentProfile({ avatar: publicUrl });
+          showToast('success', 'Profile Photo Updated 📸', 'Your new profile picture has been saved successfully.');
+        }
+      } catch (err: any) {
+        showToast('error', 'Avatar Error', err.message || 'Could not save profile picture.');
+      } finally {
+        setIsUploadingAvatar(false);
       }
     }
   };
@@ -136,8 +153,10 @@ export const ProfilePage: React.FC = () => {
         nidNumber: formData.nidNumber,
         emergencyContact: formData.emergencyContact,
       });
+      showToast('success', 'Profile Updated 👤', 'Agent personal & business details saved.');
     } catch (err) {
       console.error('Error saving profile:', err);
+      showToast('error', 'Save Failed', 'Could not save profile details.');
     } finally {
       setIsSubmittingProfile(false);
     }
@@ -164,24 +183,32 @@ export const ProfilePage: React.FC = () => {
 
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="flex items-center gap-5">
-            <label className="relative group cursor-pointer shrink-0">
-              {avatarUrl ? (
-                <img
-                  src={avatarUrl}
-                  alt={agent.name}
-                  className="w-20 h-20 sm:w-24 sm:h-24 rounded-3xl object-cover ring-4 ring-[#00c853]/60 shadow-xl transition-all group-hover:opacity-85"
-                />
-              ) : (
-                <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-3xl bg-gradient-to-br from-[#00c853] to-[#00701a] flex items-center justify-center text-white text-3xl sm:text-4xl font-black ring-4 ring-[#00c853]/60 shadow-xl transition-all group-hover:opacity-85">
-                  {agent.name?.charAt(0).toUpperCase() || 'A'}
+            <label className="relative group cursor-pointer shrink-0 block" title="Click to upload profile photo">
+              <div className="relative">
+                {avatarUrl ? (
+                  <img
+                    src={avatarUrl}
+                    alt={agent.name}
+                    className="w-20 h-20 sm:w-24 sm:h-24 rounded-3xl object-cover ring-4 ring-[#00c853]/60 shadow-xl transition-all group-hover:brightness-90"
+                  />
+                ) : (
+                  <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-3xl bg-gradient-to-br from-[#00c853] to-[#00701a] flex items-center justify-center text-white text-3xl sm:text-4xl font-black ring-4 ring-[#00c853]/60 shadow-xl transition-all group-hover:brightness-90">
+                    {agent.name?.charAt(0).toUpperCase() || 'A'}
+                  </div>
+                )}
+
+                {/* Visible Camera Badge for both Mobile & Desktop */}
+                <div className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-[#00c853] text-white border-2 border-[#121e3d] flex items-center justify-center shadow-lg group-hover:scale-110 group-hover:bg-[#00e676] transition-all">
+                  {isUploadingAvatar ? (
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Camera className="w-4 h-4" />
+                  )}
                 </div>
-              )}
-              <div className="absolute inset-0 bg-black/60 rounded-3xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                <Camera className="w-6 h-6 text-[#00c853]" />
               </div>
               <input
                 type="file"
-                accept="image/*"
+                accept="image/png,image/jpeg,image/webp,image/gif"
                 onChange={handleAvatarFileChange}
                 disabled={isUploadingAvatar}
                 className="hidden"
