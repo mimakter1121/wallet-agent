@@ -46,8 +46,7 @@ export const Header: React.FC = () => {
     triggerPwaInstall,
     isOnline,
     pendingDepositsCount,
-    pendingWithdrawalsCount,
-    pendingTotalCount
+    pendingWithdrawalsCount
   } = useApp();
 
   const [showProfileMenu, setShowProfileMenu] = useState(false);
@@ -140,17 +139,6 @@ export const Header: React.FC = () => {
             )}
           </div>
 
-          {/* Urgent Orders Alert Button */}
-          {pendingTotalCount > 0 && (
-            <button
-              onClick={() => setCurrentPage(pendingDepositsCount > 0 ? 'deposits' : 'withdrawals')}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-rose-500/20 to-amber-500/20 border border-rose-500/50 text-rose-300 hover:text-white text-xs font-black shadow-lg shadow-rose-950/50 animate-pulse transition-all active:scale-95"
-              title="Click to clear pending customer requests"
-            >
-              <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping" />
-              <span>🚨 {pendingTotalCount} {pendingTotalCount === 1 ? 'Order' : 'Orders'} Pending</span>
-            </button>
-          )}
 
           {/* Notifications Trigger */}
           <div className="relative">

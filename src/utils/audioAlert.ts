@@ -81,13 +81,6 @@ class SoundAlertManager {
       console.warn('Web Audio playback error:', err);
     }
 
-    // 2. Trigger Haptic Vibration on Android/Mobile devices
-    try {
-      if (typeof window !== 'undefined' && 'navigator' in window && 'vibrate' in navigator) {
-        navigator.vibrate([200, 100, 250, 100, 300]);
-      }
-    } catch {}
-
     // 3. Trigger Web Push / Desktop Notification if app is in background
     try {
       if (

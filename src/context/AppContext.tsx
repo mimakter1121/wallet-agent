@@ -956,17 +956,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             '🚨 New Cash-In Order!',
             `Customer ${newDep.customer_name || 'Player'} sent ৳${parseFloat(newDep.amount).toLocaleString()} via ${newDep.payment_method}`
           );
-          setActiveUrgentRequest({
-            id: newDep.id,
-            type: 'deposit',
-            requestCode: newDep.request_code,
-            customerName: newDep.customer_name || 'Customer',
-            customerPhone: newDep.customer_phone || '-',
-            amount: parseFloat(newDep.amount) || 0,
-            paymentMethod: newDep.payment_method || 'bKash',
-            trxId: newDep.transaction_ref || '-',
-            createdAt: newDep.created_at
-          });
           showToast('warning', '🚨 New Cash-In Order!', `Customer deposit #${newDep.request_code} (৳${parseFloat(newDep.amount).toLocaleString()}) received for clearance.`);
         }
 
@@ -990,17 +979,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             '💸 New Cash-Out Order!',
             `Customer ${newWth.customer_name || 'Player'} requested payout of ৳${parseFloat(newWth.amount).toLocaleString()} via ${newWth.payment_method}`
           );
-          setActiveUrgentRequest({
-            id: newWth.id,
-            type: 'withdrawal',
-            requestCode: newWth.request_code,
-            customerName: newWth.customer_name || 'Customer',
-            customerPhone: newWth.customer_phone || '-',
-            amount: parseFloat(newWth.amount) || 0,
-            paymentMethod: newWth.payment_method || 'Rocket',
-            trxId: newWth.recipient_account || newWth.reference || '-',
-            createdAt: newWth.created_at
-          });
           showToast('warning', '💸 New Cash-Out Order!', `Customer payout #${newWth.request_code} (৳${parseFloat(newWth.amount).toLocaleString()}) requested for clearance.`);
         }
       }
