@@ -10,6 +10,7 @@ import {
   TrendingUp
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
+import { formatNotificationTime } from '../utils/formatters';
 
 export const NotificationsPage: React.FC = () => {
   const { 
@@ -146,7 +147,7 @@ export const NotificationsPage: React.FC = () => {
                       )}
                     </h4>
                     <span className="text-[11px] text-slate-400 font-mono whitespace-nowrap shrink-0">
-                      {notif.timestamp}
+                      {formatNotificationTime(notif.timestamp)}
                     </span>
                   </div>
 
@@ -157,8 +158,12 @@ export const NotificationsPage: React.FC = () => {
 
                   {/* Badge */}
                   {notif.badge && (
-                    <div className="mt-2.5 inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#00c853]/15 text-[#00c853] border border-[#00c853]/30 text-xs font-bold">
-                      💰 {notif.badge}
+                    <div className={`mt-2.5 inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold border ${
+                      notif.badge === 'Action Required'
+                        ? 'bg-rose-500/15 text-rose-300 border-rose-500/30'
+                        : 'bg-[#00c853]/15 text-[#00c853] border-[#00c853]/30'
+                    }`}>
+                      {notif.badge === 'Action Required' ? '🚨' : '💰'} {notif.badge}
                     </div>
                   )}
                 </div>

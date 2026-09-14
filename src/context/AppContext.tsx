@@ -321,6 +321,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     commissionRatesRef.current = commissionRates;
   }, [commissionRates]);
 
+  const syncAgentFloatDataRef = useRef<() => Promise<void>>(async () => {});
+
   const [subAgents, setSubAgents] = useState<SubAgent[]>(() => {
     const saved = localStorage.getItem('wa_subagents');
     return saved ? JSON.parse(saved) : initialSubAgents;
@@ -328,7 +330,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const [notifications, setNotifications] = useState<NotificationItem[]>(() => {
     const saved = localStorage.getItem('wa_notifications');
-    return saved ? JSON.parse(saved) : initialNotifications;
+    if (!saved) return initialNotifications;
+    try {
+      const parsed: NotificationItem[] = JSON.parse(saved);
+      return parsed.sort((a, b) => {
+        const timeA = new Date(a.timestamp).getTime();
+        const timeB = new Date(b.timestamp).getTime();
+        return (isNaN(timeB) ? 0 : timeB) - (isNaN(timeA) ? 0 : timeA);
+      });
+    } catch {
+      return initialNotifications;
+    }
   });
 
   const [tickets, setTickets] = useState<SupportTicket[]>(() => {
@@ -593,8 +605,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       isSyncingRef.current = true;
 
       try {
+        const conds: string[] = [];
+        if (targetDbId) conds.push(`agent_id.eq.${targetDbId}`);
+        if (targetAgentCode) conds.push(`agent_code.eq.${targetAgentCode}`);
+        const agentOrFilter = conds.length > 0 ? conds.join(',') : null;
+
         // Parallel queries via Promise.all (1 single round-trip instead of 6 sequential awaits)
-        const [agentRes, txRes, subAgentsList] = await Promise.all([
+        const [agentRes, txRes, subAgentsList, depRes, wthRes] = await Promise.all([
           targetDbId
             ? supabase.from('agents').select('*').eq('id', targetDbId).maybeSingle()
             : supabase.from('agents').select('*').eq('agent_code', targetAgentCode).maybeSingle(),
@@ -604,7 +621,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             .eq('agent_id', targetDbId)
             .order('created_at', { ascending: false })
             .limit(60),
-          subAgentService.getSubAgents(targetAgentCode)
+          subAgentService.getSubAgents(targetAgentCode),
+          agentOrFilter
+            ? supabase.from('deposit_requests').select('*').or(agentOrFilter).order('created_at', { ascending: false }).limit(30)
+            : Promise.resolve({ data: [] }),
+          agentOrFilter
+            ? supabase.from('withdrawal_requests').select('*').or(agentOrFilter).order('created_at', { ascending: false }).limit(30)
+            : Promise.resolve({ data: [] })
         ]);
 
         if (subAgentsList && subAgentsList.length > 0) {
@@ -718,11 +741,66 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           }));
         }
 
-        // Auto-generate notifications
+        // Build unified notifications from deposit_requests, withdrawal_requests, and transactions
         const readIds: Set<string> = new Set(
           JSON.parse(localStorage.getItem('wa_notif_read_ids') || '[]')
         );
-        const autoNotifs: NotificationItem[] = mappedDbTx
+
+        const depNotifs: NotificationItem[] = ((depRes?.data as any[]) || []).map((d: any) => {
+          const notifId = `NOTIF-DEP-${d.id}`;
+          const isPending = d.status === 'pending';
+          const isApproved = d.status === 'approved' || d.status === 'completed';
+          const amount = parseFloat(d.amount) || 0;
+          const method = d.payment_method || 'Payment';
+          const custName = d.customer_name || 'Customer';
+
+          return {
+            id: notifId,
+            type: 'transaction' as const,
+            title: isPending
+              ? `🚨 Cash-In Request: ৳${amount.toLocaleString()} BDT`
+              : isApproved
+              ? `✅ Cash-In Approved: ৳${amount.toLocaleString()} BDT`
+              : `❌ Cash-In ${d.status}: ৳${amount.toLocaleString()} BDT`,
+            message: isPending
+              ? `Customer ${custName} requested cash-in of ৳${amount.toLocaleString()} via ${method} (${d.request_code || 'N/A'}). Action required.`
+              : isApproved
+              ? `Customer ${custName} cash-in of ৳${amount.toLocaleString()} via ${method} (${d.request_code || 'N/A'}) approved. Float balance adjusted.`
+              : `Customer ${custName} cash-in request of ৳${amount.toLocaleString()} via ${method} (${d.request_code || 'N/A'}) was ${d.status}.`,
+            timestamp: d.created_at || new Date().toISOString(),
+            read: readIds.has(notifId),
+            badge: isPending ? 'Action Required' : (isApproved ? 'Approved' : d.status)
+          };
+        });
+
+        const wthNotifs: NotificationItem[] = ((wthRes?.data as any[]) || []).map((w: any) => {
+          const notifId = `NOTIF-WTH-${w.id}`;
+          const isPending = w.status === 'pending';
+          const isApproved = w.status === 'approved' || w.status === 'completed';
+          const amount = parseFloat(w.amount) || 0;
+          const method = w.payment_method || 'Payment';
+          const custName = w.customer_name || 'Customer';
+
+          return {
+            id: notifId,
+            type: 'transaction' as const,
+            title: isPending
+              ? `💸 Cash-Out Request: ৳${amount.toLocaleString()} BDT`
+              : isApproved
+              ? `✅ Cash-Out Approved: ৳${amount.toLocaleString()} BDT`
+              : `❌ Cash-Out ${w.status}: ৳${amount.toLocaleString()} BDT`,
+            message: isPending
+              ? `Customer ${custName} requested cash-out of ৳${amount.toLocaleString()} via ${method} (${w.request_code || 'N/A'}). Action required.`
+              : isApproved
+              ? `Customer ${custName} cash-out of ৳${amount.toLocaleString()} via ${method} (${w.request_code || 'N/A'}) approved. Float balance adjusted.`
+              : `Customer ${custName} cash-out request of ৳${amount.toLocaleString()} via ${method} (${w.request_code || 'N/A'}) was ${w.status}.`,
+            timestamp: w.created_at || new Date().toISOString(),
+            read: readIds.has(notifId),
+            badge: isPending ? 'Action Required' : (isApproved ? 'Approved' : w.status)
+          };
+        });
+
+        const txNotifs: NotificationItem[] = mappedDbTx
           .filter(t => t.status === 'success')
           .map(t => {
             const isDeposit = t.type === 'deposit';
@@ -732,31 +810,38 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               : isWithdrawal
               ? (t.amount * currentWthRate).toFixed(2)
               : '0.00';
-            const notifId = 'NOTIF-' + t.id;
+            const notifId = 'NOTIF-TX-' + t.id;
 
             return {
               id: notifId,
               type: (isDeposit || isWithdrawal ? 'transaction' : 'system') as 'transaction' | 'commission' | 'security' | 'system',
               title: isDeposit
-                ? `✅ Cash-In Approved: +$${t.amount.toFixed(2)}`
+                ? `✅ Cash-In Settled: +$${t.amount.toFixed(2)}`
                 : isWithdrawal
-                ? `✅ Cash-Out Approved: $${t.amount.toFixed(2)}`
-                : `💰 Agent Topup: $${t.amount.toFixed(2)}`,
+                ? `✅ Cash-Out Settled: $${t.amount.toFixed(2)}`
+                : `💰 Float Topup: $${t.amount.toFixed(2)}`,
               message: isDeposit
                 ? `Customer ${t.customerName || 'Unknown'} cash-in of $${t.amount.toFixed(2)} via ${t.paymentMethod} approved. Commission earned: +$${commission}. Float balance updated.`
                 : isWithdrawal
                 ? `Customer ${t.customerName || 'Unknown'} cash-out of $${t.amount.toFixed(2)} via ${t.paymentMethod} approved. Commission earned: +$${commission}. Float balance updated.`
                 : `Liquidity topup of $${t.amount.toFixed(2)} via ${t.paymentMethod} approved and credited to float balance.`,
-              timestamp: t.createdAt || new Date().toISOString().substring(0, 16),
+              timestamp: t.createdAt || new Date().toISOString(),
               read: readIds.has(notifId),
               badge: isDeposit
                 ? `Commission +$${commission} (${(currentDepRate * 100).toFixed(1)}%)`
                 : isWithdrawal
                 ? `Commission +$${commission} (${(currentWthRate * 100).toFixed(1)}%)`
-                : undefined
+                : 'Settled'
             };
-          })
-          .reverse();
+          });
+
+        const autoNotifs: NotificationItem[] = [...depNotifs, ...wthNotifs, ...txNotifs];
+        // Sort strictly descending: newest first!
+        autoNotifs.sort((a, b) => {
+          const timeA = new Date(a.timestamp).getTime();
+          const timeB = new Date(b.timestamp).getTime();
+          return (isNaN(timeB) ? 0 : timeB) - (isNaN(timeA) ? 0 : timeA);
+        });
 
         setNotifications(autoNotifs);
       } catch (err) {
@@ -765,6 +850,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         isSyncingRef.current = false;
       }
     };
+
+    syncAgentFloatDataRef.current = syncAgentFloatData;
 
     // Initial instant sync
     syncAgentFloatData();
@@ -778,6 +865,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           syncAgentFloatData();
         })
         .on('postgres_changes', { event: '*', schema: 'public', table: 'agents', filter: `id=eq.${targetDbId}` }, () => {
+          syncAgentFloatData();
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'deposit_requests' }, () => {
+          syncAgentFloatData();
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'withdrawal_requests' }, () => {
           syncAgentFloatData();
         })
         .subscribe();
@@ -847,6 +940,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         const newDep = pendingDeps.find((d: any) => !seenDepositIdsRef.current.has(d.id));
         if (newDep) {
           seenDepositIdsRef.current.add(newDep.id);
+          const notifId = `NOTIF-DEP-${newDep.id}`;
+          const amount = parseFloat(newDep.amount) || 0;
+          const newNotifItem: NotificationItem = {
+            id: notifId,
+            type: 'transaction',
+            title: `🚨 Cash-In Request: ৳${amount.toLocaleString()} BDT`,
+            message: `Customer ${newDep.customer_name || 'Player'} requested cash-in of ৳${amount.toLocaleString()} via ${newDep.payment_method || 'Payment'} (${newDep.request_code || 'N/A'}). Action required.`,
+            timestamp: newDep.created_at || new Date().toISOString(),
+            read: false,
+            badge: 'Action Required'
+          };
+          setNotifications(prev => [newNotifItem, ...prev.filter(n => n.id !== notifId)]);
           soundAlert.playOrderChime(
             '🚨 New Cash-In Order!',
             `Customer ${newDep.customer_name || 'Player'} sent ৳${parseFloat(newDep.amount).toLocaleString()} via ${newDep.payment_method}`
@@ -869,6 +974,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         const newWth = pendingWths.find((w: any) => !seenWithdrawalIdsRef.current.has(w.id));
         if (newWth) {
           seenWithdrawalIdsRef.current.add(newWth.id);
+          const notifId = `NOTIF-WTH-${newWth.id}`;
+          const amount = parseFloat(newWth.amount) || 0;
+          const newNotifItem: NotificationItem = {
+            id: notifId,
+            type: 'transaction',
+            title: `💸 Cash-Out Request: ৳${amount.toLocaleString()} BDT`,
+            message: `Customer ${newWth.customer_name || 'Player'} requested payout of ৳${amount.toLocaleString()} via ${newWth.payment_method || 'Payment'} (${newWth.request_code || 'N/A'}). Action required.`,
+            timestamp: newWth.created_at || new Date().toISOString(),
+            read: false,
+            badge: 'Action Required'
+          };
+          setNotifications(prev => [newNotifItem, ...prev.filter(n => n.id !== notifId)]);
           soundAlert.playOrderChime(
             '💸 New Cash-Out Order!',
             `Customer ${newWth.customer_name || 'Player'} requested payout of ৳${parseFloat(newWth.amount).toLocaleString()} via ${newWth.payment_method}`
@@ -903,9 +1020,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       .channel(`agent_pending_orders_${agent.id || agent.dbId || 'global'}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'deposit_requests' }, () => {
         refreshPendingRequestsCount();
+        syncAgentFloatDataRef.current();
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'withdrawal_requests' }, () => {
         refreshPendingRequestsCount();
+        syncAgentFloatDataRef.current();
       })
       .subscribe();
 
@@ -1572,7 +1691,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setNotifications(prev => prev.map(n => ({ ...n, read: true })));
     // Persist all current notification IDs as read
     const allIds = notifications.map(n => n.id);
-    localStorage.setItem('wa_notif_read_ids', JSON.stringify(allIds));
+    const prevIds: string[] = JSON.parse(localStorage.getItem('wa_notif_read_ids') || '[]');
+    const merged = Array.from(new Set([...prevIds, ...allIds]));
+    localStorage.setItem('wa_notif_read_ids', JSON.stringify(merged));
     showToast('info', 'Notifications Cleared', 'All notifications marked as read.');
   };
 

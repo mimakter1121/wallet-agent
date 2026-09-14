@@ -28,6 +28,7 @@ import {
   Settings
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
+import { formatNotificationTime } from '../../utils/formatters';
 
 export const Header: React.FC = () => {
   const { 
@@ -39,6 +40,7 @@ export const Header: React.FC = () => {
     logout, 
     unreadCount, 
     notifications, 
+    markNotificationAsRead,
     markAllNotificationsAsRead,
     isInstallPromptAvailable,
     triggerPwaInstall,
@@ -194,29 +196,55 @@ export const Header: React.FC = () => {
                     )}
                   </div>
 
-                  <div className="max-h-72 overflow-y-auto divide-y divide-[#233763]">
-                    {notifications.slice(0, 4).map(notif => (
-                      <div 
-                        key={notif.id}
-                        onClick={() => {
-                          setShowNotifDropdown(false);
-                          setCurrentPage('notifications');
-                        }}
-                        className={`p-3.5 hover:bg-[#1a294e] cursor-pointer transition-colors ${!notif.read ? 'bg-[#00c853]/10' : ''}`}
-                      >
-                        <div className="flex items-start justify-between gap-2">
-                          <span className="text-xs font-bold text-white break-words">
-                            {notif.title}
-                          </span>
-                          <span className="text-[10px] text-slate-400 font-mono whitespace-nowrap shrink-0">
-                            {notif.timestamp}
-                          </span>
-                        </div>
-                        <p className="text-xs text-slate-300 mt-1 line-clamp-2 break-words">
-                          {notif.message}
-                        </p>
+                  <div className="max-h-80 overflow-y-auto divide-y divide-[#233763]">
+                    {notifications.length === 0 ? (
+                      <div className="p-6 text-center text-slate-400 text-xs font-medium">
+                        No notifications yet
                       </div>
-                    ))}
+                    ) : (
+                      notifications.slice(0, 8).map(notif => (
+                        <div 
+                          key={notif.id}
+                          onClick={() => {
+                            markNotificationAsRead(notif.id);
+                            setShowNotifDropdown(false);
+                            if (notif.id.includes('DEP') || notif.title.includes('Cash-In')) {
+                              setCurrentPage('deposits');
+                            } else if (notif.id.includes('WTH') || notif.title.includes('Cash-Out')) {
+                              setCurrentPage('withdrawals');
+                            } else {
+                              setCurrentPage('notifications');
+                            }
+                          }}
+                          className={`p-3.5 hover:bg-[#1a294e] cursor-pointer transition-colors ${!notif.read ? 'bg-[#00c853]/10 border-l-2 border-[#00c853]' : ''}`}
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <span className="text-xs font-bold text-white break-words flex-1">
+                              {notif.title}
+                            </span>
+                            <span className="text-[10px] text-slate-400 font-mono whitespace-nowrap shrink-0">
+                              {formatNotificationTime(notif.timestamp)}
+                            </span>
+                          </div>
+                          <p className="text-xs text-slate-300 mt-1 line-clamp-2 break-words">
+                            {notif.message}
+                          </p>
+                          {notif.badge && (
+                            <div className="mt-1.5 flex items-center gap-1.5">
+                              <span className={`text-[9px] font-black px-2 py-0.5 rounded-md ${
+                                notif.badge === 'Action Required'
+                                  ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40 animate-pulse'
+                                  : notif.badge === 'Approved' || notif.badge === 'Settled'
+                                  ? 'bg-[#00c853]/20 text-[#00c853] border border-[#00c853]/30'
+                                  : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                              }`}>
+                                {notif.badge}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      ))
+                    )}
                   </div>
 
                   <div className="px-4 pt-2 border-t border-[#233763] text-center">
