@@ -244,7 +244,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // State Stores with Local Fallback & Seed Data
   const [agent, setAgent] = useState<AgentProfile>(() => {
     const saved = localStorage.getItem('wa_agent');
-    return saved ? JSON.parse(saved) : initialAgent;
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (parsed.avatar && parsed.avatar.includes('photo-1507003211169')) {
+          parsed.avatar = parsed.id === 'AG-55353'
+            ? 'https://xyoiwvzifgfwvvwdqjsf.supabase.co/storage/v1/object/public/avatars/AG-55353_1789356509113.jpg'
+            : '';
+          localStorage.setItem('wa_agent', JSON.stringify(parsed));
+          localStorage.setItem('wa_agent_profile', JSON.stringify(parsed));
+        }
+        return parsed;
+      } catch (_) {}
+    }
+    return initialAgent;
   });
 
   const [customers, setCustomers] = useState<Customer[]>(() => {
@@ -718,8 +731,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             mappedKycLevel = 'Tier 1 (Basic)';
           }
 
-          setAgent(prev => ({
-            ...prev,
+          setAgent(prev => {
+            const rawAvatar = agentData.avatar_url;
+            const cleanAvatar = (rawAvatar && !rawAvatar.includes('photo-1507003211169'))
+              ? rawAvatar
+              : (agentData.agent_code === 'AG-55353'
+                  ? 'https://xyoiwvzifgfwvvwdqjsf.supabase.co/storage/v1/object/public/avatars/AG-55353_1789356509113.jpg'
+                  : (prev.avatar && !prev.avatar.includes('photo-1507003211169') ? prev.avatar : ''));
+
+            return {
+              ...prev,
+              avatar: cleanAvatar,
             id: agentData.agent_code || prev.id,
             dbId: agentData.id || prev.dbId,
             name: prev.name || agentData.full_name || agentData.name || 'Agent User',
@@ -738,7 +760,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             todayDeposits: computedTodayDep,
             todayWithdrawals: computedTodayWth,
             todayCommission: computedTodayComm
-          }));
+            };
+          });
         }
 
         // Build unified notifications from deposit_requests, withdrawal_requests, and transactions
@@ -1111,6 +1134,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       name: agentName,
       email: agentEmail,
       mobile: agentMobile,
+      avatar: customAgentData?.avatar 
+        ? (customAgentData.avatar.includes('photo-1507003211169') ? '' : customAgentData.avatar)
+        : (agentCode === 'AG-55353' ? initialAgent.avatar : ''),
       balance: customAgentData?.balance ?? 0,
       pendingBalance: customAgentData?.pendingBalance ?? 0,
       commissionBalance: customAgentData?.commissionBalance ?? 0,
@@ -1831,7 +1857,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         if (updates.district !== undefined) updatePayload.district = updates.district;
         if (updates.nidNumber !== undefined) updatePayload.nid_number = updates.nidNumber;
         if (updates.emergencyContact !== undefined) updatePayload.emergency_contact = updates.emergencyContact;
-        if (updates.avatar !== undefined) updatePayload.avatar_url = updates.avatar;
+        if (updates.avatar !== undefined) {
+          updatePayload.avatar_url = updates.avatar;
+          if (agent.email) {
+            await supabase.from('profiles').update({ avatar_url: updates.avatar }).eq('email', agent.email);
+          }
+        }
 
         if (Object.keys(updatePayload).length > 0) {
           await supabase.from('agents').update(updatePayload).eq('id', activeDbId);

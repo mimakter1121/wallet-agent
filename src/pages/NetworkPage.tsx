@@ -24,6 +24,7 @@ import { StatusBadge } from '../components/common/StatusBadge';
 import { InviteAgentModal } from '../components/modals/InviteAgentModal';
 import { Tier3UpgradeModal } from '../components/modals/Tier3UpgradeModal';
 import { AddFundsModal } from '../components/modals/AddFundsModal';
+import { getAvatarGradient } from '../utils/formatters';
 
 export const NetworkPage: React.FC = () => {
   const { agent, isMasterAgent, subAgents, commissionRates, showToast } = useApp();
@@ -321,8 +322,15 @@ export const NetworkPage: React.FC = () => {
                     return (
                       <tr key={ag.id} className="hover:bg-[#1a294e] transition-colors">
                         <td className="py-3.5 px-3">
-                          <div className="font-black text-white">{ag.name}</div>
-                          <div className="text-[10px] text-slate-400 font-mono">{ag.id} • {ag.mobile}</div>
+                          <div className="flex items-center gap-2.5">
+                            <div className={`w-8 h-8 rounded-xl bg-gradient-to-br ${getAvatarGradient(ag.name || ag.id)} flex items-center justify-center text-white text-xs font-black ring-1 ring-[#00c853]/40 shrink-0`}>
+                              {ag.name?.charAt(0).toUpperCase() || 'A'}
+                            </div>
+                            <div>
+                              <div className="font-black text-white">{ag.name}</div>
+                              <div className="text-[10px] text-slate-400 font-mono">{ag.id} • {ag.mobile}</div>
+                            </div>
+                          </div>
                         </td>
                         <td className="py-3.5 px-3 text-slate-300">
                           {ag.location}

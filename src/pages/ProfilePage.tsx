@@ -28,6 +28,7 @@ import { CollectionAccountsModal } from '../components/modals/CollectionAccounts
 import { collectionAccountService } from '../services/collectionAccountService';
 import { storageService } from '../services/storageService';
 import { supabase, isSupabaseConfigured } from '../lib/supabase/client';
+import { getAvatarGradient } from '../utils/formatters';
 
 export const ProfilePage: React.FC = () => {
   const { 
@@ -73,9 +74,7 @@ export const ProfilePage: React.FC = () => {
   
   // Keep avatarUrl in sync if agent.avatar changes
   useEffect(() => {
-    if (agent.avatar) {
-      setAvatarUrl(agent.avatar);
-    }
+    setAvatarUrl(agent.avatar || '');
   }, [agent.avatar]);
 
   // Editable form state for Personal & Outlet Info
@@ -205,7 +204,7 @@ export const ProfilePage: React.FC = () => {
                     className="w-20 h-20 sm:w-24 sm:h-24 rounded-3xl object-cover ring-4 ring-[#00c853]/60 shadow-xl transition-all group-hover:brightness-90"
                   />
                 ) : (
-                  <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-3xl bg-gradient-to-br from-[#00c853] to-[#00701a] flex items-center justify-center text-white text-3xl sm:text-4xl font-black ring-4 ring-[#00c853]/60 shadow-xl transition-all group-hover:brightness-90">
+                  <div className={`w-20 h-20 sm:w-24 sm:h-24 rounded-3xl bg-gradient-to-br ${getAvatarGradient(agent.name || agent.id)} flex items-center justify-center text-white text-3xl sm:text-4xl font-black ring-4 ring-[#00c853]/60 shadow-xl transition-all group-hover:brightness-90`}>
                     {agent.name?.charAt(0).toUpperCase() || 'A'}
                   </div>
                 )}

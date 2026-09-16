@@ -28,7 +28,7 @@ import {
   Settings
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
-import { formatNotificationTime } from '../../utils/formatters';
+import { formatNotificationTime, getAvatarGradient } from '../../utils/formatters';
 
 export const Header: React.FC = () => {
   const { 
@@ -264,7 +264,7 @@ export const Header: React.FC = () => {
                   className="w-8 h-8 rounded-xl object-cover ring-2 ring-[#00c853]"
                 />
               ) : (
-                <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#00c853] to-[#00701a] flex items-center justify-center text-white text-xs font-black ring-2 ring-[#00c853] shrink-0">
+                <div className={`w-8 h-8 rounded-xl bg-gradient-to-br ${getAvatarGradient(agent.name || agent.id)} flex items-center justify-center text-white text-xs font-black ring-2 ring-[#00c853] shrink-0`}>
                   {agent.name?.charAt(0).toUpperCase() || 'A'}
                 </div>
               )}
@@ -371,11 +371,17 @@ export const Header: React.FC = () => {
 
               {/* Agent info mini badge */}
               <div className="flex items-center gap-3 p-2.5 rounded-2xl bg-[#1a294e] border border-[#233763]">
-                <img
-                  src={agent.avatar || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80'}
-                  alt={agent.name}
-                  className="w-10 h-10 rounded-xl object-cover border border-[#00c853]"
-                />
+                {agent.avatar ? (
+                  <img
+                    src={agent.avatar}
+                    alt={agent.name}
+                    className="w-10 h-10 rounded-xl object-cover border border-[#00c853]"
+                  />
+                ) : (
+                  <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${getAvatarGradient(agent.name || agent.id)} flex items-center justify-center text-white text-sm font-black border border-[#00c853] shrink-0`}>
+                    {agent.name?.charAt(0).toUpperCase() || 'A'}
+                  </div>
+                )}
                 <div className="min-w-0 flex-1">
                   <div className="text-xs font-black text-white truncate">{agent.name}</div>
                   <div className="text-[10px] text-[#00c853] font-mono font-bold flex items-center gap-1">

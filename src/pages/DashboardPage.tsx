@@ -38,7 +38,8 @@ export const DashboardPage: React.FC = () => {
   const [isTransferOpen, setIsTransferOpen] = useState(false);
 
   const nowUTCDate = new Date().toISOString().substring(0, 10);
-  const todayTxs = transactions.filter(t => t.status === 'success' && t.createdAt?.substring(0, 10) === nowUTCDate);
+  const localToday = new Date().toLocaleDateString('en-CA');
+  const todayTxs = transactions.filter(t => t.status === 'success' && (t.createdAt?.startsWith(localToday) || t.createdAt?.startsWith(nowUTCDate)));
 
   const computedDeposits = todayTxs
     .filter(t => t.type === 'deposit')

@@ -28,7 +28,7 @@ export const initialAgent: AgentProfile = {
   todayWithdrawals: 0.00,
   todayCommission: 0.00,
   activeCustomersCount: 0,
-  avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
+  avatar: 'https://xyoiwvzifgfwvvwdqjsf.supabase.co/storage/v1/object/public/avatars/AG-55353_1789356509113.jpg',
   isOnline: true,
   referralCode: 'AGENT-55353',
   pinSet: true,

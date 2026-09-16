@@ -16,6 +16,7 @@ import {
   Sparkles
 } from 'lucide-react';
 import { useApp, PageId } from '../../context/AppContext';
+import { getAvatarGradient } from '../../utils/formatters';
 
 interface NavItem {
   id: PageId;
@@ -140,7 +141,7 @@ export const Sidebar: React.FC = () => {
                 className="w-9 h-9 rounded-xl object-cover ring-2 ring-[#00c853]/60"
               />
             ) : (
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#00c853] to-[#00701a] flex items-center justify-center text-white text-xs font-black ring-2 ring-[#00c853]/60 shrink-0">
+              <div className={`w-9 h-9 rounded-xl bg-gradient-to-br ${getAvatarGradient(agent.name || agent.id)} flex items-center justify-center text-white text-xs font-black ring-2 ring-[#00c853]/60 shrink-0`}>
                 {agent.name?.charAt(0).toUpperCase() || 'A'}
               </div>
             )}

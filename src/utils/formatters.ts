@@ -23,3 +23,24 @@ export const formatNotificationTime = (timestampStr?: string): string => {
     minute: '2-digit'
   });
 };
+
+export const getAvatarGradient = (nameOrId?: string): string => {
+  const gradients = [
+    'from-[#00c853] to-[#00701a]', // Emerald Green
+    'from-[#00b0ff] to-[#006097]', // Electric Blue
+    'from-[#7c4dff] to-[#4a148c]', // Deep Purple
+    'from-[#ff9100] to-[#b26a00]', // Amber Orange
+    'from-[#00bfa5] to-[#00695c]', // Teal
+    'from-[#f50057] to-[#880e4f]', // Pink / Rose
+    'from-[#00e5ff] to-[#00838f]', // Cyan
+    'from-[#ff5252] to-[#b71c1c]', // Coral Red
+    'from-[#ffd600] to-[#f57f17]'  // Solar Gold
+  ];
+  if (!nameOrId) return gradients[0];
+  let hash = 0;
+  for (let i = 0; i < nameOrId.length; i++) {
+    hash = nameOrId.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const index = Math.abs(hash) % gradients.length;
+  return gradients[index];
+};

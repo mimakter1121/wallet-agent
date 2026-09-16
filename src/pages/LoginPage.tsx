@@ -63,6 +63,8 @@ export const LoginPage: React.FC = () => {
     }
     
     if (authData?.profile && authData?.agent) {
+      const rawAvatar = (authData.agent as any).avatar_url || authData.profile.avatar_url;
+      const cleanAvatar = rawAvatar && !rawAvatar.includes('photo-1507003211169') ? rawAvatar : undefined;
       login({
         id: authData.agent.agent_code,
         dbId: authData.agent.id,
@@ -72,7 +74,8 @@ export const LoginPage: React.FC = () => {
         balance: parseFloat(authData.agent.balance?.toString() || '0') || 0,
         pendingBalance: parseFloat(authData.agent.pending_balance?.toString() || '0') || 0,
         commissionBalance: parseFloat(authData.agent.total_commission?.toString() || '0') || 0,
-        kycStatus: (authData.agent.verification_status as any) || 'unverified'
+        kycStatus: (authData.agent.verification_status as any) || 'unverified',
+        avatar: cleanAvatar
       });
     } else {
       login({
@@ -112,6 +115,8 @@ export const LoginPage: React.FC = () => {
       }
 
       if (data?.agent && data?.profile) {
+        const rawAvatar = (data.agent as any).avatar_url || data.profile.avatar_url;
+        const cleanAvatar = rawAvatar && !rawAvatar.includes('photo-1507003211169') ? rawAvatar : undefined;
         login({
           id: data.agent.agent_code,
           dbId: data.agent.id,
@@ -121,7 +126,8 @@ export const LoginPage: React.FC = () => {
           balance: 0.00,
           pendingBalance: 0.00,
           commissionBalance: 0.00,
-          kycStatus: 'verified'
+          kycStatus: 'verified',
+          avatar: cleanAvatar
         });
       } else {
         login({
