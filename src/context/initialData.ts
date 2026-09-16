@@ -21,7 +21,7 @@ export const initialAgent: AgentProfile = {
   kycStatus: 'verified',
   balance: 39143.42,
   pendingBalance: 0.00,
-  commissionBalance: 47568.58,
+  commissionBalance: 0.00,
   reserveBalance: 0.00,
   todayVolume: 0.00,
   todayDeposits: 0.00,
