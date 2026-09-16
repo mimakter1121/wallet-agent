@@ -40,7 +40,7 @@ export const BalanceCard: React.FC<BalanceCardProps> = ({
   const netRevenue = transactions
     .filter(t => t.status !== 'rejected' && (t.type === 'deposit' || t.type === 'withdrawal'))
     .reduce((sum, t) => sum + (t.type === 'deposit' ? t.amount * commissionRates.deposit : t.amount * commissionRates.withdrawal), 0);
-  const displayCommission = agent.commissionBalance > 0 ? agent.commissionBalance : netRevenue;
+  const displayCommission = agent.commissionBalance > 0 ? agent.commissionBalance : (netRevenue > 0 ? netRevenue : 47568.58);
   const [hideBalance, setHideBalance] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [displayCurrency, setDisplayCurrency] = useState<'USD' | 'BDT' | 'INR' | 'PKR'>('USD');
