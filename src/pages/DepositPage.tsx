@@ -21,7 +21,8 @@ export const DepositPage: React.FC = () => {
     showToast,
     requestPinConfirmation,
     bdtExchangeRate: bdtRate,
-    commissionRates
+    commissionRates,
+    refreshAgentData
   } = useApp();
 
   const [liveDepositRequests, setLiveDepositRequests] = useState<any[]>([]);
@@ -101,6 +102,7 @@ export const DepositPage: React.FC = () => {
               showToast('info', 'Deposit Rejected', `Customer deposit ${reqCode} rejected.`);
             }
             fetchLiveDepositRequests();
+            await refreshAgentData();
           } catch (err) {
             showToast('error', 'Update Failed', 'Failed to update deposit request.');
           }

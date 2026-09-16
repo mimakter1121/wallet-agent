@@ -16,14 +16,29 @@ export const BalanceCard: React.FC<BalanceCardProps> = ({
 }) => {
   const { agent, transactions, commissionRates, showToast } = useApp();
 
-  // Compute live stats from today's approved transactions with timezone resilience
+  // Include all active statuses and robust timezone matching
   const nowUTCDate = new Date().toISOString().substring(0, 10);
   const localToday = new Date().toLocaleDateString('en-CA');
-  const todayTxs = transactions.filter(t => t.status === 'success' && (t.createdAt?.startsWith(localToday) || t.createdAt?.startsWith(nowUTCDate)));
+  const isToday = (dateStr?: string) => {
+    if (!dateStr) return false;
+    if (dateStr.startsWith(localToday) || dateStr.startsWith(nowUTCDate)) return true;
+    try {
+      const d = new Date(dateStr);
+      if (!isNaN(d.getTime())) {
+        const dLocal = d.toLocaleDateString('en-CA');
+        const dUTC = d.toISOString().substring(0, 10);
+        return dLocal === localToday || dUTC === nowUTCDate || dLocal === nowUTCDate || dUTC === localToday;
+      }
+    } catch (_) {}
+    return false;
+  };
+  const todayTxs = transactions.filter(t =>
+    t.status !== 'rejected' && isToday(t.createdAt)
+  );
   const computedTodayVol = todayTxs.reduce((sum, t) => sum + t.amount, 0);
-  const todayVolume = computedTodayVol;
+  const todayVolume = Math.max(computedTodayVol, agent.todayVolume || 0);
   const netRevenue = transactions
-    .filter(t => t.status === 'success' && (t.type === 'deposit' || t.type === 'withdrawal'))
+    .filter(t => t.status !== 'rejected' && (t.type === 'deposit' || t.type === 'withdrawal'))
     .reduce((sum, t) => sum + (t.type === 'deposit' ? t.amount * commissionRates.deposit : t.amount * commissionRates.withdrawal), 0);
   const displayCommission = agent.commissionBalance > 0 ? agent.commissionBalance : netRevenue;
   const [hideBalance, setHideBalance] = useState(false);

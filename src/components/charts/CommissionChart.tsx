@@ -10,8 +10,8 @@ export const CommissionChart: React.FC = () => {
   const clearanceRate = commissionRates.clearance;
 
 
-  // Compute commission amounts from live approved transactions
-  const approvedTxs = transactions.filter(t => t.status === 'success');
+  // Compute commission amounts from live transactions
+  const approvedTxs = transactions.filter(t => t.status !== 'rejected');
 
   const depositComm = approvedTxs
     .filter(t => t.type === 'deposit')

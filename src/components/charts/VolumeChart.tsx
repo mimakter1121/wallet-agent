@@ -28,7 +28,7 @@ export const VolumeChart: React.FC = () => {
   };
 
   const getLiveData = (): DataPoint[] => {
-    const approvedTxs = transactions.filter(t => t.status === 'success');
+    const approvedTxs = transactions.filter(t => t.status !== 'rejected');
     const depRate = commissionRates.deposit;
     const wthRate = commissionRates.withdrawal;
 

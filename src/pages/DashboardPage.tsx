@@ -39,7 +39,24 @@ export const DashboardPage: React.FC = () => {
 
   const nowUTCDate = new Date().toISOString().substring(0, 10);
   const localToday = new Date().toLocaleDateString('en-CA');
-  const todayTxs = transactions.filter(t => t.status === 'success' && (t.createdAt?.startsWith(localToday) || t.createdAt?.startsWith(nowUTCDate)));
+  const isToday = (dateStr?: string) => {
+    if (!dateStr) return false;
+    if (dateStr.startsWith(localToday) || dateStr.startsWith(nowUTCDate)) return true;
+    try {
+      const d = new Date(dateStr);
+      if (!isNaN(d.getTime())) {
+        const dLocal = d.toLocaleDateString('en-CA');
+        const dUTC = d.toISOString().substring(0, 10);
+        return dLocal === localToday || dUTC === nowUTCDate || dLocal === nowUTCDate || dUTC === localToday;
+      }
+    } catch (_) {}
+    return false;
+  };
+
+  const todayTxs = transactions.filter(t =>
+    t.status !== 'rejected' &&
+    isToday(t.createdAt)
+  );
 
   const computedDeposits = todayTxs
     .filter(t => t.type === 'deposit')
@@ -53,9 +70,9 @@ export const DashboardPage: React.FC = () => {
     .filter(t => t.type === 'deposit' || t.type === 'withdrawal')
     .reduce((acc, t) => acc + (t.type === 'deposit' ? t.amount * commissionRates.deposit : t.amount * commissionRates.withdrawal), 0);
 
-  const displayDeposits = computedDeposits;
-  const displayWithdrawals = computedWithdrawals;
-  const displayCommission = computedCommission;
+  const displayDeposits = Math.max(computedDeposits, agent.todayDeposits || 0);
+  const displayWithdrawals = Math.max(computedWithdrawals, agent.todayWithdrawals || 0);
+  const displayCommission = Math.max(computedCommission, agent.todayCommission || 0);
 
   const bdt200 = formatCurrency(usdToLocal(200, 'BDT'), 'BDT');
   const bdt1000 = formatCurrency(usdToLocal(1000, 'BDT'), 'BDT');

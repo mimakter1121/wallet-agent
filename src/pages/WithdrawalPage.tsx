@@ -21,7 +21,8 @@ export const WithdrawalPage: React.FC = () => {
     showToast,
     requestPinConfirmation,
     bdtExchangeRate: bdtRate,
-    commissionRates
+    commissionRates,
+    refreshAgentData
   } = useApp();
 
   const [liveWithdrawalRequests, setLiveWithdrawalRequests] = useState<any[]>([]);
@@ -102,6 +103,7 @@ export const WithdrawalPage: React.FC = () => {
               showToast('info', 'Cashout Rejected', `Customer cashout ${reqCode} rejected.`);
             }
             fetchLiveWithdrawalRequests();
+            await refreshAgentData();
           } catch (err) {
             showToast('error', 'Update Failed', 'Failed to update withdrawal request.');
           }

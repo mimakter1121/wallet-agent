@@ -188,6 +188,7 @@ interface AppContextType {
   activeUrgentRequest: IncomingRequestAlert | null;
   dismissUrgentRequest: () => void;
   refreshPendingRequestsCount: () => Promise<void>;
+  refreshAgentData: () => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -633,13 +634,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             .select('*')
             .eq('agent_id', targetDbId)
             .order('created_at', { ascending: false })
-            .limit(60),
+            .limit(5000),
           subAgentService.getSubAgents(targetAgentCode),
           agentOrFilter
-            ? supabase.from('deposit_requests').select('*').or(agentOrFilter).order('created_at', { ascending: false }).limit(30)
+            ? supabase.from('deposit_requests').select('*').or(agentOrFilter).order('created_at', { ascending: false }).limit(300)
             : Promise.resolve({ data: [] }),
           agentOrFilter
-            ? supabase.from('withdrawal_requests').select('*').or(agentOrFilter).order('created_at', { ascending: false }).limit(30)
+            ? supabase.from('withdrawal_requests').select('*').or(agentOrFilter).order('created_at', { ascending: false }).limit(300)
             : Promise.resolve({ data: [] })
         ]);
 
@@ -699,7 +700,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         // Metrics computation
         const nowUTCDate = new Date().toISOString().substring(0, 10);
         const localToday = new Date().toLocaleDateString('en-CA');
-        const todaySuccessTxs = mappedDbTx.filter(t => t.status === 'success' && (t.createdAt?.startsWith(localToday) || t.createdAt?.startsWith(nowUTCDate)));
+        const isDateToday = (dateStr?: string) => {
+          if (!dateStr) return false;
+          if (dateStr.startsWith(localToday) || dateStr.startsWith(nowUTCDate)) return true;
+          try {
+            const d = new Date(dateStr);
+            if (!isNaN(d.getTime())) {
+              const dLocal = d.toLocaleDateString('en-CA');
+              const dUTC = d.toISOString().substring(0, 10);
+              return dLocal === localToday || dUTC === nowUTCDate || dLocal === nowUTCDate || dUTC === localToday;
+            }
+          } catch (_) {}
+          return false;
+        };
+
+        const todaySuccessTxs = mappedDbTx.filter(t => 
+          t.status !== 'rejected' && 
+          isDateToday(t.createdAt)
+        );
         const computedTodayVol = todaySuccessTxs.reduce((sum, t) => sum + t.amount, 0);
         const computedTodayDep = todaySuccessTxs.filter(t => t.type === 'deposit').reduce((sum, t) => sum + t.amount, 0);
         const computedTodayWth = todaySuccessTxs.filter(t => t.type === 'withdrawal').reduce((sum, t) => sum + t.amount, 0);
@@ -1953,7 +1971,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         pendingTotalCount,
         activeUrgentRequest,
         dismissUrgentRequest,
-        refreshPendingRequestsCount
+        refreshPendingRequestsCount,
+        refreshAgentData: () => syncAgentFloatDataRef.current()
       }}
     >
       {children}
