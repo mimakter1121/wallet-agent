@@ -23,6 +23,7 @@ export interface PaymentChannel {
   estFee: string;
   notes?: string;
   createdAt: string;
+  qr_code_url?: string;
 }
 
 export interface Agent {

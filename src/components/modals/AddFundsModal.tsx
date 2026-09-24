@@ -45,6 +45,7 @@ export interface CollectionAccount {
   status: string;             // active / inactive
   daily_limit?: number;
   notes?: string;
+  qr_code_url?: string;
 }
 
 type Step = 'select_channel' | 'enter_amount' | 'payment_details';
@@ -444,9 +445,9 @@ export const AddFundsModal: React.FC<AddFundsModalProps> = ({ isOpen, onClose })
               </div>
 
               {/* QR Code display if crypto or phone */}
-              <div className="w-32 h-32 sm:w-36 sm:h-36 mx-auto my-2.5 sm:my-3 p-2 bg-white rounded-2xl border-2 border-[#00c853]/40 shadow-lg flex items-center justify-center">
+              <div className="w-32 h-32 sm:w-36 sm:h-36 mx-auto my-2.5 sm:my-3 p-2 bg-white rounded-2xl border-2 border-[#00c853]/40 shadow-lg flex items-center justify-center relative overflow-hidden">
                 <img
-                  src={`https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=${encodeURIComponent(targetAddress)}`}
+                  src={selectedAccount.qr_code_url || `https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=${encodeURIComponent(targetAddress)}`}
                   alt="Clearance QR Code"
                   className="w-full h-full object-contain rounded-xl"
                 />

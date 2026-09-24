@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { QrCode, Plus, Power, Trash2, ShieldCheck, Wallet, Check, Copy, AlertCircle, Building, Layers } from 'lucide-react';
+import { QrCode, Plus, Power, Trash2, ShieldCheck, Wallet, Check, Copy, AlertCircle, Building, Layers, Upload, RotateCcw } from 'lucide-react';
 import { useAdmin } from '../context/AdminContext';
 import { PaymentChannel } from '../types';
+import { supabase } from '../lib/supabase';
 
 export const ChannelsPage: React.FC = () => {
-  const { channels, toggleChannelStatus, addChannel, deleteChannel, showToast } = useAdmin();
+  const { channels, toggleChannelStatus, addChannel, deleteChannel, updateChannelQr, showToast } = useAdmin();
 
   const [showForm, setShowForm] = useState(false);
   const [name, setName] = useState('');
@@ -13,6 +14,60 @@ export const ChannelsPage: React.FC = () => {
   const [minDepositUSD, setMinDepositUSD] = useState('10');
   const [estFee, setEstFee] = useState('~$0.10');
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [formQrUrl, setFormQrUrl] = useState<string>('');
+  const [isUploading, setIsUploading] = useState<boolean>(false);
+  const [uploadingChannelId, setUploadingChannelId] = useState<string | null>(null);
+
+  const uploadFileToStorage = async (file: File, prefix: string): Promise<string> => {
+    try {
+      const fileExt = (file.name.split('.').pop() || 'png').toLowerCase();
+      const fileName = `${prefix}_${Date.now()}.${fileExt}`;
+      const { data, error } = await supabase.storage
+        .from('avatars')
+        .upload(fileName, file, { cacheControl: '3600', upsert: true, contentType: file.type || 'image/png' });
+      if (!error && data?.path) {
+        const { data: p } = supabase.storage.from('avatars').getPublicUrl(data.path);
+        if (p?.publicUrl) return p.publicUrl;
+      }
+    } catch (_) {}
+
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const handleFormQrUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setIsUploading(true);
+    try {
+      const url = await uploadFileToStorage(file, 'treasury_form_qr');
+      setFormQrUrl(url);
+      showToast('success', 'QR Uploaded', 'Custom QR Code attached to channel form.');
+    } catch (err: any) {
+      showToast('error', 'Upload Failed', err.message);
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleListQrUpload = async (channelId: string, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingChannelId(channelId);
+    try {
+      const url = await uploadFileToStorage(file, `treasury_${channelId}`);
+      await updateChannelQr(channelId, url);
+    } catch (err: any) {
+      showToast('error', 'Upload Failed', err.message);
+    } finally {
+      setUploadingChannelId(null);
+      e.target.value = '';
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,12 +82,14 @@ export const ChannelsPage: React.FC = () => {
       badgeText: 'ADMIN TREASURY',
       status: 'active',
       minDepositUSD: parseFloat(minDepositUSD) || 10,
-      estFee: estFee.trim() || 'Free'
+      estFee: estFee.trim() || 'Free',
+      qr_code_url: formQrUrl || undefined
     });
 
     setShowForm(false);
     setName('');
     setAccountNumber('');
+    setFormQrUrl('');
   };
 
   const handleCopy = (id: string, text: string) => {
@@ -136,6 +193,57 @@ export const ChannelsPage: React.FC = () => {
             />
           </div>
 
+          {/* Custom QR Code Upload Section */}
+          <div className="p-3.5 rounded-xl bg-[#1a294e] border border-[#233763] space-y-2">
+            <div className="flex items-center justify-between flex-wrap gap-1">
+              <label className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
+                <QrCode className="w-4 h-4 text-[#00c853]" />
+                <span>Custom QR Code Image (Optional)</span>
+              </label>
+              <span className="text-[10px] text-slate-400">
+                Uploaded QR will be shown to Agents when adding float funds
+              </span>
+            </div>
+
+            <div className="flex items-center gap-3">
+              {formQrUrl ? (
+                <div className="relative group w-16 h-16 bg-white p-1 rounded-xl border-2 border-[#00c853] shrink-0">
+                  <img src={formQrUrl} alt="QR Preview" className="w-full h-full object-contain rounded-lg" />
+                  <button
+                    type="button"
+                    onClick={() => setFormQrUrl('')}
+                    className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-rose-500 hover:bg-rose-600 text-white rounded-full flex items-center justify-center text-xs shadow cursor-pointer"
+                    title="Remove QR Image"
+                  >
+                    ×
+                  </button>
+                </div>
+              ) : (
+                <div className="w-16 h-16 bg-[#121e3d] border border-dashed border-[#233763] rounded-xl flex flex-col items-center justify-center text-slate-500 shrink-0">
+                  <QrCode className="w-6 h-6 opacity-40 text-slate-400" />
+                  <span className="text-[9px] mt-0.5 opacity-60">Auto QR</span>
+                </div>
+              )}
+
+              <div className="flex-1">
+                <label className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-[#121e3d] border border-[#233763] hover:border-[#00c853] text-xs font-bold text-slate-200 hover:text-white cursor-pointer transition-all shadow">
+                  <Upload className="w-3.5 h-3.5 text-[#00c853]" />
+                  <span>{isUploading ? 'Uploading...' : formQrUrl ? 'Change QR Image' : 'Upload QR Image'}</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleFormQrUpload}
+                    disabled={isUploading}
+                  />
+                </label>
+                <p className="text-[10px] text-slate-400 mt-1">
+                  PNG, JPG, WEBP. If empty, system auto-generates QR code from address.
+                </p>
+              </div>
+            </div>
+          </div>
+
           <div className="pt-2 flex justify-end gap-3">
             <button
               type="button"
@@ -204,6 +312,50 @@ export const ChannelsPage: React.FC = () => {
                       >
                         {copiedId === ch.id ? <Check className="w-3.5 h-3.5 text-[#00c853]" /> : <Copy className="w-3.5 h-3.5" />}
                       </button>
+                    </div>
+                  </div>
+
+                  {/* QR Code Preview & Direct Upload/Reset in Admin List */}
+                  <div className="flex items-center gap-2 shrink-0 bg-[#121e3d] p-1.5 rounded-xl border border-[#233763]">
+                    <div className="w-11 h-11 bg-white p-1 rounded-lg border border-slate-300 shrink-0">
+                      <img
+                        src={ch.qr_code_url || `https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(ch.accountNumber)}`}
+                        alt="QR"
+                        className="w-full h-full object-contain rounded"
+                      />
+                    </div>
+
+                    <div className="flex flex-col gap-1 pr-1">
+                      <span className={`text-[9px] font-black px-1.5 py-0.5 rounded uppercase leading-none ${
+                        ch.qr_code_url ? 'bg-[#00c853]/20 text-[#00c853] border border-[#00c853]/40' : 'bg-slate-800 text-slate-400'
+                      }`}>
+                        {ch.qr_code_url ? 'Custom QR' : 'Auto QR'}
+                      </span>
+
+                      <div className="flex items-center gap-1">
+                        <label className="text-[10px] font-bold text-[#00c853] hover:text-white bg-[#1a294e] hover:bg-[#00c853] px-2 py-1 rounded-md border border-[#00c853]/40 transition-all cursor-pointer inline-flex items-center gap-1">
+                          <Upload className="w-2.5 h-2.5" />
+                          <span>{uploadingChannelId === ch.id ? '...' : ch.qr_code_url ? 'Change' : 'Upload QR'}</span>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={e => handleListQrUpload(ch.id, e)}
+                            disabled={uploadingChannelId === ch.id}
+                          />
+                        </label>
+
+                        {ch.qr_code_url && (
+                          <button
+                            type="button"
+                            onClick={() => updateChannelQr(ch.id, null)}
+                            className="text-[10px] text-rose-400 hover:text-rose-300 p-1 rounded bg-[#1a294e] border border-rose-500/30 hover:border-rose-500/60 cursor-pointer"
+                            title="Reset to system auto QR"
+                          >
+                            <RotateCcw className="w-2.5 h-2.5" />
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>

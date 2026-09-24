@@ -18,6 +18,7 @@ interface AdminContextType {
   toggleChannelStatus: (id: string) => void;
   addChannel: (channel: Omit<PaymentChannel, 'id' | 'createdAt'>) => void;
   deleteChannel: (id: string) => void;
+  updateChannelQr: (id: string, qrUrl: string | null) => Promise<void>;
   approveTransaction: (id: string) => void;
   rejectTransaction: (id: string) => void;
   updateAgentStatus: (id: string, active: boolean) => void;
@@ -167,7 +168,8 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             status: c.status === 'active' ? 'active' : 'inactive',
             minDepositUSD: 10,
             estFee: 'Free',
-            createdAt: c.created_at?.substring(0, 10) || new Date().toISOString().substring(0, 10)
+            createdAt: c.created_at?.substring(0, 10) || new Date().toISOString().substring(0, 10),
+            qr_code_url: c.qr_code_url
           };
         });
         setChannels(mappedCol);
@@ -260,7 +262,8 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           account_name: data.name,
           status: 'active',
           daily_limit: 100000,
-          notes: `Admin Treasury Wallet (${data.provider})`
+          notes: `Admin Treasury Wallet (${data.provider})`,
+          qr_code_url: data.qr_code_url || null
         })
         .select()
         .single();
@@ -289,6 +292,26 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
 
     showToast('info', 'Channel Removed', 'Collection channel deleted from database.');
+  };
+
+  const updateChannelQr = async (id: string, qrUrl: string | null) => {
+    setChannels(prev => prev.map(c => c.id === id ? { ...c, qr_code_url: qrUrl || undefined } : c));
+
+    try {
+      const { error } = await supabase
+        .from('treasury_accounts')
+        .update({ qr_code_url: qrUrl, updated_at: new Date().toISOString() })
+        .eq('id', id);
+
+      if (error) {
+        showToast('error', 'QR Save Error', error.message);
+      } else {
+        showToast('success', 'Treasury QR Updated', qrUrl ? 'Custom QR Code saved for this address.' : 'Reverted to auto-generated QR code.');
+        fetchLiveAdminData();
+      }
+    } catch (err: any) {
+      showToast('error', 'QR Save Error', err.message || 'Failed to update QR code.');
+    }
   };
 
   const approveTransaction = async (id: string) => {
@@ -522,6 +545,7 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       toggleChannelStatus,
       addChannel,
       deleteChannel,
+      updateChannelQr,
       approveTransaction,
       rejectTransaction,
       updateAgentStatus,
