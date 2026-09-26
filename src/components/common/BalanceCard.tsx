@@ -37,10 +37,12 @@ export const BalanceCard: React.FC<BalanceCardProps> = ({
   const todayTxs = transactions.filter(t =>
     t.status !== 'rejected' && isToday(t.createdAt)
   );
-  const computedTodayVol = todayTxs.reduce((sum, t) => sum + t.amount, 0);
+  const computedTodayVol = todayTxs
+    .filter(t => (t.type === 'deposit' || t.type === 'withdrawal') && t.customerId !== 'AGENT-SELF' && !t.customerName?.includes('Agent Settlement'))
+    .reduce((sum, t) => sum + t.amount, 0);
   const todayVolume = Math.max(computedTodayVol, agent.todayVolume || 0);
   const netRevenue = transactions
-    .filter(t => t.status !== 'rejected' && (t.type === 'deposit' || t.type === 'withdrawal'))
+    .filter(t => t.status !== 'rejected' && (t.type === 'deposit' || t.type === 'withdrawal') && t.customerId !== 'AGENT-SELF' && !t.customerName?.includes('Agent Settlement'))
     .reduce((sum, t) => sum + (t.type === 'deposit' ? t.amount * commissionRates.deposit : t.amount * commissionRates.withdrawal), 0);
   const displayCommission = agent.commissionBalance > 0 ? agent.commissionBalance : netRevenue;
   const [hideBalance, setHideBalance] = useState(false);

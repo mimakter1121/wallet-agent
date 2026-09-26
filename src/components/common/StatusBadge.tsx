@@ -66,6 +66,22 @@ export const TypeBadge: React.FC<{ type: string }> = ({ type }) => {
       </span>
     );
   }
+  if (norm === 'payout' || norm === 'agent_withdrawal') {
+    return (
+      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-xs font-semibold bg-amber-500/20 text-amber-400 border border-amber-500/40">
+        <ArrowUpRight className="w-3 h-3 text-amber-400" />
+        Agent Payout
+      </span>
+    );
+  }
+  if (norm === 'topup' || norm === 'add_funds') {
+    return (
+      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-xs font-semibold bg-blue-500/20 text-blue-400 border border-blue-500/40">
+        <ArrowDownLeft className="w-3 h-3 text-blue-400" />
+        Agent Top-up
+      </span>
+    );
+  }
   return (
     <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-xs font-medium bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">
       {type.charAt(0).toUpperCase() + type.slice(1)}

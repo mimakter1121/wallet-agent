@@ -65,11 +65,11 @@ export const DashboardPage: React.FC = () => {
     .reduce((acc, t) => acc + t.amount, 0);
 
   const computedWithdrawals = todayTxs
-    .filter(t => t.type === 'withdrawal')
+    .filter(t => t.type === 'withdrawal' && t.customerId !== 'AGENT-SELF' && !t.customerName?.includes('Agent Settlement'))
     .reduce((acc, t) => acc + t.amount, 0);
 
   const computedCommission = todayTxs
-    .filter(t => t.type === 'deposit' || t.type === 'withdrawal')
+    .filter(t => (t.type === 'deposit' || t.type === 'withdrawal') && t.customerId !== 'AGENT-SELF' && !t.customerName?.includes('Agent Settlement'))
     .reduce((acc, t) => acc + (t.type === 'deposit' ? t.amount * commissionRates.deposit : t.amount * commissionRates.withdrawal), 0);
 
   const displayDeposits = Math.max(computedDeposits, agent.todayDeposits || 0);

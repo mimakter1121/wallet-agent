@@ -220,7 +220,7 @@ export const agentService = {
         .insert({
           transaction_code: txCode,
           agent_id: targetAgentUuid,
-          type: 'withdrawal',
+          type: 'fund_transfer',
           amount: amount,
           fee: 0,
           commission: 0,

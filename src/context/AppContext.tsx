@@ -686,12 +686,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           mappedDbTx = txRes.data.map((t: any) => {
             const rawCode = t.transaction_code || '';
             const rawType = t.type || '';
-            const isDeposit = rawType === 'deposit' || rawCode.startsWith('DEP');
-            const isWithdrawal = rawType === 'withdrawal' || rawCode.startsWith('WTH');
-            const mappedType: 'deposit' | 'withdrawal' | 'topup' = isDeposit ? 'deposit' : (isWithdrawal ? 'withdrawal' : 'topup');
+            const isAgentPayout = rawCode.startsWith('WD-') || t.note?.includes('Agent Settlement') || t.customer_name?.includes('Agent Settlement');
+            const isAgentTopup = rawCode.startsWith('TOPUP') || t.note?.includes('Agent Topup') || t.customer_name?.includes('Agent Topup');
+            const isDeposit = !isAgentPayout && !isAgentTopup && (rawType === 'deposit' || rawCode.startsWith('DEP'));
+            const isWithdrawal = !isAgentPayout && !isAgentTopup && (rawType === 'withdrawal' || rawCode.startsWith('WTH'));
+            const mappedType: 'deposit' | 'withdrawal' | 'topup' | 'payout' = 
+              isAgentPayout ? 'payout' : (isAgentTopup ? 'topup' : (isDeposit ? 'deposit' : (isWithdrawal ? 'withdrawal' : 'topup')));
 
             const displayName = t.customer_name 
-              || (t.note && !t.note.startsWith('Agent Topup') ? t.note.replace('Customer Cash-In Approved: ', '').replace('Customer Cash-Out Approved: ', '') : (isDeposit ? 'Customer Cash-In' : (isWithdrawal ? 'Customer Cash-Out' : `${agent.name || 'Agent'} Topup`)));
+              || (t.note && !t.note.startsWith('Agent Topup') && !t.note.includes('Agent Settlement') ? t.note.replace('Customer Cash-In Approved: ', '').replace('Customer Cash-Out Approved: ', '') : (isAgentPayout ? 'Agent Settlement' : (isDeposit ? 'Customer Cash-In' : (isWithdrawal ? 'Customer Cash-Out' : `${agent.name || 'Agent'} Topup`))));
             const displayPhone = t.customer_phone || agent.mobile || '01700000000';
 
             return {
@@ -1499,7 +1502,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       customerId: 'AGENT-SELF',
       customerName: agent.name + ` (Agent Settlement - ${source === 'commission' ? 'Commission' : 'Float'})`,
       customerPhone: destinationAddress,
-      type: 'withdrawal',
+      type: 'payout',
       amount,
       fee: 0,
       netAmount: amount,

@@ -1,4 +1,4 @@
-export type TransactionType = 'deposit' | 'withdrawal' | 'commission' | 'transfer' | 'topup';
+export type TransactionType = 'deposit' | 'withdrawal' | 'commission' | 'transfer' | 'topup' | 'payout';
 
 export type TransactionStatus = 'success' | 'pending' | 'processing' | 'rejected';
 
