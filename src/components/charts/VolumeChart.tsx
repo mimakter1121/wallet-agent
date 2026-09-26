@@ -12,7 +12,7 @@ interface DataPoint {
 
 export const VolumeChart: React.FC = () => {
   const { transactions, commissionRates } = useApp();
-  const [range, setRange] = useState<TimeRange>('7days');
+  const [range, setRange] = useState<TimeRange>('today');
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
 
   // Get UTC date string from stored createdAt
@@ -28,15 +28,25 @@ export const VolumeChart: React.FC = () => {
   };
 
   const getLiveData = (): DataPoint[] => {
-    const approvedTxs = transactions.filter(t => t.status !== 'rejected');
+    const approvedTxs = transactions.filter(
+      t => t.status !== 'rejected' &&
+           (t.type === 'deposit' || t.type === 'withdrawal') &&
+           t.customerId !== 'AGENT-SELF' &&
+           !t.customerName?.includes('Agent Settlement')
+    );
     const depRate = commissionRates.deposit;
     const wthRate = commissionRates.withdrawal;
 
     if (range === 'today') {
-      // Use UTC today date to match Supabase UTC timestamps
-      const nowUTC = new Date();
-      const todayUTC = nowUTC.toISOString().substring(0, 10);
-      const todayTxs = approvedTxs.filter(t => t.createdAt && getUTCDateStr(t.createdAt) === todayUTC);
+      // Use both UTC today and local today date to match Supabase timestamps
+      const now = new Date();
+      const todayUTC = now.toISOString().substring(0, 10);
+      const localToday = now.toLocaleDateString('en-CA');
+      const todayTxs = approvedTxs.filter(t => {
+        if (!t.createdAt) return false;
+        const dStr = getUTCDateStr(t.createdAt);
+        return dStr === todayUTC || dStr === localToday;
+      });
 
       const timeSlots = [
         { label: '00:00', start: 0, end: 4 },

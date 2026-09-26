@@ -137,9 +137,9 @@ export const CommissionPage: React.FC = () => {
             <Award className="w-5 h-5" />
           </div>
           <div>
-            <h2 className="text-lg font-black text-white flex items-center gap-2">
+            <h2 className="text-base sm:text-lg font-black text-white flex flex-wrap items-center gap-2">
               <span>Commission & Revenue Center</span>
-              <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[10px] font-black uppercase">
+              <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[10px] font-black uppercase whitespace-nowrap shrink-0 inline-flex items-center">
                 Tier {agentTierNum} Active
               </span>
             </h2>

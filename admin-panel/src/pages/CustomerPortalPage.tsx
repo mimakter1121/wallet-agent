@@ -210,10 +210,65 @@ export const CustomerPortalPage: React.FC = () => {
         const table = item.type === 'deposit' ? 'deposit_requests' : 'withdrawal_requests';
         await supabase
           .from(table)
-          .update({ status: newStatus })
+          .update({ status: newStatus, updated_at: new Date().toISOString() })
           .eq('id', item.id);
 
-        showToast('success', 'Status Updated', `Request #${item.requestCode} marked as ${newStatus.toUpperCase()}.`);
+        const isAgentSettlement = item.requestCode.startsWith('WD-') || 
+          item.customerName?.includes('Agent Settlement') || 
+          item.customerName?.includes('Agent Payout');
+
+        if (isAgentSettlement) {
+          // 1. Update transactions table
+          await supabase
+            .from('transactions')
+            .update({ status: newStatus, updated_at: new Date().toISOString() })
+            .or(`transaction_code.eq.${item.requestCode},id.eq.${item.requestCode}`);
+
+          // 2. Sync agent balance and pending hold in Supabase
+          const targetAgentCode = item.agentCode;
+          const { data: agData } = await supabase
+            .from('agents')
+            .select('id, balance, pending_balance, total_commission')
+            .or(`agent_code.eq.${targetAgentCode},id.eq.${targetAgentCode}`)
+            .maybeSingle();
+
+          if (agData) {
+            const currentPending = parseFloat(agData.pending_balance) || 0;
+            const currentBal = parseFloat(agData.balance) || 0;
+            const currentComm = parseFloat(agData.total_commission) || 0;
+            const txAmt = item.amount;
+
+            if (newStatus === 'approved') {
+              // Withdrawal approved: release pending hold
+              await supabase
+                .from('agents')
+                .update({ pending_balance: Math.max(0, currentPending - txAmt) })
+                .eq('id', agData.id);
+            } else {
+              // Withdrawal rejected: refund held funds back to agent
+              const isCommission = item.customerName?.includes('Commission');
+              if (isCommission) {
+                await supabase
+                  .from('agents')
+                  .update({
+                    total_commission: currentComm + txAmt,
+                    pending_balance: Math.max(0, currentPending - txAmt)
+                  })
+                  .eq('id', agData.id);
+              } else {
+                await supabase
+                  .from('agents')
+                  .update({
+                    balance: currentBal + txAmt,
+                    pending_balance: Math.max(0, currentPending - txAmt)
+                  })
+                  .eq('id', agData.id);
+              }
+            }
+          }
+        }
+
+        showToast('success', isAgentSettlement ? (newStatus === 'approved' ? 'Agent Payout Approved ✓' : 'Agent Payout Rejected & Refunded ✕') : 'Status Updated', `Request #${item.requestCode} marked as ${newStatus.toUpperCase()}.`);
         fetchLiveRequests();
       } catch (err) {
         showToast('error', 'Update Failed', 'Failed to update status in Supabase.');
@@ -725,6 +780,25 @@ export const CustomerPortalPage: React.FC = () => {
                         Agent: <span className="text-amber-400 font-bold">{req.agentCode || 'General'}</span>
                       </div>
                     </div>
+
+                    {req.status === 'pending' && (
+                      <div className="flex gap-2 pt-2 border-t border-[#233763]">
+                        <button
+                          onClick={() => handleUpdateStatus(req, 'approved')}
+                          className="flex-1 py-2 rounded-xl bg-[#00c853] hover:bg-[#00e676] text-white font-black text-xs shadow-sm flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                        >
+                          <CheckCircle2 className="w-3.5 h-3.5" />
+                          <span>{req.requestCode.startsWith('WD-') || req.customerName?.includes('Agent') ? 'Approve Payout' : 'Approve'}</span>
+                        </button>
+                        <button
+                          onClick={() => handleUpdateStatus(req, 'rejected')}
+                          className="flex-1 py-2 rounded-xl bg-rose-500/20 hover:bg-rose-500 text-rose-400 hover:text-white border border-rose-500/40 font-bold text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                        >
+                          <XCircle className="w-3.5 h-3.5" />
+                          <span>Reject</span>
+                        </button>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -812,11 +886,28 @@ export const CustomerPortalPage: React.FC = () => {
 
                         <td className="py-3.5 px-3 text-right">
                           {req.status === 'pending' ? (
-                            <span className="px-2.5 py-1 rounded-xl bg-[#1a294e] border border-[#233763] text-amber-400 font-bold text-[11px]">
-                              Sent to Agent {req.agentCode || 'General'}
-                            </span>
+                            <div className="flex items-center justify-end gap-1.5">
+                              <button
+                                onClick={() => handleUpdateStatus(req, 'approved')}
+                                className="px-2.5 py-1.5 rounded-xl bg-[#00c853] hover:bg-[#00e676] text-white font-black text-[11px] shadow-sm flex items-center gap-1 transition-all cursor-pointer"
+                                title="Approve and confirm payout"
+                              >
+                                <CheckCircle2 className="w-3.5 h-3.5" />
+                                <span>{req.requestCode.startsWith('WD-') || req.customerName?.includes('Agent') ? 'Approve Payout' : 'Approve'}</span>
+                              </button>
+                              <button
+                                onClick={() => handleUpdateStatus(req, 'rejected')}
+                                className="px-2.5 py-1.5 rounded-xl bg-rose-500/20 hover:bg-rose-500 text-rose-400 hover:text-white border border-rose-500/40 font-bold text-[11px] transition-all flex items-center gap-1 cursor-pointer"
+                                title="Reject request and refund balance"
+                              >
+                                <XCircle className="w-3.5 h-3.5" />
+                                <span>Reject</span>
+                              </button>
+                            </div>
                           ) : (
-                            <span className="text-[10px] font-bold text-slate-400 italic">Settled by Agent</span>
+                            <span className="text-[10px] font-bold text-slate-400 italic">
+                              {req.status === 'approved' ? 'Cleared & Completed' : 'Rejected'}
+                            </span>
                           )}
                         </td>
 

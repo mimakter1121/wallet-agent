@@ -239,6 +239,26 @@ export const agentService = {
         return { data: null, error: txError.message };
       }
 
+      // Also register into withdrawal_requests queue for the Admin Payment Desk
+      try {
+        await supabase
+          .from('withdrawal_requests')
+          .insert({
+            request_code: txCode,
+            agent_id: targetAgentUuid,
+            agent_name: agentName || 'Agent Settlement',
+            customer_name: agentName ? `${agentName} (Agent Settlement - ${source === 'commission' ? 'Commission' : 'Float'})` : 'Agent Settlement',
+            customer_phone: destinationAddress || 'N/A',
+            amount: amount,
+            payment_method: paymentMethod,
+            recipient_account: destinationAddress,
+            status: 'pending',
+            note: displayNote
+          });
+      } catch (wthReqErr) {
+        console.warn('Could not insert to withdrawal_requests:', wthReqErr);
+      }
+
       // 3. Update agent's balance or total_commission and pending_balance
       try {
         const { data: curAgent } = await supabase

@@ -10,6 +10,7 @@ import {
   ShieldCheck,
   X
 } from 'lucide-react';
+import { useAdmin } from '../context/AdminContext';
 
 export type AdminTab = 'dashboard' | 'customer_portal' | 'exchange_rates' | 'channels' | 'agents' | 'kyc_requests' | 'transactions' | 'settings';
 
@@ -26,14 +27,21 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
   isOpenMobile = false,
   onCloseMobile
 }) => {
+  const { transactions } = useAdmin();
+
+  const pendingAgentPayouts = transactions.filter(t => 
+    (t.status === 'pending' || t.status === 'processing') && 
+    (t.type === 'withdrawal' || t.id.startsWith('WD-') || t.agentName?.includes('Agent Settlement') || t.customerName?.includes('Agent Settlement') || t.customerName?.includes('Payout'))
+  ).length;
+
   const menuItems = [
     { id: 'dashboard', label: 'Platform Overview', icon: LayoutDashboard },
-    { id: 'customer_portal', label: 'Customer Payment Desk', icon: Smartphone },
+    { id: 'customer_portal', label: 'Customer Payment Desk', icon: Smartphone, badge: pendingAgentPayouts },
     { id: 'exchange_rates', label: 'Exchange Rates (BDT/INR/PKR)', icon: RefreshCw },
     { id: 'channels', label: 'Payment Channels & Numbers', icon: Building2 },
     { id: 'agents', label: 'Agent Liquidity Pool', icon: Users },
     { id: 'kyc_requests', label: 'KYC Requests & Clearance', icon: ShieldCheck },
-    { id: 'transactions', label: 'Clearance Ledger', icon: Receipt },
+    { id: 'transactions', label: 'Clearance Ledger', icon: Receipt, badge: pendingAgentPayouts },
     { id: 'settings', label: 'System Fees & Security', icon: Settings },
   ];
 
@@ -79,14 +87,23 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
                     onCloseMobile();
                   }
                 }}
-                className={`w-full flex items-center gap-3 px-3.5 py-2.5 sm:py-3 rounded-xl font-bold text-xs transition-all ${
+                className={`w-full flex items-center justify-between gap-3 px-3.5 py-2.5 sm:py-3 rounded-xl font-bold text-xs transition-all ${
                   isActive
                     ? 'bg-[#00c853] text-white shadow-md shadow-emerald-950/50'
                     : 'text-slate-200 hover:bg-[#1a294e] hover:text-white'
                 }`}
               >
-                <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-white' : 'text-slate-300'}`} />
-                <span className="truncate">{item.label}</span>
+                <div className="flex items-center gap-3 truncate">
+                  <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-white' : 'text-slate-300'}`} />
+                  <span className="truncate">{item.label}</span>
+                </div>
+                {item.badge && item.badge > 0 ? (
+                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-black shrink-0 ${
+                    isActive ? 'bg-slate-950 text-amber-400' : 'bg-amber-500 text-slate-950 animate-pulse'
+                  }`}>
+                    {item.badge}
+                  </span>
+                ) : null}
               </button>
             );
           })}

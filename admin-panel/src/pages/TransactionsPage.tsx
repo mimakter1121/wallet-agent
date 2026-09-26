@@ -1,9 +1,43 @@
-import React from 'react';
-import { Receipt, ShieldCheck, CheckCheck, XCircle, Download } from 'lucide-react';
+import React, { useState } from 'react';
+import { Receipt, ShieldCheck, CheckCheck, XCircle, Download, Clock, ArrowUpRight, ArrowDownLeft, Filter } from 'lucide-react';
 import { useAdmin } from '../context/AdminContext';
+import { PlatformTransaction } from '../types';
 
 export const TransactionsPage: React.FC = () => {
   const { transactions, approveTransaction, rejectTransaction, showToast } = useAdmin();
+  const [filter, setFilter] = useState<'all' | 'pending_withdrawals' | 'pending_topups' | 'completed' | 'rejected'>('all');
+
+  const isAgentWithdrawal = (tx: PlatformTransaction) => 
+    tx.type === 'withdrawal' || 
+    tx.id.startsWith('WD-') || 
+    tx.agentName?.includes('Agent Settlement') || 
+    tx.customerName?.includes('Agent Settlement') || 
+    tx.customerName?.includes('Payout');
+
+  const isAgentTopup = (tx: PlatformTransaction) => 
+    tx.type === 'topup' || 
+    tx.id.startsWith('TOPUP') || 
+    tx.agentName?.includes('Topup') || 
+    tx.customerName?.includes('Topup');
+
+  const pendingWithdrawalsCount = transactions.filter(t => (t.status === 'pending' || t.status === 'processing') && isAgentWithdrawal(t)).length;
+  const pendingTopupsCount = transactions.filter(t => (t.status === 'pending' || t.status === 'processing') && isAgentTopup(t)).length;
+
+  const displayedTxs = transactions.filter(tx => {
+    if (filter === 'pending_withdrawals') {
+      return (tx.status === 'pending' || tx.status === 'processing') && isAgentWithdrawal(tx);
+    }
+    if (filter === 'pending_topups') {
+      return (tx.status === 'pending' || tx.status === 'processing') && isAgentTopup(tx);
+    }
+    if (filter === 'completed') {
+      return tx.status === 'success';
+    }
+    if (filter === 'rejected') {
+      return tx.status === 'rejected';
+    }
+    return true;
+  });
 
   const handleExportCsv = () => {
     if (transactions.length === 0) {
@@ -11,7 +45,7 @@ export const TransactionsPage: React.FC = () => {
       return;
     }
     const headers = ['Tx ID', 'Agent Name', 'Customer Name', 'Type', 'Amount (USD)', 'Local Amount', 'Payment Method', 'Reference', 'Status', 'Date'];
-    const rows = transactions.map(t => [
+    const rows = displayedTxs.map(t => [
       t.id,
       `"${t.agentName}"`,
       `"${t.customerName}"`,
@@ -64,17 +98,111 @@ export const TransactionsPage: React.FC = () => {
         </button>
       </div>
 
+      {/* Pending Agent Alert Banner if any pending requests exist */}
+      {pendingWithdrawalsCount > 0 && filter !== 'pending_withdrawals' && (
+        <div 
+          onClick={() => setFilter('pending_withdrawals')}
+          className="p-3.5 rounded-2xl bg-amber-500/15 border border-amber-500/40 flex items-center justify-between cursor-pointer hover:bg-amber-500/25 transition-all text-amber-300 text-xs font-bold animate-pulse"
+        >
+          <div className="flex items-center gap-2.5">
+            <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-ping shrink-0" />
+            <span>⚡ {pendingWithdrawalsCount} Agent Withdrawal Request(s) pending your payout clearance!</span>
+          </div>
+          <span className="px-3 py-1 rounded-xl bg-amber-500 text-slate-950 font-black text-[11px] shadow">
+            Review & Approve Now →
+          </span>
+        </div>
+      )}
+
+      {/* Filter Tabs */}
+      <div className="flex flex-wrap items-center gap-2">
+        <button
+          onClick={() => setFilter('all')}
+          className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${
+            filter === 'all'
+              ? 'bg-[#00c853] text-white shadow-md'
+              : 'bg-[#121e3d] text-slate-300 hover:text-white border border-[#233763]'
+          }`}
+        >
+          All Records ({transactions.length})
+        </button>
+
+        <button
+          onClick={() => setFilter('pending_withdrawals')}
+          className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all ${
+            filter === 'pending_withdrawals'
+              ? 'bg-amber-500 text-slate-950 font-black shadow-md'
+              : 'bg-[#121e3d] text-amber-400 border border-amber-500/40 hover:bg-amber-500/10'
+          }`}
+        >
+          <ArrowUpRight className="w-3.5 h-3.5" />
+          <span>Agent Withdrawals</span>
+          {pendingWithdrawalsCount > 0 && (
+            <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-black ${
+              filter === 'pending_withdrawals' ? 'bg-slate-950 text-amber-400' : 'bg-amber-500 text-slate-950'
+            }`}>
+              {pendingWithdrawalsCount}
+            </span>
+          )}
+        </button>
+
+        <button
+          onClick={() => setFilter('pending_topups')}
+          className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all ${
+            filter === 'pending_topups'
+              ? 'bg-blue-500 text-white font-black shadow-md'
+              : 'bg-[#121e3d] text-blue-400 border border-blue-500/40 hover:bg-blue-500/10'
+          }`}
+        >
+          <ArrowDownLeft className="w-3.5 h-3.5" />
+          <span>Agent Top-ups</span>
+          {pendingTopupsCount > 0 && (
+            <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-black ${
+              filter === 'pending_topups' ? 'bg-white text-blue-600' : 'bg-blue-500 text-white'
+            }`}>
+              {pendingTopupsCount}
+            </span>
+          )}
+        </button>
+
+        <button
+          onClick={() => setFilter('completed')}
+          className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${
+            filter === 'completed'
+              ? 'bg-[#1a294e] text-white border border-[#233763]'
+              : 'bg-[#121e3d] text-slate-400 hover:text-white border border-[#233763]'
+          }`}
+        >
+          Cleared
+        </button>
+
+        <button
+          onClick={() => setFilter('rejected')}
+          className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${
+            filter === 'rejected'
+              ? 'bg-[#1a294e] text-white border border-[#233763]'
+              : 'bg-[#121e3d] text-slate-400 hover:text-white border border-[#233763]'
+          }`}
+        >
+          Rejected
+        </button>
+      </div>
+
       {/* Ledger Container */}
       <div className="bg-[#121e3d] border border-[#233763] rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-card">
-        {transactions.length === 0 ? (
+        {displayedTxs.length === 0 ? (
           <div className="text-center py-12 text-slate-400 text-xs font-semibold">
-            No pending agent top-up requests. When an agent submits a liquidity top-up request, it will appear here for Master Admin approval.
+            {filter === 'pending_withdrawals' 
+              ? 'No pending agent withdrawal requests. When an agent requests a float or commission payout, it will appear here.'
+              : filter === 'pending_topups'
+              ? 'No pending agent top-up requests.'
+              : 'No transactions found for the selected filter.'}
           </div>
         ) : (
           <>
             {/* Mobile Cards View (md:hidden) */}
             <div className="md:hidden space-y-3">
-              {transactions.map(tx => {
+              {displayedTxs.map(tx => {
                 const isAgentSettlement = tx.type === 'withdrawal' || tx.agentName?.includes('Agent Settlement') || tx.customerName?.includes('Agent Settlement');
                 const isAgentTopup = tx.type === 'topup' || tx.agentName?.includes('Topup') || tx.customerName?.includes('Topup');
 
@@ -179,7 +307,7 @@ export const TransactionsPage: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#233763]/60">
-                  {transactions.map(tx => {
+                  {displayedTxs.map(tx => {
                     const isAgentSettlement = tx.type === 'withdrawal' || tx.agentName?.includes('Agent Settlement') || tx.customerName?.includes('Agent Settlement');
                     const isAgentTopup = tx.type === 'topup' || tx.agentName?.includes('Topup') || tx.customerName?.includes('Topup');
 

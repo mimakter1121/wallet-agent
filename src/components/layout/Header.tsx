@@ -46,8 +46,7 @@ export const Header: React.FC = () => {
     triggerPwaInstall,
     isOnline,
     pendingDepositsCount,
-    pendingWithdrawalsCount,
-    openAgentWithdrawModal
+    pendingWithdrawalsCount
   } = useApp();
 
   const [showProfileMenu, setShowProfileMenu] = useState(false);
@@ -141,15 +140,6 @@ export const Header: React.FC = () => {
           </div>
 
 
-          {/* Quick Withdraw Button */}
-          <button
-            onClick={() => openAgentWithdrawModal('float')}
-            className="cash-btn-amber px-2.5 sm:px-3 py-1.5 rounded-xl text-[11px] sm:text-xs font-black flex items-center gap-1 shadow-md active:scale-95 cursor-pointer"
-            title="Withdraw Agent Float or Commission"
-          >
-            <ArrowUpRight className="w-3.5 h-3.5 text-white shrink-0" />
-            <span>↑ Withdraw</span>
-          </button>
 
           {/* Notifications Trigger */}
           <div className="relative">

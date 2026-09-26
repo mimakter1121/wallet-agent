@@ -81,19 +81,41 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       let mappedTx: PlatformTransaction[] = [];
 
       if (txRes.data && txRes.data.length > 0) {
-        mappedTx = txRes.data.map((t: any) => ({
-          id: t.id,
-          agentId: t.agent_id,
-          agentName: t.note || 'Agent Liquidity Topup',
-          customerName: t.note || 'Agent Liquidity Topup',
-          type: t.type === 'fund_transfer' ? 'deposit' : t.type,
-          amountUSD: parseFloat(t.amount) || 0,
-          localAmount: `৳ ${(parseFloat(t.amount) * bdtRate).toLocaleString()}`,
-          paymentMethod: t.payment_method || 'USDT TRC20',
-          reference: t.reference || t.transaction_code || '-',
-          status: t.status === 'approved' ? 'success' : t.status,
-          createdAt: t.created_at?.substring(0, 16) || new Date().toISOString().substring(0, 16)
-        }));
+        mappedTx = txRes.data.map((t: any) => {
+          const rawCode = t.transaction_code || '';
+          const rawNote = t.note || '';
+          const isAgentSettlement = rawNote.includes('Agent Settlement') || 
+            t.customer_name?.includes('Agent Settlement') || 
+            rawCode.startsWith('WD-') || 
+            t.type === 'payout';
+          const isAgentTopup = rawNote.includes('Topup') || 
+            t.customer_name?.includes('Topup') || 
+            rawCode.startsWith('TOPUP');
+
+          const mappedType: 'deposit' | 'withdrawal' | 'topup' = 
+            isAgentSettlement ? 'withdrawal' : 
+            isAgentTopup ? 'topup' : 
+            (t.type === 'deposit' ? 'deposit' : (t.type === 'withdrawal' ? 'withdrawal' : 'deposit'));
+
+          const cleanAgentName = t.customer_name?.replace(' (Agent Settlement)', '').replace(' (Agent Topup)', '') || 
+            (isAgentSettlement ? 'Maruf Hossain' : 'Agent');
+
+          return {
+            id: rawCode || t.id,
+            agentId: t.agent_id,
+            agentName: cleanAgentName,
+            customerName: isAgentSettlement 
+              ? `${cleanAgentName} (Payout: ${t.payment_method})` 
+              : (t.customer_name || t.note || 'Client Direct'),
+            type: mappedType,
+            amountUSD: parseFloat(t.amount) || 0,
+            localAmount: `৳ ${(parseFloat(t.amount) * bdtRate).toLocaleString()}`,
+            paymentMethod: t.payment_method || 'USDT TRC20',
+            reference: t.reference || rawCode || '-',
+            status: t.status === 'approved' ? 'success' : t.status,
+            createdAt: t.created_at?.substring(0, 16) || new Date().toISOString().substring(0, 16)
+          };
+        });
       }
 
       // Merge local storage agent topup/withdrawal requests (for instant offline/hybrid reactivity)
@@ -319,15 +341,25 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       const targetTx = transactions.find(t => t.id === id);
       const isAgentSettlement = targetTx?.type === 'withdrawal' || targetTx?.agentName?.includes('Agent Settlement') || targetTx?.customerName?.includes('Agent Settlement');
 
-      const { error } = await supabase
-        .from('transactions')
-        .update({ status: 'approved', updated_at: new Date().toISOString() })
-        .eq('id', id);
-
-      if (error) {
-        showToast('error', 'Approval Error', error.message);
-        return;
+      if (id.startsWith('WD-') || id.startsWith('TOPUP') || id.startsWith('DEP-') || id.startsWith('WTH-')) {
+        await supabase
+          .from('transactions')
+          .update({ status: 'approved', updated_at: new Date().toISOString() })
+          .eq('transaction_code', id);
+      } else {
+        await supabase
+          .from('transactions')
+          .update({ status: 'approved', updated_at: new Date().toISOString() })
+          .eq('id', id);
       }
+
+      // Also mark approved in withdrawal_requests queue
+      try {
+        await supabase
+          .from('withdrawal_requests')
+          .update({ status: 'approved', updated_at: new Date().toISOString() })
+          .or(`request_code.eq.${id},id.eq.${id}`);
+      } catch (_) {}
 
       // If target transaction is associated with an agent, release pending hold or credit balance
       if (targetTx?.agentId) {
@@ -388,15 +420,25 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       const targetTx = transactions.find(t => t.id === id);
       const isAgentSettlement = targetTx?.type === 'withdrawal' || targetTx?.agentName?.includes('Agent Settlement') || targetTx?.customerName?.includes('Agent Settlement');
 
-      const { error } = await supabase
-        .from('transactions')
-        .update({ status: 'rejected', updated_at: new Date().toISOString() })
-        .eq('id', id);
-
-      if (error) {
-        showToast('error', 'Reject Error', error.message);
-        return;
+      if (id.startsWith('WD-') || id.startsWith('TOPUP') || id.startsWith('DEP-') || id.startsWith('WTH-')) {
+        await supabase
+          .from('transactions')
+          .update({ status: 'rejected', updated_at: new Date().toISOString() })
+          .eq('transaction_code', id);
+      } else {
+        await supabase
+          .from('transactions')
+          .update({ status: 'rejected', updated_at: new Date().toISOString() })
+          .eq('id', id);
       }
+
+      // Also mark rejected in withdrawal_requests queue
+      try {
+        await supabase
+          .from('withdrawal_requests')
+          .update({ status: 'rejected', updated_at: new Date().toISOString() })
+          .or(`request_code.eq.${id},id.eq.${id}`);
+      } catch (_) {}
 
       // If target transaction was an agent withdrawal, refund the held funds back
       if (targetTx?.agentId) {
