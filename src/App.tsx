@@ -10,6 +10,7 @@ import { ReceiptModal } from './components/common/ReceiptModal';
 import { TransactionDetailModal } from './components/common/TransactionDetailModal';
 import { CustomerDetailDrawer } from './components/common/CustomerDetailDrawer';
 import { TelegramFloatingButton } from './components/common/TelegramFloatingButton';
+import { AgentWithdrawModal } from './components/modals/AgentWithdrawModal';
 
 // Code-split pages for instant initial load times
 const LoginPage = lazy(() => import('./pages/LoginPage').then(m => ({ default: m.LoginPage })));
@@ -36,7 +37,13 @@ const PageLoader: React.FC = () => (
 );
 
 export const App: React.FC = () => {
-  const { isAuthenticated, currentPage } = useApp();
+  const { 
+    isAuthenticated, 
+    currentPage,
+    isAgentWithdrawModalOpen,
+    closeAgentWithdrawModal,
+    agentWithdrawInitialSource
+  } = useApp();
 
   if (!isAuthenticated || currentPage === 'login') {
     return (
@@ -98,6 +105,11 @@ export const App: React.FC = () => {
       <BottomNav />
 
       {/* Global Overlays & Modals */}
+      <AgentWithdrawModal
+        isOpen={isAgentWithdrawModalOpen}
+        onClose={closeAgentWithdrawModal}
+        initialSource={agentWithdrawInitialSource}
+      />
       <SecurityPinModal />
       <ReceiptModal />
       <TransactionDetailModal />

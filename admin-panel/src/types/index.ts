@@ -42,6 +42,7 @@ export interface Agent {
 
 export interface PlatformTransaction {
   id: string;
+  agentId?: string;
   agentName: string;
   customerName: string;
   type: 'deposit' | 'withdrawal' | 'topup' | 'transfer';

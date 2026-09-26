@@ -93,6 +93,17 @@
   background: #40c4ff;
 }
 
+.cash-btn-amber {
+  background: linear-gradient(135deg, #f59e0b, #ea580c);
+  color: #ffffff;
+  font-weight: 800;
+  border-radius: 12px;
+  transition: all 0.15s ease;
+}
+.cash-btn-amber:hover {
+  background: linear-gradient(135deg, #fbbf24, #f97316);
+}
+
 /* Print styling for receipts */
 @media print {
   body * {

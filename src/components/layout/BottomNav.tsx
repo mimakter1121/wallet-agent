@@ -21,7 +21,8 @@ export const BottomNav: React.FC = () => {
     setCurrentPage, 
     pendingDepositsCount, 
     pendingWithdrawalsCount, 
-    pendingTotalCount 
+    pendingTotalCount,
+    openAgentWithdrawModal
   } = useApp();
   const [showFabMenu, setShowFabMenu] = useState(false);
 
@@ -57,6 +58,28 @@ export const BottomNav: React.FC = () => {
               </button>
             </div>
             
+            {/* Agent Withdrawal / Settlement Button */}
+            <button
+              onClick={() => {
+                setShowFabMenu(false);
+                openAgentWithdrawModal('float');
+              }}
+              className="w-full flex items-center justify-between p-2.5 rounded-2xl bg-amber-500/20 border border-amber-500/40 text-amber-400 font-black text-xs transition-all active:scale-98 cursor-pointer"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-xl bg-amber-500 text-slate-950 flex items-center justify-center font-black flex-shrink-0">
+                  <ArrowUpRight className="w-4 h-4" />
+                </div>
+                <div className="text-left">
+                  <div className="font-black text-xs text-white">↑ Withdraw Funds</div>
+                  <div className="text-[10px] text-amber-300">Cash out float or commission yield</div>
+                </div>
+              </div>
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-500 text-slate-950">
+                Payout
+              </span>
+            </button>
+
             <button
               onClick={() => {
                 setShowFabMenu(false);

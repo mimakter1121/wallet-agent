@@ -18,6 +18,7 @@ import { AddFundsModal } from '../components/modals/AddFundsModal';
 import { TransferModal } from '../components/modals/TransferModal';
 import { ClaimCommissionModal } from '../components/modals/ClaimCommissionModal';
 import { CurrencyExchangeModal } from '../components/modals/CurrencyExchangeModal';
+import { AgentWithdrawModal } from '../components/modals/AgentWithdrawModal';
 import {
   getExchangeRates,
   usdToLocal,
@@ -42,6 +43,8 @@ export const WalletPage: React.FC = () => {
   const [showCurrencyPicker, setShowCurrencyPicker] = useState(false);
 
   const [isAddFundsOpen, setIsAddFundsOpen] = useState(false);
+  const [isWithdrawOpen, setIsWithdrawOpen] = useState(false);
+  const [withdrawInitialSource, setWithdrawInitialSource] = useState<'float' | 'commission'>('float');
   const [isTransferOpen, setIsTransferOpen] = useState(false);
   const [isClaimOpen, setIsClaimOpen] = useState(false);
   const [isExchangeOpen, setIsExchangeOpen] = useState(false);
@@ -127,15 +130,26 @@ export const WalletPage: React.FC = () => {
           <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2.5 w-full lg:w-auto">
             <button
               onClick={() => setIsAddFundsOpen(true)}
-              className="flex items-center justify-center gap-1.5 sm:gap-2 bg-[#00c853] hover:bg-[#00e676] text-white px-3 sm:px-4 py-2.5 rounded-xl font-black text-xs transition-all shadow-md shadow-emerald-950/50 active:scale-98 text-center"
+              className="flex items-center justify-center gap-1.5 sm:gap-2 bg-[#00c853] hover:bg-[#00e676] text-white px-3 sm:px-4 py-2.5 rounded-xl font-black text-xs transition-all shadow-md shadow-emerald-950/50 active:scale-98 text-center cursor-pointer"
             >
               <PlusCircle className="w-4 h-4 flex-shrink-0" />
-              <span className="truncate">Add Funds</span>
+              <span className="truncate">+ Add Funds</span>
+            </button>
+
+            <button
+              onClick={() => {
+                setWithdrawInitialSource('float');
+                setIsWithdrawOpen(true);
+              }}
+              className="cash-btn-amber px-3 sm:px-4 py-2.5 rounded-xl font-black text-xs transition-all shadow-md active:scale-98 text-center cursor-pointer flex items-center justify-center gap-1.5 sm:gap-2"
+            >
+              <ArrowUpRight className="w-4 h-4 flex-shrink-0 text-white" />
+              <span className="truncate">↑ Withdraw</span>
             </button>
 
             <button
               onClick={() => setIsExchangeOpen(true)}
-              className="flex items-center justify-center gap-1.5 sm:gap-2 bg-[#00b0ff] hover:bg-[#40c4ff] text-white px-3 sm:px-4 py-2.5 rounded-xl font-black text-xs transition-all shadow-md active:scale-98 text-center"
+              className="flex items-center justify-center gap-1.5 sm:gap-2 bg-[#00b0ff] hover:bg-[#40c4ff] text-white px-3 sm:px-4 py-2.5 rounded-xl font-black text-xs transition-all shadow-md active:scale-98 text-center cursor-pointer"
             >
               <RefreshCw className="w-4 h-4 flex-shrink-0" />
               <span className="truncate">Swap & Rates</span>
@@ -180,12 +194,24 @@ export const WalletPage: React.FC = () => {
           <div className="p-3.5 rounded-2xl bg-[#1a294e] border border-[#233763] min-w-0 flex flex-col justify-between">
             <div className="flex items-center justify-between gap-1">
               <div className="text-[11px] font-bold text-slate-300 uppercase truncate">Commission</div>
-              <button
-                onClick={() => setIsClaimOpen(true)}
-                className="text-[10px] bg-[#00c853] hover:bg-[#00e676] text-white font-black px-2 py-0.5 rounded-md transition-colors shadow-sm flex-shrink-0"
-              >
-                Claim
-              </button>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => {
+                    setWithdrawInitialSource('commission');
+                    setIsWithdrawOpen(true);
+                  }}
+                  className="text-[10px] bg-amber-500/20 hover:bg-amber-500/30 text-amber-400 border border-amber-500/40 font-bold px-1.5 py-0.5 rounded-md transition-colors shadow-sm flex-shrink-0 cursor-pointer"
+                  title="Directly cash out earned commission"
+                >
+                  Withdraw
+                </button>
+                <button
+                  onClick={() => setIsClaimOpen(true)}
+                  className="text-[10px] bg-[#00c853] hover:bg-[#00e676] text-white font-black px-2 py-0.5 rounded-md transition-colors shadow-sm flex-shrink-0 cursor-pointer"
+                >
+                  Claim
+                </button>
+              </div>
             </div>
             <div className="text-base sm:text-lg font-black text-[#00c853] mt-1 font-mono truncate">
               +{displayCurrency.symbol}{localCommission.toLocaleString('en-US', { maximumFractionDigits: 0 })}
@@ -305,6 +331,11 @@ export const WalletPage: React.FC = () => {
       <AddFundsModal isOpen={isAddFundsOpen} onClose={() => setIsAddFundsOpen(false)} />
       <TransferModal isOpen={isTransferOpen} onClose={() => setIsTransferOpen(false)} />
       <ClaimCommissionModal isOpen={isClaimOpen} onClose={() => setIsClaimOpen(false)} />
+      <AgentWithdrawModal
+        isOpen={isWithdrawOpen}
+        onClose={() => setIsWithdrawOpen(false)}
+        initialSource={withdrawInitialSource}
+      />
       <CurrencyExchangeModal
         isOpen={isExchangeOpen}
         onClose={() => setIsExchangeOpen(false)}

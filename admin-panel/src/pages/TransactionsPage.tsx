@@ -74,73 +74,94 @@ export const TransactionsPage: React.FC = () => {
           <>
             {/* Mobile Cards View (md:hidden) */}
             <div className="md:hidden space-y-3">
-              {transactions.map(tx => (
-                <div
-                  key={tx.id}
-                  className="p-3.5 rounded-xl bg-[#1a294e]/70 border border-[#233763] space-y-3"
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <div>
-                      <div className="font-mono text-xs font-bold text-white flex items-center gap-2">
-                        <span>{tx.id}</span>
-                        <span className="text-[10px] px-2 py-0.5 rounded bg-blue-500/20 text-blue-400 font-bold uppercase">
-                          {tx.type}
-                        </span>
+              {transactions.map(tx => {
+                const isAgentSettlement = tx.type === 'withdrawal' || tx.agentName?.includes('Agent Settlement') || tx.customerName?.includes('Agent Settlement');
+                const isAgentTopup = tx.type === 'topup' || tx.agentName?.includes('Topup') || tx.customerName?.includes('Topup');
+
+                return (
+                  <div
+                    key={tx.id}
+                    className="p-3.5 rounded-xl bg-[#1a294e]/70 border border-[#233763] space-y-3"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <div className="font-mono text-xs font-bold text-white flex items-center gap-2">
+                          <span>{tx.id}</span>
+                          {isAgentSettlement ? (
+                            <span className="text-[10px] px-2 py-0.5 rounded bg-amber-500/20 text-amber-400 border border-amber-500/40 font-bold uppercase tracking-wider">
+                              Agent Withdrawal
+                            </span>
+                          ) : isAgentTopup ? (
+                            <span className="text-[10px] px-2 py-0.5 rounded bg-blue-500/20 text-blue-400 font-bold uppercase">
+                              Agent Top-up
+                            </span>
+                          ) : (
+                            <span className="text-[10px] px-2 py-0.5 rounded bg-slate-500/20 text-slate-300 font-bold uppercase">
+                              {tx.type}
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-[11px] text-slate-400 mt-0.5">
+                          Agent: <span className="font-semibold text-white">{tx.agentName}</span>
+                        </div>
                       </div>
-                      <div className="text-[11px] text-slate-400 mt-0.5">
-                        Agent: <span className="font-semibold text-white">{tx.agentName}</span>
+
+                      <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider shrink-0 ${
+                        tx.status === 'success'
+                          ? 'bg-[#00c853]/20 text-[#00c853] border border-[#00c853]/40'
+                          : tx.status === 'pending' || tx.status === 'processing'
+                          ? 'bg-amber-500/20 text-amber-400 border border-amber-500/40'
+                          : 'bg-rose-500/20 text-rose-400 border border-rose-500/40'
+                      }`}>
+                        {tx.status}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 text-xs bg-[#121e3d] p-2.5 rounded-lg border border-[#233763]/60">
+                      <div>
+                        <div className="text-[10px] uppercase font-bold text-slate-400">
+                          {isAgentSettlement ? 'Payout Amount' : 'Amount'}
+                        </div>
+                        <div className="font-black text-sm text-[#00c853]">${tx.amountUSD.toLocaleString()}</div>
+                        {tx.localAmount && <div className="text-[10px] text-slate-400 font-mono">{tx.localAmount}</div>}
+                      </div>
+                      <div>
+                        <div className="text-[10px] uppercase font-bold text-slate-400">
+                          {isAgentSettlement ? 'Payout Destination' : 'Method & Ref'}
+                        </div>
+                        <div className="font-semibold text-white truncate">{tx.paymentMethod}</div>
+                        <div className="font-mono text-[10px] text-slate-400 truncate" title={tx.reference}>
+                          {tx.reference || 'N/A'}
+                        </div>
                       </div>
                     </div>
 
-                    <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider shrink-0 ${
-                      tx.status === 'success'
-                        ? 'bg-[#00c853]/20 text-[#00c853] border border-[#00c853]/40'
-                        : tx.status === 'pending' || tx.status === 'processing'
-                        ? 'bg-amber-500/20 text-amber-400 border border-amber-500/40'
-                        : 'bg-rose-500/20 text-rose-400 border border-rose-500/40'
-                    }`}>
-                      {tx.status}
-                    </span>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-2 text-xs bg-[#121e3d] p-2.5 rounded-lg border border-[#233763]/60">
-                    <div>
-                      <div className="text-[10px] uppercase font-bold text-slate-400">Amount</div>
-                      <div className="font-black text-sm text-[#00c853]">${tx.amountUSD.toLocaleString()}</div>
-                      {tx.localAmount && <div className="text-[10px] text-slate-400 font-mono">{tx.localAmount}</div>}
+                    <div className="text-[11px] text-slate-400 flex items-center justify-between">
+                      <span>{isAgentSettlement ? 'Recipient: ' : 'Customer: '}<strong className="text-white">{tx.customerName || 'Direct Platform'}</strong></span>
+                      <span className="font-mono text-[10px]">{tx.createdAt?.substring(0, 16).replace('T', ' ')}</span>
                     </div>
-                    <div>
-                      <div className="text-[10px] uppercase font-bold text-slate-400">Method & Ref</div>
-                      <div className="font-semibold text-white truncate">{tx.paymentMethod}</div>
-                      <div className="font-mono text-[10px] text-slate-400 truncate">{tx.reference || 'N/A'}</div>
-                    </div>
-                  </div>
 
-                  <div className="text-[11px] text-slate-400 flex items-center justify-between">
-                    <span>Customer: <strong className="text-white">{tx.customerName || 'Direct Platform'}</strong></span>
-                    <span className="font-mono text-[10px]">{tx.createdAt?.substring(0, 16).replace('T', ' ')}</span>
+                    {(tx.status === 'pending' || tx.status === 'processing') && (
+                      <div className="flex gap-2 pt-1 border-t border-[#233763]">
+                        <button
+                          onClick={() => approveTransaction(tx.id)}
+                          className="flex-1 py-2 rounded-xl bg-[#00c853] hover:bg-[#00e676] text-white font-black text-xs shadow-sm flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                        >
+                          <CheckCheck className="w-4 h-4" />
+                          <span>{isAgentSettlement ? 'Approve Payout' : 'Approve'}</span>
+                        </button>
+                        <button
+                          onClick={() => rejectTransaction(tx.id)}
+                          className="flex-1 py-2 rounded-xl bg-rose-500/20 hover:bg-rose-500 text-rose-400 hover:text-white border border-rose-500/40 font-bold text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                        >
+                          <XCircle className="w-4 h-4" />
+                          <span>Reject</span>
+                        </button>
+                      </div>
+                    )}
                   </div>
-
-                  {(tx.status === 'pending' || tx.status === 'processing') && (
-                    <div className="flex gap-2 pt-1 border-t border-[#233763]">
-                      <button
-                        onClick={() => approveTransaction(tx.id)}
-                        className="flex-1 py-2 rounded-xl bg-[#00c853] hover:bg-[#00e676] text-white font-black text-xs shadow-sm flex items-center justify-center gap-1.5 transition-all"
-                      >
-                        <CheckCheck className="w-4 h-4" />
-                        <span>Approve</span>
-                      </button>
-                      <button
-                        onClick={() => rejectTransaction(tx.id)}
-                        className="flex-1 py-2 rounded-xl bg-rose-500/20 hover:bg-rose-500 text-rose-400 hover:text-white border border-rose-500/40 font-bold text-xs transition-all flex items-center justify-center gap-1.5"
-                      >
-                        <XCircle className="w-4 h-4" />
-                        <span>Reject</span>
-                      </button>
-                    </div>
-                  )}
-                </div>
-              ))}
+                );
+              })}
             </div>
 
             {/* Desktop Full Table (hidden md:block) */}
@@ -148,54 +169,75 @@ export const TransactionsPage: React.FC = () => {
               <table className="w-full text-left text-xs">
                 <thead>
                   <tr className="border-b border-[#233763] text-slate-400 font-semibold uppercase text-[10px]">
-                    <th className="py-3 px-3 min-w-[130px]">Tx ID</th>
-                    <th className="py-3 px-3 min-w-[140px]">Agent</th>
-                    <th className="py-3 px-3 min-w-[140px]">Customer</th>
+                    <th className="py-3 px-3 min-w-[130px]">Tx ID & Type</th>
+                    <th className="py-3 px-3 min-w-[140px]">Agent / Request</th>
+                    <th className="py-3 px-3 min-w-[140px]">Customer / Beneficiary</th>
                     <th className="py-3 px-3 min-w-[110px]">Amount (USD)</th>
-                    <th className="py-3 px-3 min-w-[130px]">Channel / Method</th>
-                    <th className="py-3 px-3 min-w-[120px]">Reference</th>
+                    <th className="py-3 px-3 min-w-[130px]">Payout Channel</th>
+                    <th className="py-3 px-3 min-w-[140px]">Destination / Ref</th>
                     <th className="py-3 px-3 text-right min-w-[180px]">Action</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#233763]/60">
-                  {transactions.map(tx => (
-                    <tr key={tx.id} className="hover:bg-[#1a294e]/50 transition-colors">
-                      <td className="py-3.5 px-3 font-mono font-bold text-white">{tx.id}</td>
-                      <td className="py-3.5 px-3 font-semibold text-white">{tx.agentName}</td>
-                      <td className="py-3.5 px-3 text-slate-300">{tx.customerName}</td>
-                      <td className="py-3.5 px-3 font-black text-[#00c853]">${tx.amountUSD.toLocaleString()}</td>
-                      <td className="py-3.5 px-3 text-slate-300">{tx.paymentMethod}</td>
-                      <td className="py-3.5 px-3 font-mono text-[11px] text-slate-400">{tx.reference}</td>
-                      <td className="py-3.5 px-3 text-right">
-                        {tx.status === 'pending' || tx.status === 'processing' ? (
-                          <div className="flex justify-end gap-1.5 whitespace-nowrap">
-                            <button
-                              onClick={() => approveTransaction(tx.id)}
-                              className="px-3 py-1 rounded-xl bg-[#00c853] hover:bg-[#00e676] text-white font-bold text-[11px] shadow-sm flex items-center gap-1 transition-all whitespace-nowrap cursor-pointer"
-                            >
-                              <CheckCheck className="w-3.5 h-3.5" />
-                              <span>Approve Clearance</span>
-                            </button>
-                            <button
-                              onClick={() => rejectTransaction(tx.id)}
-                              className="px-3 py-1 rounded-xl bg-rose-500/20 hover:bg-rose-500 text-rose-400 hover:text-white border border-rose-500/40 font-bold text-[11px] transition-all flex items-center gap-1 whitespace-nowrap cursor-pointer"
-                            >
-                              <XCircle className="w-3.5 h-3.5" />
-                              <span>Reject</span>
-                            </button>
-                          </div>
-                        ) : (
-                          <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${
-                            tx.status === 'success'
-                              ? 'bg-[#00c853]/20 text-[#00c853] border border-[#00c853]/40'
-                              : 'bg-rose-500/20 text-rose-400 border border-rose-500/40'
-                          }`}>
-                            {tx.status}
-                          </span>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
+                  {transactions.map(tx => {
+                    const isAgentSettlement = tx.type === 'withdrawal' || tx.agentName?.includes('Agent Settlement') || tx.customerName?.includes('Agent Settlement');
+                    const isAgentTopup = tx.type === 'topup' || tx.agentName?.includes('Topup') || tx.customerName?.includes('Topup');
+
+                    return (
+                      <tr key={tx.id} className="hover:bg-[#1a294e]/50 transition-colors">
+                        <td className="py-3.5 px-3 font-mono font-bold text-white">
+                          <div>{tx.id}</div>
+                          {isAgentSettlement ? (
+                            <span className="text-[9px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400 border border-amber-500/40 font-bold uppercase tracking-wider inline-block mt-0.5">
+                              Agent Withdrawal
+                            </span>
+                          ) : isAgentTopup ? (
+                            <span className="text-[9px] px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-400 font-bold uppercase inline-block mt-0.5">
+                              Agent Top-up
+                            </span>
+                          ) : null}
+                        </td>
+                        <td className="py-3.5 px-3 font-semibold text-white">{tx.agentName}</td>
+                        <td className="py-3.5 px-3 text-slate-300">{tx.customerName}</td>
+                        <td className="py-3.5 px-3 font-black text-[#00c853]">
+                          <div>${tx.amountUSD.toLocaleString()}</div>
+                          {tx.localAmount && <div className="text-[10px] text-slate-400 font-mono font-normal">{tx.localAmount}</div>}
+                        </td>
+                        <td className="py-3.5 px-3 text-slate-300 font-semibold">{tx.paymentMethod}</td>
+                        <td className="py-3.5 px-3 font-mono text-[11px] text-slate-300 max-w-[180px] truncate" title={tx.reference}>
+                          {tx.reference}
+                        </td>
+                        <td className="py-3.5 px-3 text-right">
+                          {tx.status === 'pending' || tx.status === 'processing' ? (
+                            <div className="flex justify-end gap-1.5 whitespace-nowrap">
+                              <button
+                                onClick={() => approveTransaction(tx.id)}
+                                className="px-3 py-1 rounded-xl bg-[#00c853] hover:bg-[#00e676] text-white font-bold text-[11px] shadow-sm flex items-center gap-1 transition-all whitespace-nowrap cursor-pointer"
+                              >
+                                <CheckCheck className="w-3.5 h-3.5" />
+                                <span>{isAgentSettlement ? 'Approve Payout' : 'Approve Clearance'}</span>
+                              </button>
+                              <button
+                                onClick={() => rejectTransaction(tx.id)}
+                                className="px-3 py-1 rounded-xl bg-rose-500/20 hover:bg-rose-500 text-rose-400 hover:text-white border border-rose-500/40 font-bold text-[11px] transition-all flex items-center gap-1 whitespace-nowrap cursor-pointer"
+                              >
+                                <XCircle className="w-3.5 h-3.5" />
+                                <span>Reject</span>
+                              </button>
+                            </div>
+                          ) : (
+                            <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${
+                              tx.status === 'success'
+                                ? 'bg-[#00c853]/20 text-[#00c853] border border-[#00c853]/40'
+                                : 'bg-rose-500/20 text-rose-400 border border-rose-500/40'
+                            }`}>
+                              {tx.status}
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

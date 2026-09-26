@@ -96,19 +96,19 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         }));
       }
 
-      // Merge local storage agent topup requests (for instant offline/hybrid reactivity)
+      // Merge local storage agent topup/withdrawal requests (for instant offline/hybrid reactivity)
       const localTxsRaw = localStorage.getItem('wa_transactions');
       if (localTxsRaw) {
         try {
           const parsed = JSON.parse(localTxsRaw);
           const localMapped: PlatformTransaction[] = parsed
-            .filter((t: any) => t.type === 'topup' || t.customerName?.includes('Agent Topup'))
+            .filter((t: any) => t.type === 'topup' || t.type === 'withdrawal' || t.customerName?.includes('Agent') || t.notes?.includes('Agent Settlement'))
             .map((t: any) => ({
               id: t.id || t.receiptNumber || 'TX-LOCAL',
               agentId: t.customerId || 'AG-LOCAL',
-              agentName: t.customerName || 'Agent Topup Request',
-              customerName: t.customerName || 'Agent Topup Request',
-              type: 'deposit',
+              agentName: t.notes?.includes('Agent Settlement') ? t.notes : (t.customerName || 'Agent Request'),
+              customerName: t.customerName || 'Agent Direct',
+              type: t.type === 'withdrawal' ? 'withdrawal' : 'deposit',
               amountUSD: parseFloat(t.amount) || 0,
               localAmount: `৳ ${(parseFloat(t.amount) * bdtRate).toLocaleString()}`,
               paymentMethod: t.paymentMethod || 'USDT TRC20',
@@ -316,10 +316,12 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const approveTransaction = async (id: string) => {
     try {
-      // Update transaction status in Supabase (PostgreSQL trigger automatically credits agent balance)
+      const targetTx = transactions.find(t => t.id === id);
+      const isAgentSettlement = targetTx?.type === 'withdrawal' || targetTx?.agentName?.includes('Agent Settlement') || targetTx?.customerName?.includes('Agent Settlement');
+
       const { error } = await supabase
         .from('transactions')
-        .update({ status: 'approved' })
+        .update({ status: 'approved', updated_at: new Date().toISOString() })
         .eq('id', id);
 
       if (error) {
@@ -327,7 +329,53 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         return;
       }
 
-      showToast('success', 'Top-up Approved ✓', `Agent transaction cleared. Balance credited.`);
+      // If target transaction is associated with an agent, release pending hold or credit balance
+      if (targetTx?.agentId) {
+        try {
+          const { data: agData } = await supabase
+            .from('agents')
+            .select('id, balance, pending_balance, total_commission')
+            .or(`id.eq.${targetTx.agentId},agent_code.eq.${targetTx.agentId}`)
+            .maybeSingle();
+
+          if (agData) {
+            const currentPending = parseFloat(agData.pending_balance) || 0;
+            const currentBal = parseFloat(agData.balance) || 0;
+            const txAmt = targetTx.amountUSD;
+
+            if (isAgentSettlement) {
+              // Withdrawal: amount was already deducted from available balance upon submission and held in pending.
+              // Now that admin approves the payout, release the pending hold.
+              await supabase
+                .from('agents')
+                .update({
+                  pending_balance: Math.max(0, currentPending - txAmt)
+                })
+                .eq('id', agData.id);
+            } else {
+              // Top-up: credit available balance and release pending hold.
+              await supabase
+                .from('agents')
+                .update({
+                  balance: currentBal + txAmt,
+                  pending_balance: Math.max(0, currentPending - txAmt)
+                })
+                .eq('id', agData.id);
+            }
+          }
+        } catch (e) {
+          console.warn('Could not sync agent balance on approval:', e);
+        }
+      }
+
+      // Also update localStorage if present
+      try {
+        const localTxs = JSON.parse(localStorage.getItem('wa_transactions') || '[]');
+        const updated = localTxs.map((t: any) => t.id === id ? { ...t, status: 'approved' } : t);
+        localStorage.setItem('wa_transactions', JSON.stringify(updated));
+      } catch {}
+
+      showToast('success', isAgentSettlement ? 'Withdrawal Approved ✓' : 'Top-up Approved ✓', isAgentSettlement ? `Payout of $${targetTx?.amountUSD || 0} to agent confirmed.` : 'Agent transaction cleared. Balance credited.');
       fetchLiveAdminData();
     } catch (err: any) {
       setTransactions(prev => prev.map(t => t.id === id ? { ...t, status: 'success' } : t));
@@ -337,9 +385,12 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const rejectTransaction = async (id: string) => {
     try {
+      const targetTx = transactions.find(t => t.id === id);
+      const isAgentSettlement = targetTx?.type === 'withdrawal' || targetTx?.agentName?.includes('Agent Settlement') || targetTx?.customerName?.includes('Agent Settlement');
+
       const { error } = await supabase
         .from('transactions')
-        .update({ status: 'rejected' })
+        .update({ status: 'rejected', updated_at: new Date().toISOString() })
         .eq('id', id);
 
       if (error) {
@@ -347,7 +398,62 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         return;
       }
 
-      showToast('info', 'Transaction Rejected', `Transaction ${id} marked as rejected.`);
+      // If target transaction was an agent withdrawal, refund the held funds back
+      if (targetTx?.agentId) {
+        try {
+          const { data: agData } = await supabase
+            .from('agents')
+            .select('id, balance, pending_balance, total_commission')
+            .or(`id.eq.${targetTx.agentId},agent_code.eq.${targetTx.agentId}`)
+            .maybeSingle();
+
+          if (agData) {
+            const currentPending = parseFloat(agData.pending_balance) || 0;
+            const currentBal = parseFloat(agData.balance) || 0;
+            const currentComm = parseFloat(agData.total_commission) || 0;
+            const txAmt = targetTx.amountUSD;
+
+            if (isAgentSettlement) {
+              const isCommission = targetTx.agentName?.includes('Commission') || targetTx.customerName?.includes('Commission');
+              if (isCommission) {
+                await supabase
+                  .from('agents')
+                  .update({
+                    total_commission: currentComm + txAmt,
+                    pending_balance: Math.max(0, currentPending - txAmt)
+                  })
+                  .eq('id', agData.id);
+              } else {
+                await supabase
+                  .from('agents')
+                  .update({
+                    balance: currentBal + txAmt,
+                    pending_balance: Math.max(0, currentPending - txAmt)
+                  })
+                  .eq('id', agData.id);
+              }
+            } else {
+              await supabase
+                .from('agents')
+                .update({
+                  pending_balance: Math.max(0, currentPending - txAmt)
+                })
+                .eq('id', agData.id);
+            }
+          }
+        } catch (e) {
+          console.warn('Could not sync agent balance on rejection:', e);
+        }
+      }
+
+      // Also update localStorage if present
+      try {
+        const localTxs = JSON.parse(localStorage.getItem('wa_transactions') || '[]');
+        const updated = localTxs.map((t: any) => t.id === id ? { ...t, status: 'rejected' } : t);
+        localStorage.setItem('wa_transactions', JSON.stringify(updated));
+      } catch {}
+
+      showToast('info', 'Transaction Rejected', `Transaction ${id} marked as rejected. Funds released.`);
       fetchLiveAdminData();
     } catch (err: any) {
       setTransactions(prev => prev.map(t => t.id === id ? { ...t, status: 'rejected' } : t));

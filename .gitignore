@@ -25,3 +25,6 @@ dist-ssr
 
 admin-panel/node_modules
 admin-panel/dist
+
+# Temporary scratch scripts
+scratch/

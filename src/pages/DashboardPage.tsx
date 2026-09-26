@@ -21,6 +21,7 @@ import { CommissionChart } from '../components/charts/CommissionChart';
 import { StatusBadge, TypeBadge } from '../components/common/StatusBadge';
 import { AddFundsModal } from '../components/modals/AddFundsModal';
 import { TransferModal } from '../components/modals/TransferModal';
+import { AgentWithdrawModal } from '../components/modals/AgentWithdrawModal';
 
 import { usdToLocal, formatCurrency } from '../config/currencyRates';
 
@@ -36,6 +37,7 @@ export const DashboardPage: React.FC = () => {
 
   const [isAddFundsOpen, setIsAddFundsOpen] = useState(false);
   const [isTransferOpen, setIsTransferOpen] = useState(false);
+  const [isWithdrawOpen, setIsWithdrawOpen] = useState(false);
 
   const nowUTCDate = new Date().toISOString().substring(0, 10);
   const localToday = new Date().toLocaleDateString('en-CA');
@@ -117,6 +119,7 @@ export const DashboardPage: React.FC = () => {
         onAddFunds={() => setIsAddFundsOpen(true)}
         onRequestWithdrawal={() => setCurrentPage('withdrawals')}
         onNewDeposit={() => setCurrentPage('deposits')}
+        onAgentWithdraw={() => setIsWithdrawOpen(true)}
       />
 
       {/* 4 Financial Stat Cards */}
@@ -262,6 +265,11 @@ export const DashboardPage: React.FC = () => {
       <TransferModal
         isOpen={isTransferOpen}
         onClose={() => setIsTransferOpen(false)}
+      />
+
+      <AgentWithdrawModal
+        isOpen={isWithdrawOpen}
+        onClose={() => setIsWithdrawOpen(false)}
       />
 
     </div>

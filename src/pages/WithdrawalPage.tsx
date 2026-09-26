@@ -22,7 +22,8 @@ export const WithdrawalPage: React.FC = () => {
     requestPinConfirmation,
     bdtExchangeRate: bdtRate,
     commissionRates,
-    refreshAgentData
+    refreshAgentData,
+    openAgentWithdrawModal
   } = useApp();
 
   const [liveWithdrawalRequests, setLiveWithdrawalRequests] = useState<any[]>([]);
@@ -137,6 +138,34 @@ export const WithdrawalPage: React.FC = () => {
         >
           <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
           <span>Refresh Queue</span>
+        </button>
+      </div>
+
+      {/* Agent Settlement Quick Action Card */}
+      <div className="bg-[#1a294e] border border-amber-500/40 rounded-3xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-lg shadow-amber-950/20">
+        <div className="flex items-center gap-3.5">
+          <div className="w-10 h-10 rounded-2xl bg-amber-500/20 text-amber-400 border border-amber-500/40 flex items-center justify-center font-black shrink-0">
+            <ArrowUpRight className="w-5 h-5 text-amber-400" />
+          </div>
+          <div>
+            <div className="text-xs sm:text-sm font-black text-white flex items-center gap-2">
+              <span>Agent Float & Commission Settlement</span>
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400 font-bold border border-amber-500/40 uppercase">
+                Self Withdrawal
+              </span>
+            </div>
+            <p className="text-[11px] text-slate-300 font-medium mt-0.5">
+              Available Float: <strong className="text-emerald-400 font-mono">${agent.balance.toLocaleString('en-US', { minimumFractionDigits: 2 })}</strong> • Unclaimed Commission: <strong className="text-amber-400 font-mono">+${agent.commissionBalance.toLocaleString('en-US', { minimumFractionDigits: 2 })}</strong>
+            </p>
+          </div>
+        </div>
+
+        <button
+          onClick={() => openAgentWithdrawModal('float')}
+          className="cash-btn-amber px-5 py-2.5 rounded-xl text-xs font-black flex items-center justify-center gap-2 shadow-md active:scale-95 shrink-0 cursor-pointer self-start sm:self-auto"
+        >
+          <ArrowUpRight className="w-4 h-4 text-white" />
+          <span>↑ Withdraw My Funds</span>
         </button>
       </div>
 

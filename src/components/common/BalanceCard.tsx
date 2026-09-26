@@ -7,12 +7,14 @@ interface BalanceCardProps {
   onAddFunds: () => void;
   onRequestWithdrawal: () => void;
   onNewDeposit: () => void;
+  onAgentWithdraw?: () => void;
 }
 
 export const BalanceCard: React.FC<BalanceCardProps> = ({
   onAddFunds,
   onRequestWithdrawal,
-  onNewDeposit
+  onNewDeposit,
+  onAgentWithdraw
 }) => {
   const { agent, transactions, commissionRates, showToast } = useApp();
 
@@ -125,7 +127,7 @@ export const BalanceCard: React.FC<BalanceCardProps> = ({
             <span className="text-[#00c853] font-bold">{getFormattedBalance()}</span>
             {displayCurrency !== 'USD' && !hideBalance && (
               <span className="text-xs font-bold text-slate-400 font-sans">
-                ($${agent.balance.toLocaleString('en-US', { minimumFractionDigits: 2 })} USD)
+                (${agent.balance.toLocaleString('en-US', { minimumFractionDigits: 2 })} USD)
               </span>
             )}
           </div>
@@ -158,29 +160,37 @@ export const BalanceCard: React.FC<BalanceCardProps> = ({
       </div>
 
       {/* Cashier Action Buttons */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3 pt-2">
         <button
           onClick={onAddFunds}
-          className="cash-btn-blue py-3 px-4 flex items-center justify-center gap-2 text-xs uppercase tracking-wider shadow-md active:scale-98"
+          className="cash-btn-blue py-3 px-3 sm:px-4 flex items-center justify-center gap-1.5 sm:gap-2 text-xs uppercase tracking-wider shadow-md active:scale-98 cursor-pointer"
         >
-          <PlusCircle className="w-4 h-4" />
-          <span>+ Add Funds</span>
+          <PlusCircle className="w-4 h-4 shrink-0" />
+          <span className="truncate">+ Add Funds</span>
+        </button>
+
+        <button
+          onClick={onAgentWithdraw || onRequestWithdrawal}
+          className="cash-btn-amber py-3 px-3 sm:px-4 flex items-center justify-center gap-1.5 sm:gap-2 text-xs font-black uppercase tracking-wider shadow-md active:scale-98 cursor-pointer"
+        >
+          <ArrowUpRight className="w-4 h-4 text-white shrink-0" />
+          <span className="truncate">↑ Withdraw</span>
         </button>
 
         <button
           onClick={onNewDeposit}
-          className="cash-btn-primary py-3 px-4 flex items-center justify-center gap-2 text-xs uppercase tracking-wider shadow-md active:scale-98"
+          className="cash-btn-primary py-3 px-3 sm:px-4 flex items-center justify-center gap-1.5 sm:gap-2 text-xs uppercase tracking-wider shadow-md active:scale-98 cursor-pointer"
         >
-          <ArrowDownLeft className="w-4 h-4" />
-          <span>↓ Deposit (Cash In)</span>
+          <ArrowDownLeft className="w-4 h-4 shrink-0" />
+          <span className="truncate">↓ Customer In</span>
         </button>
 
         <button
           onClick={onRequestWithdrawal}
-          className="bg-[#1a294e] hover:bg-[#233763] text-white border border-[#233763] py-3 px-4 rounded-xl flex items-center justify-center gap-2 text-xs font-bold uppercase tracking-wider transition-all active:scale-98"
+          className="bg-[#1a294e] hover:bg-[#233763] text-white border border-[#233763] py-3 px-3 sm:px-4 rounded-xl flex items-center justify-center gap-1.5 sm:gap-2 text-xs font-bold uppercase tracking-wider transition-all active:scale-98 cursor-pointer"
         >
-          <ArrowUpRight className="w-4 h-4 text-emerald-400" />
-          <span>↑ Payout (Cash Out)</span>
+          <ArrowUpRight className="w-4 h-4 text-emerald-400 shrink-0" />
+          <span className="truncate">↑ Customer Out</span>
         </button>
       </div>
     </div>

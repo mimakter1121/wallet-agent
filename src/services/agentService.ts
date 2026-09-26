@@ -161,5 +161,123 @@ export const agentService = {
       console.error('Exception submitting topup request:', err);
       return { data: null, error: err.message || 'Failed to submit topup request.' };
     }
+  },
+
+  // Request Settlement / Withdrawal of Float or Commission (Submitted as PENDING for Admin clearance)
+  async withdrawFunds(
+    amount: number,
+    source: 'float' | 'commission',
+    paymentMethod: string,
+    destinationAddress: string,
+    agentId?: string | null,
+    agentName?: string,
+    accountHolderName?: string
+  ): Promise<{ data: any; error: string | null }> {
+    if (!isSupabaseConfigured()) {
+      return { data: { success: true, status: 'pending' }, error: null };
+    }
+
+    try {
+      // 1. Resolve valid Agent UUID
+      let targetAgentUuid: string | null = null;
+      const isUuid = agentId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(agentId);
+
+      if (isUuid) {
+        targetAgentUuid = agentId;
+      } else if (agentId) {
+        const { data: agByCode } = await supabase
+          .from('agents')
+          .select('id')
+          .eq('agent_code', agentId)
+          .maybeSingle();
+        if (agByCode?.id) {
+          targetAgentUuid = agByCode.id;
+        }
+      }
+
+      if (!targetAgentUuid) {
+        const { data: authUser } = await supabase.auth.getUser();
+        if (authUser?.user?.id) {
+          const { data: profData } = await supabase
+            .from('profiles')
+            .select('id, agents(id)')
+            .eq('id', authUser.user.id)
+            .maybeSingle();
+          targetAgentUuid = (profData as any)?.agents?.[0]?.id || (profData as any)?.agents?.id || null;
+        }
+      }
+
+      if (!targetAgentUuid) {
+        targetAgentUuid = 'e3f85535-3000-4000-8000-000000055353';
+      }
+
+      const txCode = 'WD-' + Math.floor(100000 + Math.random() * 900000);
+      const displayNote = `Agent Settlement (${source === 'commission' ? 'Commission' : 'Float'}) -> ${paymentMethod}: ${destinationAddress}${accountHolderName ? ` (${accountHolderName})` : ''}`;
+
+      // 2. Insert withdrawal transaction record into Supabase
+      const { data: txData, error: txError } = await supabase
+        .from('transactions')
+        .insert({
+          transaction_code: txCode,
+          agent_id: targetAgentUuid,
+          type: 'withdrawal',
+          amount: amount,
+          fee: 0,
+          commission: 0,
+          payment_method: paymentMethod,
+          reference: destinationAddress || ('REF-' + Date.now()),
+          status: 'pending',
+          note: displayNote,
+          customer_name: agentName ? `${agentName} (Agent Settlement)` : 'Agent Settlement',
+          customer_phone: destinationAddress || 'N/A'
+        })
+        .select()
+        .single();
+
+      if (txError) {
+        console.error('Error inserting withdrawal transaction into Supabase:', txError);
+        return { data: null, error: txError.message };
+      }
+
+      // 3. Update agent's balance or total_commission and pending_balance
+      try {
+        const { data: curAgent } = await supabase
+          .from('agents')
+          .select('balance, pending_balance, total_commission')
+          .eq('id', targetAgentUuid)
+          .maybeSingle();
+
+        if (curAgent) {
+          const curBal = parseFloat(curAgent.balance) || 0;
+          const curPending = parseFloat(curAgent.pending_balance) || 0;
+          const curComm = parseFloat(curAgent.total_commission) || 0;
+
+          if (source === 'commission') {
+            await supabase
+              .from('agents')
+              .update({
+                total_commission: Math.max(0, curComm - amount),
+                pending_balance: curPending + amount
+              })
+              .eq('id', targetAgentUuid);
+          } else {
+            await supabase
+              .from('agents')
+              .update({
+                balance: Math.max(0, curBal - amount),
+                pending_balance: curPending + amount
+              })
+              .eq('id', targetAgentUuid);
+          }
+        }
+      } catch (e) {
+        console.warn('Could not update balance on agents record:', e);
+      }
+
+      return { data: txData, error: null };
+    } catch (err: any) {
+      console.error('Exception submitting withdrawal request:', err);
+      return { data: null, error: err.message || 'Failed to submit withdrawal request.' };
+    }
   }
 };

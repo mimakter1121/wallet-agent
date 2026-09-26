@@ -90,6 +90,11 @@ interface AppContextType {
   isMasterAgent: boolean;
   updateAgentProfile: (updates: Partial<AgentProfile>) => void;
   addFunds: (amount: number, method: PaymentMethod, ref: string) => Promise<void>;
+  withdrawFunds: (amount: number, source: 'float' | 'commission', method: string, destinationAddress: string, accountHolderName?: string) => Promise<void>;
+  isAgentWithdrawModalOpen: boolean;
+  agentWithdrawInitialSource: 'float' | 'commission';
+  openAgentWithdrawModal: (source?: 'float' | 'commission') => void;
+  closeAgentWithdrawModal: () => void;
   transferFunds: (amount: number, recipient: string, note: string) => void;
   
   // Customers
@@ -413,6 +418,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const [receiptTx, setReceiptTx] = useState<Transaction | null>(null);
   const [isReceiptOpen, setIsReceiptOpen] = useState<boolean>(false);
+
+  // Agent Withdrawal Modal
+  const [isAgentWithdrawModalOpen, setIsAgentWithdrawModalOpen] = useState(false);
+  const [agentWithdrawInitialSource, setAgentWithdrawInitialSource] = useState<'float' | 'commission'>('float');
+
+  const openAgentWithdrawModal = (source: 'float' | 'commission' = 'float') => {
+    setAgentWithdrawInitialSource(source);
+    setIsAgentWithdrawModalOpen(true);
+  };
+
+  const closeAgentWithdrawModal = () => {
+    setIsAgentWithdrawModalOpen(false);
+  };
 
   // Security PIN
   const [isPinModalOpen, setIsPinModalOpen] = useState(false);
@@ -1446,6 +1464,93 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     showToast('info', 'Top-up Request Submitted ⏳', `Liquidity top-up of $${amount.toLocaleString()} submitted. Awaiting Master Admin clearance approval.`);
   };
 
+  // Withdraw / Settle Funds via Supabase (Submitted as PENDING for Master Admin clearance)
+  const withdrawFunds = async (
+    amount: number,
+    source: 'float' | 'commission',
+    method: string,
+    destinationAddress: string,
+    accountHolderName?: string
+  ) => {
+    if (source === 'float' && amount > agent.balance) {
+      showToast('error', 'Insufficient Float Balance', `Cannot withdraw $${amount.toFixed(2)}. Available float is $${agent.balance.toFixed(2)}.`);
+      return;
+    }
+    if (source === 'commission' && amount > agent.commissionBalance) {
+      showToast('error', 'Insufficient Commission', `Cannot withdraw $${amount.toFixed(2)}. Unclaimed commission is $${agent.commissionBalance.toFixed(2)}.`);
+      return;
+    }
+
+    if (isSupabaseConfigured()) {
+      await agentService.withdrawFunds(
+        amount,
+        source,
+        method,
+        destinationAddress,
+        agent.dbId || agent.id,
+        agent.name,
+        accountHolderName
+      );
+    }
+
+    const txCode = 'WD-' + Math.floor(100000 + Math.random() * 900000);
+    const newTx: Transaction = {
+      id: txCode,
+      customerId: 'AGENT-SELF',
+      customerName: agent.name + ` (Agent Settlement - ${source === 'commission' ? 'Commission' : 'Float'})`,
+      customerPhone: destinationAddress,
+      type: 'withdrawal',
+      amount,
+      fee: 0,
+      netAmount: amount,
+      paymentMethod: method as any,
+      reference: destinationAddress,
+      status: 'pending',
+      createdAt: new Date().toISOString().replace('T', ' ').substring(0, 16),
+      updatedAt: new Date().toISOString().replace('T', ' ').substring(0, 16),
+      adminNote: `Awaiting Master Admin Settlement Clearance (${method})`,
+      receiptNumber: 'RCP-WD-' + Math.floor(10000 + Math.random() * 90000),
+      notes: `Agent Settlement (${source === 'commission' ? 'Commission' : 'Float'}) -> ${method}: ${destinationAddress}${accountHolderName ? ` (${accountHolderName})` : ''}`
+    };
+
+    setTransactions(prev => [newTx, ...prev]);
+
+    // Persist to localStorage for admin panel hybrid sync
+    try {
+      const existing = JSON.parse(localStorage.getItem('wa_transactions') || '[]');
+      localStorage.setItem('wa_transactions', JSON.stringify([newTx, ...existing]));
+    } catch {}
+
+    setAgent(prev => {
+      if (source === 'commission') {
+        return {
+          ...prev,
+          commissionBalance: Math.max(0, prev.commissionBalance - amount),
+          pendingBalance: prev.pendingBalance + amount
+        };
+      } else {
+        return {
+          ...prev,
+          balance: Math.max(0, prev.balance - amount),
+          pendingBalance: prev.pendingBalance + amount
+        };
+      }
+    });
+
+    const notif: NotificationItem = {
+      id: 'notif-wd-' + Date.now(),
+      title: 'Withdrawal Submitted ⏳',
+      message: `Your settlement request of $${amount.toLocaleString()} to ${method} (${destinationAddress}) has been queued for admin payout.`,
+      type: 'transaction',
+      timestamp: 'Just now',
+      read: false,
+      badge: `-$${amount.toLocaleString()}`
+    };
+    setNotifications(prev => [notif, ...prev]);
+
+    showToast('info', 'Withdrawal Queued ⏳', `Settlement of $${amount.toLocaleString()} submitted. Awaiting Master Admin payout approval.`);
+  };
+
   // Internal Transfer
   const transferFunds = (amount: number, recipient: string, note: string) => {
     if (amount > agent.balance) {
@@ -1911,6 +2016,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         isMasterAgent,
         updateAgentProfile,
         addFunds,
+        withdrawFunds,
+        isAgentWithdrawModalOpen,
+        agentWithdrawInitialSource,
+        openAgentWithdrawModal,
+        closeAgentWithdrawModal,
         transferFunds,
         customers,
         selectedCustomer,
